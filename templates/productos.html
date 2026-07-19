@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productos - NexuStock</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+    <!-- Barra Superior -->
+
+    <div class="bg-blue-600 text-white p-4 shadow">
+
+        <div class="flex justify-between items-center">
+
+            <h1 class="text-2xl font-bold">
+                📦 NexuStock
+            </h1>
+
+            <div class="space-x-6">
+
+                <a href="/dashboard" class="hover:underline">
+                    Dashboard
+                </a>
+
+                <a href="/productos" class="hover:underline font-bold">
+                    Productos
+                </a>
+
+                <a href="/movimientos" class="hover:underline">
+                    Movimientos
+                </a>
+
+                <a href="/reportes" class="hover:underline">
+                    Reportes
+                </a>
+
+                <a href="/usuarios" class="hover:underline">
+                    Usuarios
+                </a>
+
+                <a href="/entrada-stock" class="hover:underline">
+                    Entrada Stock
+                </a>
+                <a href="/salida-stock" class="hover:underline">
+                    Salida Stock
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Contenido -->
+
+    <div class="p-6">
+
+        <div class="flex justify-between items-center mb-6">
+
+            <h2 class="text-3xl font-bold">
+                Productos
+            </h2>
+
+            <a
+                href="/nuevo-producto"
+                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            >
+                ➕ Nuevo Producto
+            </a>
+            <a
+            href="/exportar-excel"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+            📊 Exportar Excel
+        </a>
+
+        </div>
+        
+        <form method="GET" class="mb-6">
+            <div class="flex gap-2">
+                <input
+                type="text"
+                name="buscar"
+                value="{{ busqueda }}"
+                placeholder="Buscar producto..."
+                class="w-full border rounded-lg px-4 py-3"
+                >
+                <button
+                type="submit"
+                class="bg-blue-600 text-white px-6 rounded-lg"
+                >
+                Buscar
+            </button>
+        </div>
+    </form>
+
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+
+            <table class="w-full">
+
+                <thead class="bg-gray-200">
+
+                    <tr>
+
+                        <th class="p-3 text-left">
+                            Código
+                        </th>
+
+                        <th class="p-3 text-left">
+                            Producto
+                        </th>
+
+                        <th class="p-3 text-left">
+                            Stock
+                        </th>
+
+                        <th class="p-3 text-left">
+                            Mínimo
+                        </th>
+
+                        <th class="p-3 text-left">
+                            Estado
+                        </th>
+
+                        <th class="p-3 text-left">
+                            Acciones
+                        </th>
+
+                        <th class="p-3 text-left">
+                            Alerta
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+    {% for producto in productos %}
+
+    <tr class="border-t">
+
+        <td class="p-3">
+            {{ producto.codigo }}
+        </td>
+
+        <td class="p-3">
+            {{ producto.nombre }}
+        </td>
+
+        <td class="p-3">
+            {{ producto.stock }}
+        </td>
+
+        <td class="p-3">
+            {{ producto.stock_minimo }}
+        </td>
+
+        <td class="p-3">
+
+            {% if producto.stock <= producto.stock_minimo %}
+
+                <span class="text-red-600 font-bold">
+                    ⚠️ Stock Bajo
+                </span>
+
+            {% else %}
+
+                <span class="text-green-600 font-bold">
+                    ✅ OK
+                </span>
+
+            {% endif %}
+
+        </td>
+
+        <td class="p-3">
+
+            <div class="flex gap-2">
+
+                <a
+                    href="/editar-producto/{{ producto.id }}"
+                    class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                >
+                    ✏️ Editar
+                </a>
+
+                {% if usuario_actual.rol == "admin" %}
+
+                <a
+                    href="/eliminar-producto/{{ producto.id }}"
+                    onclick="return confirm('¿Está seguro de eliminar este producto?')"
+                    class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                >
+                    🗑️ Eliminar
+                </a>
+
+                {% endif %}
+
+            </div>
+
+        </td>
+
+        <td class="p-3">
+
+            {% if producto.stock <= producto.stock_minimo %}
+
+                <span class="text-red-600 font-bold">
+                    Reponer
+                </span>
+
+            {% else %}
+
+                <span class="text-gray-500">
+                    —
+                </span>
+
+            {% endif %}
+
+        </td>
+
+    </tr>
+
+    {% endfor %}
+
+</tbody>
+
+</html>

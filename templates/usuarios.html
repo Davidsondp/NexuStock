@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuarios - NexuStock</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+    <!-- Barra Superior -->
+
+    <div class="bg-blue-600 text-white p-4 shadow">
+
+        <div class="flex justify-between items-center">
+
+            <h1 class="text-2xl font-bold">
+                📦 NexuStock
+            </h1>
+
+            <div class="space-x-6">
+
+                <a href="/dashboard" class="hover:underline">
+                    Dashboard
+                </a>
+
+                <a href="/productos" class="hover:underline">
+                    Productos
+                </a>
+
+                <a href="/movimientos" class="hover:underline">
+                    Movimientos
+                </a>
+
+                <a href="/usuarios" class="font-bold hover:underline">
+                    Usuarios
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Contenido -->
+
+    <div class="p-6">
+
+        <div class="flex justify-between items-center mb-6">
+
+            <h2 class="text-3xl font-bold">
+                👥 Usuarios
+            </h2>
+
+            <a
+                href="/nuevo-usuario"
+                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            >
+                ➕ Nuevo Usuario
+            </a>
+
+        </div>
+
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+
+            <table class="w-full">
+
+                <thead class="bg-gray-200">
+
+                    <tr>
+
+                        <th class="p-3 text-left">
+                            ID
+                        </th>
+
+                        <th class="p-3 text-left">
+                            Nombre
+                        </th>
+
+                        <th class="p-3 text-left">
+                            Correo
+                        </th>
+
+                        <th class="p-3 text-left">
+                            Rol
+                        </th>
+
+                        <th class="p-3 text-left">
+                            Acciones
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for usuario in usuarios %}
+
+                    <tr class="border-t hover:bg-gray-50">
+
+                        <td class="p-3">
+                            {{ usuario.id }}
+                        </td>
+
+                        <td class="p-3">
+                            {{ usuario.nombre }}
+                        </td>
+
+                        <td class="p-3">
+                            {{ usuario.email }}
+                        </td>
+
+                        <td class="p-3">
+
+                            {% if usuario.rol == "admin" %}
+
+                            <span class="text-green-600 font-bold">
+                                Administrador
+                            </span>
+
+                            {% else %}
+
+                            <span class="text-blue-600">
+                                Empleado
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td class="p-3 space-x-2">
+
+                            <a
+                                href="/editar-usuario/{{ usuario.id }}"
+                                class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                            >
+                                ✏️ Editar
+                            </a>
+
+                            <a
+                                href="/eliminar-usuario/{{ usuario.id }}"
+                                class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                                onclick="return confirm('¿Seguro que deseas eliminar este usuario?')"
+                            >
+                                🗑 Eliminar
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

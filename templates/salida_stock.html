@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salida de Stock - NexuStock</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+    <div class="bg-blue-600 text-white p-4 shadow">
+
+        <div class="flex justify-between items-center">
+
+            <h1 class="text-2xl font-bold">
+                📦 NexuStock
+            </h1>
+
+            <div class="space-x-6">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/productos">Productos</a>
+                <a href="/movimientos">Movimientos</a>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="max-w-2xl mx-auto mt-8 bg-white p-8 rounded-xl shadow">
+
+        <h2 class="text-3xl font-bold mb-6">
+            📤 Salida de Stock
+        </h2>
+
+        <form method="POST">
+
+            <div class="mb-4">
+
+                <label class="block mb-2">
+                    Producto
+                </label>
+
+                <select
+                    name="producto_id"
+                    class="w-full border rounded-lg px-4 py-3"
+                >
+
+                    {% for producto in productos %}
+
+                    <option
+                        value="{{ producto.id }}"
+                        data-unidades="{{ producto.unidades_por_caja }}"
+
+                        {% if producto_preseleccionado and
+                              producto.id == producto_preseleccionado|int %}
+                        selected
+                        {% endif %}
+                    >
+
+                        {{ producto.nombre }}
+                        (Stock: {{ producto.stock }})
+                        (Caja: {{ producto.unidades_por_caja }} uds)
+
+                    </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+            <div class="mb-4">
+
+                <label class="block mb-2">
+                    Cantidad de cajas
+                </label>
+
+                <input
+                    type="number"
+                    name="cajas"
+                    min="1"
+                    value="1"
+                    class="w-full border rounded-lg px-4 py-3"
+                >
+
+            </div>
+
+            <div class="mb-6">
+
+                <label class="block mb-2">
+                    Cantidad total de unidades
+                </label>
+
+                <input
+                    type="number"
+                    name="cantidad"
+                    readonly
+                    required
+                    class="w-full border rounded-lg px-4 py-3 bg-gray-100"
+                >
+
+            </div>
+
+            <button
+                type="submit"
+                class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700"
+            >
+                Registrar Salida
+            </button>
+
+        </form>
+
+    </div>
+
+<script>
+
+const productoSelect =
+document.querySelector(
+    'select[name="producto_id"]'
+);
+
+const cajasInput =
+document.querySelector(
+    'input[name="cajas"]'
+);
+
+const cantidadInput =
+document.querySelector(
+    'input[name="cantidad"]'
+);
+
+function calcularCantidad() {
+
+    const opcion =
+    productoSelect.options[
+        productoSelect.selectedIndex
+    ];
+
+    const unidades =
+    parseInt(
+        opcion.dataset.unidades || 1
+    );
+
+    const cajas =
+    parseInt(
+        cajasInput.value || 0
+    );
+
+    cantidadInput.value =
+    cajas * unidades;
+}
+
+cajasInput.addEventListener(
+    "input",
+    calcularCantidad
+);
+
+productoSelect.addEventListener(
+    "change",
+    calcularCantidad
+);
+
+calcularCantidad();
+
+</script>
+
+</body>
+
+</html>

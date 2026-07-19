@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Escáner - NexuStock</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+</head>
+
+<body class="bg-gray-100">
+
+    <div class="bg-blue-600 text-white p-4 shadow">
+
+        <div class="flex justify-between items-center">
+
+            <h1 class="text-2xl font-bold">
+                📷 Escáner NexuStock
+            </h1>
+
+            <a
+                href="/dashboard"
+                class="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold"
+            >
+                Dashboard
+            </a>
+
+        </div>
+
+    </div>
+
+    <div class="max-w-4xl mx-auto p-6">
+
+        <div class="bg-white rounded-xl shadow p-6">
+
+            <h2 class="text-2xl font-bold mb-4">
+                Escanear Código de Barras o QR
+            </h2>
+
+            <div id="reader"></div>
+
+            <div
+                id="resultado"
+                class="mt-6 p-4 bg-gray-100 rounded-lg"
+            >
+
+                Esperando escaneo...
+
+            </div>
+
+        </div>
+
+    </div>
+
+<script>
+
+async function onScanSuccess(
+    decodedText,
+    decodedResult
+) {
+
+    try {
+
+        const respuesta = await fetch(
+            `/buscar-producto/${decodedText}`
+        );
+
+        const data =
+        await respuesta.json();
+
+        if (data.encontrado) {
+
+            document.getElementById(
+                "resultado"
+            ).innerHTML = `
+
+                <div class="space-y-2">
+
+                    <h3 class="text-2xl font-bold text-green-600">
+                        ✅ Producto Encontrado
+                    </h3>
+
+                    <p>
+                        <strong>Nombre:</strong>
+                        ${data.nombre}
+                    </p>
+
+                    <p>
+                        <strong>Stock Actual:</strong>
+                        ${data.stock}
+                    </p>
+
+                    <p>
+                        <strong>Precio:</strong>
+                        $${data.precio}
+                    </p>
+
+                    <p>
+                        <strong>Unidades por Caja:</strong>
+                        ${data.unidades_por_caja}
+                    </p>
+
+                    <div class="flex gap-3 mt-4">
+
+                        <a
+                            href="/entrada-stock?producto=${data.id}"
+                            class="bg-green-600 text-white px-4 py-2 rounded-lg"
+                        >
+                            ➕ Entrada de Stock
+                        </a>
+
+                        <a
+                            href="/salida-stock?producto=${data.id}"
+                            class="bg-red-600 text-white px-4 py-2 rounded-lg"
+                        >
+                            ➖ Salida de Stock
+                        </a>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        } else {
+
+            document.getElementById(
+                "resultado"
+            ).innerHTML = `
+
+                <div class="text-red-600">
+
+                    <h3 class="font-bold text-xl">
+                        ❌ Producto no encontrado
+                    </h3>
+
+                    <p class="mt-2">
+                        Código detectado:
+                        ${decodedText}
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+
+    } catch(error) {
+
+        document.getElementById(
+            "resultado"
+        ).innerHTML = `
+
+            <div class="text-red-600 font-bold">
+
+                Error al consultar el producto.
+
+            </div>
+
+        `;
+
+        console.error(error);
+
+    }
+
+}
+
+const html5QrCode =
+
+new Html5QrcodeScanner(
+
+    "reader",
+
+    {
+        fps: 10,
+        qrbox: 250
+    }
+
+);
+
+html5QrCode.render(
+    onScanSuccess
+);
+
+</script>
+
+</body>
+
+</html>
