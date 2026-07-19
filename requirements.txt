@@ -1,7 +1,0 @@
-Flask
-Flask-SQLAlchemy
-Flask-Login
-Flask-Mail
-itsdangerous
-gunicorn
-psycopg2-binary

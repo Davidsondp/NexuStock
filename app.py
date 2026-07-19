@@ -7,12 +7,19 @@ from werkzeug.security import (
     generate_password_hash,
     check_password_hash
 )
+from dotenv import load_dotenv
 import os
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "optistock_secret_key"
+
+app.secret_key = os.getenv(
+    "SECRET_KEY",
+    "nexustock_local_dev_key"
+)
+
 serializer = URLSafeTimedSerializer(
     app.secret_key
 )
@@ -21,6 +28,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
     "DATABASE_URL",
     "sqlite:///optistock.db"
 )
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # ----------------------------------
@@ -31,12 +39,17 @@ app.config["MAIL_SERVER"] = "smtp.gmail.com"
 app.config["MAIL_PORT"] = 587
 app.config["MAIL_USE_TLS"] = True
 
-app.config["MAIL_USERNAME"] = "davidsondp1993@gmail.com"
+app.config["MAIL_USERNAME"] = os.getenv(
+    "MAIL_USERNAME"
+)
 
-app.config["MAIL_PASSWORD"] = "ufaobpmciwczcdex"
+app.config["MAIL_PASSWORD"] = os.getenv(
+    "MAIL_PASSWORD"
+)
 
-app.config["MAIL_DEFAULT_SENDER"] = "davidsondp1993@gmail.com"
-
+app.config["MAIL_DEFAULT_SENDER"] = os.getenv(
+    "MAIL_USERNAME"
+)
 mail = Mail(app)
 
 db.init_app(app)
