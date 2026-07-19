@@ -6,3 +6,4 @@ itsdangerous
 python-dotenv
 gunicorn
 psycopg2-binary
+openpyxl
