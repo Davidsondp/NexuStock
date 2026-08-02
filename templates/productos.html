@@ -2,232 +2,753 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Productos - NexuStock</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<title>Productos | NexuStock</title>
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+
+<script src="https://unpkg.com/lucide@latest"></script>
+
+
 </head>
 
-<body class="bg-gray-100">
-
-    <!-- Barra Superior -->
 
-    <div class="bg-blue-600 text-white p-4 shadow">
-
-        <div class="flex justify-between items-center">
 
-            <h1 class="text-2xl font-bold">
-                📦 NexuStock
-            </h1>
+<body class="bg-slate-100">
 
-            <div class="space-x-6">
-
-                <a href="/dashboard" class="hover:underline">
-                    Dashboard
-                </a>
-
-                <a href="/productos" class="hover:underline font-bold">
-                    Productos
-                </a>
-
-                <a href="/movimientos" class="hover:underline">
-                    Movimientos
-                </a>
-
-                <a href="/reportes" class="hover:underline">
-                    Reportes
-                </a>
 
-                <a href="/usuarios" class="hover:underline">
-                    Usuarios
-                </a>
 
-                <a href="/entrada-stock" class="hover:underline">
-                    Entrada Stock
-                </a>
-                <a href="/salida-stock" class="hover:underline">
-                    Salida Stock
-                </a>
+<div class="flex min-h-screen">
 
-            </div>
 
-        </div>
 
-    </div>
 
-    <!-- Contenido -->
 
-    <div class="p-6">
+<!-- SIDEBAR -->
 
-        <div class="flex justify-between items-center mb-6">
+<aside class="hidden md:flex w-64 bg-slate-900 text-white flex-col">
 
-            <h2 class="text-3xl font-bold">
-                Productos
-            </h2>
 
-            <a
-                href="/nuevo-producto"
-                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-            >
-                ➕ Nuevo Producto
-            </a>
-            <a
-            href="/exportar-excel"
-            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-            >
-            📊 Exportar Excel
-        </a>
+<div class="p-6 border-b border-slate-700">
 
-        </div>
-        
-        <form method="GET" class="mb-6">
-            <div class="flex gap-2">
-                <input
-                type="text"
-                name="buscar"
-                value="{{ busqueda }}"
-                placeholder="Buscar producto..."
-                class="w-full border rounded-lg px-4 py-3"
-                >
-                <button
-                type="submit"
-                class="bg-blue-600 text-white px-6 rounded-lg"
-                >
-                Buscar
-            </button>
-        </div>
-    </form>
 
-        <div class="bg-white rounded-xl shadow overflow-hidden">
+<h1 class="text-2xl font-bold">
+📦 NexuStock
+</h1>
 
-            <table class="w-full">
 
-                <thead class="bg-gray-200">
+<p class="text-sm text-slate-400 mt-1">
 
-                    <tr>
+ERP Inventario Inteligente
 
-                        <th class="p-3 text-left">
-                            Código
-                        </th>
+</p>
 
-                        <th class="p-3 text-left">
-                            Producto
-                        </th>
 
-                        <th class="p-3 text-left">
-                            Stock
-                        </th>
+</div>
 
-                        <th class="p-3 text-left">
-                            Mínimo
-                        </th>
 
-                        <th class="p-3 text-left">
-                            Estado
-                        </th>
 
-                        <th class="p-3 text-left">
-                            Acciones
-                        </th>
 
-                        <th class="p-3 text-left">
-                            Alerta
-                        </th>
 
-                    </tr>
+<nav class="p-4 space-y-2">
 
-                </thead>
 
-                <tbody>
+<a href="/dashboard"
+class="flex gap-3 items-center px-4 py-3 rounded-lg hover:bg-slate-800">
 
-    {% for producto in productos %}
+<i data-lucide="layout-dashboard"></i>
 
-    <tr class="border-t">
+Dashboard
 
-        <td class="p-3">
-            {{ producto.codigo }}
-        </td>
+</a>
 
-        <td class="p-3">
-            {{ producto.nombre }}
-        </td>
 
-        <td class="p-3">
-            {{ producto.stock }}
-        </td>
 
-        <td class="p-3">
-            {{ producto.stock_minimo }}
-        </td>
 
-        <td class="p-3">
+<a href="/productos"
+class="flex gap-3 items-center px-4 py-3 rounded-lg bg-blue-600">
 
-            {% if producto.stock <= producto.stock_minimo %}
+<i data-lucide="package"></i>
 
-                <span class="text-red-600 font-bold">
-                    ⚠️ Stock Bajo
-                </span>
+Productos
 
-            {% else %}
+</a>
 
-                <span class="text-green-600 font-bold">
-                    ✅ OK
-                </span>
 
-            {% endif %}
 
-        </td>
 
-        <td class="p-3">
 
-            <div class="flex gap-2">
+<a href="/movimientos"
+class="flex gap-3 items-center px-4 py-3 rounded-lg hover:bg-slate-800">
 
-                <a
-                    href="/editar-producto/{{ producto.id }}"
-                    class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                >
-                    ✏️ Editar
-                </a>
+<i data-lucide="repeat"></i>
 
-                {% if usuario_actual.rol == "admin" %}
+Movimientos
 
-                <a
-                    href="/eliminar-producto/{{ producto.id }}"
-                    onclick="return confirm('¿Está seguro de eliminar este producto?')"
-                    class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                >
-                    🗑️ Eliminar
-                </a>
+</a>
 
-                {% endif %}
 
-            </div>
 
-        </td>
 
-        <td class="p-3">
 
-            {% if producto.stock <= producto.stock_minimo %}
+<a href="/entrada-stock"
+class="flex gap-3 items-center px-4 py-3 rounded-lg hover:bg-slate-800">
 
-                <span class="text-red-600 font-bold">
-                    Reponer
-                </span>
+<i data-lucide="arrow-down-circle"></i>
 
-            {% else %}
+Entrada stock
 
-                <span class="text-gray-500">
-                    —
-                </span>
+</a>
 
-            {% endif %}
 
-        </td>
 
-    </tr>
 
-    {% endfor %}
+
+<a href="/salida-stock"
+class="flex gap-3 items-center px-4 py-3 rounded-lg hover:bg-slate-800">
+
+<i data-lucide="arrow-up-circle"></i>
+
+Salida stock
+
+</a>
+
+
+
+
+
+<a href="/reportes"
+class="flex gap-3 items-center px-4 py-3 rounded-lg hover:bg-slate-800">
+
+<i data-lucide="chart-column"></i>
+
+Reportes
+
+</a>
+
+
+
+</nav>
+
+
+</aside>
+
+
+
+
+
+
+
+
+<!-- CONTENIDO -->
+
+
+<main class="flex-1 p-6">
+
+
+
+
+
+<!-- HEADER -->
+
+
+<div class="flex flex-col md:flex-row justify-between gap-4 mb-8">
+
+
+<div>
+
+
+<h2 class="text-3xl font-bold text-slate-800">
+
+Gestión de Productos
+
+</h2>
+
+
+<p class="text-slate-500">
+
+Administra tu inventario en tiempo real
+
+</p>
+
+
+</div>
+
+
+
+
+
+<div class="flex gap-3">
+
+
+<a href="/nuevo-producto"
+
+class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl shadow">
+
+
+<i data-lucide="plus"></i>
+
+Nuevo
+
+
+</a>
+
+
+
+<a href="/exportar-excel"
+
+class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl shadow">
+
+
+<i data-lucide="download"></i>
+
+Excel
+
+
+</a>
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+<!-- KPIS -->
+
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+
+
+<div class="bg-white rounded-2xl p-6 border shadow-sm">
+
+
+<p class="text-slate-500">
+
+Total productos
+
+</p>
+
+
+<h3 class="text-4xl font-bold text-blue-600">
+
+{{ productos|length }}
+
+</h3>
+
+
+</div>
+
+
+
+
+
+
+<div class="bg-white rounded-2xl p-6 border shadow-sm">
+
+
+<p class="text-slate-500">
+
+Productos encontrados
+
+</p>
+
+
+<h3 class="text-4xl font-bold text-green-600">
+
+
+{{ productos|length }}
+
+
+</h3>
+
+
+</div>
+
+
+
+
+
+
+<div class="bg-white rounded-2xl p-6 border shadow-sm">
+
+
+<p class="text-slate-500">
+
+Control inventario
+
+</p>
+
+
+<h3 class="text-xl font-bold text-purple-600 mt-3">
+
+Activo
+
+</h3>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<!-- BUSCADOR -->
+
+
+<form method="GET"
+
+class="bg-white rounded-2xl shadow-sm border p-5 mb-8">
+
+
+<div class="flex flex-col md:flex-row gap-3">
+
+
+<div class="relative flex-1">
+
+
+<i data-lucide="search"
+
+class="absolute left-4 top-3.5 text-slate-400">
+
+</i>
+
+
+<input
+
+type="text"
+
+name="buscar"
+
+value="{{ busqueda }}"
+
+placeholder="Buscar por nombre, código o categoría..."
+
+class="w-full pl-12 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+
+>
+
+
+</div>
+
+
+
+
+<button
+
+class="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700">
+
+
+Buscar
+
+
+</button>
+
+
+</div>
+
+
+</form>
+
+
+
+
+
+
+
+
+<!-- TABLA -->
+
+
+<div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+
+
+<div class="overflow-x-auto">
+
+
+<table class="w-full">
+
+
+
+<thead class="bg-slate-100">
+
+
+<tr>
+
+
+<th class="p-4 text-left">
+Código
+</th>
+
+
+<th class="p-4 text-left">
+Producto
+</th>
+
+
+<th class="p-4 text-left">
+Categoría
+</th>
+
+
+<th class="p-4 text-left">
+Stock
+</th>
+
+
+<th class="p-4 text-left">
+Precio
+</th>
+
+
+<th class="p-4 text-left">
+Estado
+</th>
+
+
+<th class="p-4 text-left">
+Acciones
+</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+
+
+<tbody>
+
+
+{% for producto in productos %}
+
+
+
+<tr class="border-t hover:bg-slate-50">
+
+
+
+
+
+<td class="p-4">
+
+{{ producto.codigo }}
+
+</td>
+
+
+
+
+
+
+
+<td class="p-4">
+
+
+<p class="font-bold">
+
+{{ producto.nombre }}
+
+</p>
+
+
+<p class="text-xs text-slate-500">
+
+{{ producto.codigo_barras or "Sin código barra" }}
+
+</p>
+
+
+</td>
+
+
+
+
+
+
+
+<td class="p-4">
+
+
+{{ producto.categoria or "Sin categoría" }}
+
+
+</td>
+
+
+
+
+
+
+
+<td class="p-4">
+
+
+<span class="font-bold text-lg">
+
+{{ producto.stock }}
+
+</span>
+
+
+uds
+
+
+</td>
+
+
+
+
+
+
+
+<td class="p-4 font-semibold">
+
+
+${{ "{:,.0f}".format(producto.precio_venta or 0) }}
+
+
+</td>
+
+
+
+
+
+
+
+
+<td class="p-4">
+
+
+
+{% if producto.stock <= producto.stock_minimo %}
+
+
+
+<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold">
+
+⚠ Bajo
+
+</span>
+
+
+
+{% else %}
+
+
+
+<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
+
+✓ Disponible
+
+</span>
+
+
+
+{% endif %}
+
+
+</td>
+
+
+
+
+
+
+
+
+<td class="p-4">
+
+
+<div class="flex gap-2">
+
+
+
+
+
+<a href="/entrada-stock?producto={{ producto.id }}"
+
+class="bg-green-600 text-white p-2 rounded-lg">
+
+<i data-lucide="arrow-down"></i>
+
+</a>
+
+
+
+
+
+
+<a href="/salida-stock?producto={{ producto.id }}"
+
+class="bg-red-600 text-white p-2 rounded-lg">
+
+<i data-lucide="arrow-up"></i>
+
+</a>
+
+
+
+
+
+
+<a href="/editar-producto/{{ producto.id }}"
+
+class="bg-yellow-500 text-white p-2 rounded-lg">
+
+<i data-lucide="edit"></i>
+
+</a>
+
+
+
+
+
+
+{% if usuario_actual.rol == "admin" %}
+
+
+<form
+
+action="{{ url_for('eliminar_producto', id=producto.id) }}"
+
+method="POST"
+
+onsubmit="return confirm('¿Eliminar producto?')">
+
+
+<input
+
+type="hidden"
+
+name="csrf_token"
+
+value="{{ csrf_token() }}"
+
+>
+
+
+<button
+
+class="bg-red-600 text-white p-2 rounded-lg">
+
+
+<i data-lucide="trash"></i>
+
+
+</button>
+
+
+</form>
+
+
+
+{% endif %}
+
+
+
+
+
+</div>
+
+
+</td>
+
+
+
+</tr>
+
+
+
+
+
+
+{% else %}
+
+
+
+<tr>
+
+
+<td colspan="7"
+
+class="text-center p-10 text-slate-500">
+
+
+No existen productos registrados.
+
+
+</td>
+
+
+</tr>
+
+
+
+{% endfor %}
+
+
 
 </tbody>
+
+
+</table>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+</main>
+
+
+</div>
+
+
+
+
+
+<script>
+
+lucide.createIcons();
+
+</script>
+
+
+
+</body>
 
 </html>

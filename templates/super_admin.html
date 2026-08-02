@@ -1,0 +1,624 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Panel Super Administrador
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="mb-8">
+
+    <h1 class="text-4xl font-bold">
+        🛡️ Super Admin NexuStock
+    </h1>
+
+    <p class="text-gray-500 mt-2">
+        Control global del ecosistema SaaS
+    </p>
+
+</div>
+
+
+
+<!-- ================================= -->
+<!-- KPIs PRINCIPALES -->
+<!-- ================================= -->
+
+
+<div class="grid md:grid-cols-4 gap-6 mb-8">
+
+
+    <div class="bg-blue-600 text-white rounded-xl shadow p-6">
+
+        <p class="uppercase text-sm">
+            Empresas Totales
+        </p>
+
+        <h2 class="text-4xl font-bold">
+            {{ total_empresas }}
+        </h2>
+
+    </div>
+
+
+
+    <div class="bg-green-600 text-white rounded-xl shadow p-6">
+
+        <p class="uppercase text-sm">
+            Empresas Activas
+        </p>
+
+        <h2 class="text-4xl font-bold">
+            {{ empresas_activas }}
+        </h2>
+
+    </div>
+
+
+
+    <div class="bg-yellow-500 text-white rounded-xl shadow p-6">
+
+        <p class="uppercase text-sm">
+            Usuarios
+        </p>
+
+        <h2 class="text-4xl font-bold">
+            {{ total_usuarios }}
+        </h2>
+
+    </div>
+
+
+
+    <div class="bg-purple-600 text-white rounded-xl shadow p-6">
+
+    <p class="text-sm uppercase">
+        Próximos vencimientos
+    </p>
+
+    <h2 class="text-4xl font-bold mt-2">
+
+        {{ empresas_por_vencer }}
+
+    </h2>
+
+</div>
+
+
+</div>
+
+
+
+<!-- ================================= -->
+<!-- NEGOCIO SaaS -->
+<!-- ================================= -->
+
+
+<div class="grid md:grid-cols-4 gap-6 mb-8">
+
+
+    <div class="bg-emerald-100 rounded-xl shadow p-6">
+
+        <p>
+            Ingresos Mes
+        </p>
+
+        <h2 class="text-3xl font-bold text-emerald-700">
+
+            ${{ "{:,.0f}".format(ingresos_mensuales).replace(",", ".") }}
+
+        </h2>
+
+    </div>
+
+
+
+    <div class="bg-blue-100 rounded-xl shadow p-6">
+
+        <p>
+            MRR
+        </p>
+
+        <h2 class="text-3xl font-bold text-blue-700">
+
+            ${{ "{:,.0f}".format(mrr).replace(",", ".") }}
+
+        </h2>
+
+    </div>
+
+
+
+    <div class="bg-green-100 rounded-xl shadow p-6">
+
+        <p>
+            Clientes Pagando
+        </p>
+
+        <h2 class="text-3xl font-bold text-green-700">
+
+            ${{ clientes_pagando }}
+
+        </h2>
+
+    </div>
+
+
+
+    <div class="bg-gray-100 rounded-xl shadow p-6">
+
+        <p>
+            Clientes Gratis
+        </p>
+
+        <h2 class="text-3xl font-bold">
+
+            ${{ clientes_gratis }}
+
+        </h2>
+
+    </div>
+
+
+
+</div>
+
+
+
+
+
+<!-- ================================= -->
+<!-- USUARIOS -->
+<!-- ================================= -->
+
+
+<div class="grid md:grid-cols-3 gap-6 mb-10">
+
+
+<div class="bg-white rounded-xl shadow p-6 border">
+
+<p class="text-gray-500">
+Usuarios activos hoy
+</p>
+
+
+<h2 class="text-3xl font-bold">
+{{ usuarios_activos_hoy }}
+</h2>
+
+</div>
+
+
+
+
+<div class="bg-white rounded-xl shadow p-6 border">
+
+    <p class="text-gray-500">
+        Nuevos usuarios mes
+    </p>
+
+    <h2 class="text-3xl font-bold">
+        {{ nuevos_usuarios_mes }}
+    </h2>
+
+</div>
+
+
+
+
+<div class="bg-red-100 rounded-xl shadow p-6">
+
+<p>
+Empresas suspendidas
+</p>
+
+<h2 class="text-3xl font-bold text-red-700">
+
+{{ empresas_suspendidas }}
+
+</h2>
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+<!-- ================================= -->
+<!-- PLANES -->
+<!-- ================================= -->
+
+
+<h2 class="text-2xl font-bold mb-5">
+
+📊 Distribución de planes
+
+</h2>
+
+
+
+<div class="grid md:grid-cols-4 gap-5 mb-10">
+
+
+<div class="bg-gray-100 rounded-xl p-5 shadow">
+
+Prueba
+
+<h3 class="text-3xl font-bold">
+
+{{ plan_prueba }}
+
+</h3>
+
+</div>
+
+
+
+<div class="bg-blue-100 rounded-xl p-5 shadow">
+
+Básico
+
+<h3 class="text-3xl font-bold">
+
+{{ plan_basico }}
+
+</h3>
+
+</div>
+
+
+
+<div class="bg-yellow-100 rounded-xl p-5 shadow">
+
+Profesional
+
+<h3 class="text-3xl font-bold">
+
+{{ plan_profesional }}
+
+</h3>
+
+</div>
+
+
+
+<div class="bg-purple-100 rounded-xl p-5 shadow">
+
+Premium
+
+<h3 class="text-3xl font-bold">
+
+{{ plan_premium }}
+
+</h3>
+
+</div>
+
+
+</div>
+
+
+<!-- ================================= -->
+<!-- SOLICITUDES DE CAMBIO DE PLAN -->
+<!-- ================================= -->
+
+<h2 class="text-2xl font-bold mb-5">
+📩 Solicitudes de cambio de plan
+</h2>
+
+<div class="bg-white rounded-xl shadow overflow-hidden mb-10">
+
+{% if solicitudes_pendientes %}
+
+<table class="min-w-full">
+
+    <thead class="bg-indigo-700 text-white">
+
+        <tr>
+
+            <th class="px-6 py-4 text-left">
+                Empresa
+            </th>
+
+            <th class="px-6 py-4 text-center">
+                Plan Actual
+            </th>
+
+            <th class="px-6 py-4 text-center">
+                Plan Solicitado
+            </th>
+
+            <th class="px-6 py-4 text-center">
+                Fecha
+            </th>
+
+            <th class="px-6 py-4 text-center">
+                Acción
+            </th>
+
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+    {% for solicitud in solicitudes_pendientes %}
+
+    <tr class="border-b hover:bg-gray-50">
+
+        <td class="px-6 py-4">
+
+            <div class="font-semibold">
+
+                {{ solicitud.empresa.nombre }}
+
+            </div>
+
+            <div class="text-sm text-gray-500">
+
+                {{ solicitud.empresa.email }}
+
+            </div>
+
+        </td>
+
+        <td class="text-center">
+
+            {{ solicitud.plan_actual|capitalize }}
+
+        </td>
+
+        <td class="text-center font-bold text-indigo-700">
+
+            {{ solicitud.plan_solicitado|capitalize }}
+
+        </td>
+
+        <td class="text-center">
+
+            {{ solicitud.created_at.strftime("%d/%m/%Y") }}
+
+        </td>
+
+        <td class="text-center">
+
+            <div class="flex justify-center gap-2">
+
+                <a href="{{ url_for('aprobar_cambio_plan', solicitud_id=solicitud.id) }}"
+                   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+
+                    Aprobar
+
+                </a>
+
+                <a href="{{ url_for('rechazar_cambio_plan', solicitud_id=solicitud.id) }}"
+                   class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+
+                    Rechazar
+
+                </a>
+
+            </div>
+
+        </td>
+
+    </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% else %}
+
+<div class="p-10 text-center text-gray-500">
+
+    No existen solicitudes pendientes.
+
+</div>
+
+{% endif %}
+
+</div>
+
+
+<!-- ================================= -->
+<!-- ACCESOS RÁPIDOS -->
+<!-- ================================= -->
+
+<h2 class="text-2xl font-bold mb-5">
+⚙️ Administración Global
+</h2>
+
+<div class="grid lg:grid-cols-4 md:grid-cols-2 gap-6 mb-10">
+
+    <a href="{{ url_for('super_admin_empresas') }}"
+       class="bg-white rounded-xl shadow hover:shadow-xl transition p-6 border">
+
+        <div class="text-5xl mb-3">
+            🏢
+        </div>
+
+        <h3 class="text-xl font-bold">
+            Empresas
+        </h3>
+
+        <p class="text-gray-500 mt-2">
+            Administrar clientes, estados, planes y vencimientos.
+        </p>
+
+    </a>
+
+
+
+    <a href="{{ url_for('super_admin_pagos') }}"
+       class="bg-white rounded-xl shadow hover:shadow-xl transition p-6 border">
+
+        <div class="text-5xl mb-3">
+            💳
+        </div>
+
+        <h3 class="text-xl font-bold">
+            Pagos
+        </h3>
+
+        <p class="text-gray-500 mt-2">
+            Revisar pagos, ingresos, MRR y facturación.
+        </p>
+
+    </a>
+
+
+
+    <a href="{{ url_for('super_admin_planes') }}"
+       class="bg-white rounded-xl shadow hover:shadow-xl transition p-6 border">
+
+        <div class="text-5xl mb-3">
+            📦
+        </div>
+
+        <h3 class="text-xl font-bold">
+            Planes
+        </h3>
+
+        <p class="text-gray-500 mt-2">
+            Distribución de clientes y administración de planes.
+        </p>
+
+    </a>
+
+
+
+    <a href="{{ url_for('super_admin_auditoria') }}"
+       class="bg-white rounded-xl shadow hover:shadow-xl transition p-6 border">
+
+        <div class="text-5xl mb-3">
+            📜
+        </div>
+
+        <h3 class="text-xl font-bold">
+            Auditoría
+        </h3>
+
+        <p class="text-gray-500 mt-2">
+            Historial completo de acciones del sistema.
+        </p>
+
+    </a>
+
+</div>
+
+
+
+<!-- ================================= -->
+<!-- EMPRESAS RECIENTES -->
+<!-- ================================= -->
+
+<h2 class="text-2xl font-bold mb-5">
+🏢 Últimas empresas registradas
+</h2>
+
+<div class="bg-white rounded-xl shadow overflow-hidden">
+
+    <table class="min-w-full">
+
+        <thead class="bg-slate-900 text-white">
+
+            <tr>
+
+                <th class="px-6 py-4 text-left">
+                    Empresa
+                </th>
+
+                <th class="px-6 py-4">
+                    Plan
+                </th>
+
+                <th class="px-6 py-4">
+                    Estado
+                </th>
+
+                <th class="px-6 py-4">
+                    Usuarios
+                </th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+        {% for item in empresas[:5] %}
+
+        <tr class="border-b hover:bg-gray-50">
+
+            <td class="px-6 py-4">
+
+                <div class="font-semibold">
+
+                    {{ item.empresa.nombre }}
+
+                </div>
+
+                <div class="text-sm text-gray-500">
+
+                    {{ item.empresa.email }}
+
+                </div>
+
+            </td>
+
+            <td class="text-center">
+
+                {{ item.empresa.plan|capitalize }}
+
+            </td>
+
+            <td class="text-center">
+
+                {% if item.empresa.estado=="activo" %}
+
+                    <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full">
+
+                        Activa
+
+                    </span>
+
+                {% else %}
+
+                    <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full">
+
+                        Suspendida
+
+                    </span>
+
+                {% endif %}
+
+            </td>
+
+            <td class="text-center font-bold">
+
+                {{ item.usuarios }}
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}

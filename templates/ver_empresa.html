@@ -1,0 +1,518 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ empresa.nombre }} | Empresa
+{% endblock %}
+
+{% block header %}
+Detalle de Empresa
+{% endblock %}
+
+{% block content %}
+
+<div class="space-y-8">
+
+    <!-- ================================= -->
+    <!-- TÍTULO -->
+    <!-- ================================= -->
+
+    <div class="flex justify-between items-center">
+
+        <div>
+
+            <h1 class="text-4xl font-black text-gray-800">
+                🏢 {{ empresa.nombre }}
+            </h1>
+
+            <p class="text-gray-500 mt-2">
+
+                Información completa de la empresa.
+
+            </p>
+
+        </div>
+
+        <div>
+
+            <a
+                href="{{ url_for('super_admin_empresas') }}"
+                class="bg-slate-700 hover:bg-slate-800 text-white px-6 py-3 rounded-xl"
+            >
+                ← Volver
+            </a>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- KPIs -->
+    <!-- ================================= -->
+
+    <div class="grid lg:grid-cols-4 md:grid-cols-2 gap-6">
+
+        <div class="bg-blue-100 rounded-2xl shadow p-6">
+
+            <p class="text-gray-500">
+                Usuarios
+            </p>
+
+            <h2 class="text-4xl font-black text-blue-700">
+
+                {{ total_usuarios }}
+
+            </h2>
+
+        </div>
+
+        <div class="bg-green-100 rounded-2xl shadow p-6">
+
+            <p class="text-gray-500">
+                Productos
+            </p>
+
+            <h2 class="text-4xl font-black text-green-700">
+
+                {{ total_productos }}
+
+            </h2>
+
+        </div>
+
+        <div class="bg-yellow-100 rounded-2xl shadow p-6">
+
+            <p class="text-gray-500">
+                Proveedores
+            </p>
+
+            <h2 class="text-4xl font-black text-yellow-700">
+
+                {{ total_proveedores }}
+
+            </h2>
+
+        </div>
+
+        <div class="bg-purple-100 rounded-2xl shadow p-6">
+
+            <p class="text-gray-500">
+                Movimientos
+            </p>
+
+            <h2 class="text-4xl font-black text-purple-700">
+
+                {{ total_movimientos }}
+
+            </h2>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- DATOS -->
+    <!-- ================================= -->
+
+    <div class="bg-white rounded-2xl shadow p-8">
+
+        <h2 class="text-2xl font-bold mb-6">
+
+            Información General
+
+        </h2>
+
+        <div class="grid lg:grid-cols-2 gap-6">
+
+            <div>
+
+                <label class="text-gray-500">
+
+                    Empresa
+
+                </label>
+
+                <p class="font-bold">
+
+                    {{ empresa.nombre }}
+
+                </p>
+
+            </div>
+
+            <div>
+
+                <label class="text-gray-500">
+
+                    Email
+
+                </label>
+
+                <p>
+
+                    {{ empresa.email }}
+
+                </p>
+
+            </div>
+
+            <div>
+
+                <label class="text-gray-500">
+
+                    Teléfono
+
+                </label>
+
+                <p>
+
+                    {{ empresa.telefono or "-" }}
+
+                </p>
+
+            </div>
+
+            <div>
+
+                <label class="text-gray-500">
+
+                    Ciudad
+
+                </label>
+
+                <p>
+
+                    {{ empresa.ciudad or "-" }}
+
+                </p>
+
+            </div>
+
+            <div>
+
+                <label class="text-gray-500">
+
+                    País
+
+                </label>
+
+                <p>
+
+                    {{ empresa.pais }}
+
+                </p>
+
+            </div>
+
+            <div>
+
+                <label class="text-gray-500">
+
+                    Plan
+
+                </label>
+
+                <p class="font-bold text-indigo-600">
+
+                    {{ empresa.plan|capitalize }}
+
+                </p>
+
+            </div>
+
+            <div>
+
+                <label class="text-gray-500">
+
+                    Estado
+
+                </label>
+
+                <p>
+
+                    {% if empresa.estado=="activo" %}
+
+                        <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full">
+
+                            Activa
+
+                        </span>
+
+                    {% elif empresa.estado=="prueba" %}
+
+                        <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
+
+                            Prueba
+
+                        </span>
+
+                    {% else %}
+
+                        <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full">
+
+                            Suspendida
+
+                        </span>
+
+                    {% endif %}
+
+                </p>
+
+            </div>
+
+            <div>
+
+                <label class="text-gray-500">
+
+                    Vencimiento
+
+                </label>
+
+                <p>
+
+                    {% if empresa.fecha_vencimiento %}
+
+                        {{ empresa.fecha_vencimiento.strftime("%d/%m/%Y") }}
+
+                    {% else %}
+
+                        -
+
+                    {% endif %}
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- PAGOS -->
+    <!-- ================================= -->
+
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+
+        <div class="bg-slate-900 text-white px-6 py-4">
+
+            <h2 class="font-bold text-lg">
+
+                Últimos Pagos
+
+            </h2>
+
+        </div>
+
+        <table class="min-w-full">
+
+            <thead class="bg-gray-100">
+
+                <tr>
+
+                    <th class="px-6 py-3 text-left">
+
+                        Fecha
+
+                    </th>
+
+                    <th class="px-6 py-3">
+
+                        Estado
+
+                    </th>
+
+                    <th class="px-6 py-3">
+
+                        Monto
+
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for pago in pagos %}
+
+                <tr class="border-b">
+
+                    <td class="px-6 py-4">
+
+                        {{ pago.fecha_pago.strftime("%d/%m/%Y") if pago.fecha_pago else "-" }}
+
+                    </td>
+
+                    <td class="text-center">
+
+                        {{ pago.estado }}
+
+                    </td>
+
+                    <td class="text-center font-bold text-green-700">
+
+                        ${{ "{:,.0f}".format(pago.monto).replace(",", ".") }}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="3" class="text-center py-8 text-gray-500">
+
+                        No existen pagos registrados.
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- AUDITORÍA -->
+    <!-- ================================= -->
+
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+
+        <div class="bg-slate-900 text-white px-6 py-4">
+
+            <h2 class="font-bold text-lg">
+
+                Últimos Eventos
+
+            </h2>
+
+        </div>
+
+        <table class="min-w-full">
+
+            <thead class="bg-gray-100">
+
+                <tr>
+
+                    <th class="px-6 py-3 text-left">
+
+                        Fecha
+
+                    </th>
+
+                    <th class="px-6 py-3">
+
+                        Acción
+
+                    </th>
+
+                    <th class="px-6 py-3">
+
+                        Descripción
+
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for evento in auditorias %}
+
+                <tr class="border-b">
+
+                    <td class="px-6 py-4">
+
+                        {{ evento.fecha.strftime("%d/%m/%Y %H:%M") }}
+
+                    </td>
+
+                    <td class="text-center">
+
+                        {{ evento.accion }}
+
+                    </td>
+
+                    <td class="px-6 py-4">
+
+                        {{ evento.descripcion }}
+
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+
+                    <td colspan="3" class="text-center py-8 text-gray-500">
+
+                        No existen registros.
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- ACCIONES -->
+    <!-- ================================= -->
+
+    <div class="flex flex-wrap gap-4">
+
+        <a
+            href="{{ url_for('super_admin_editar_empresa', id=empresa.id) }}"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl"
+        >
+            ✏️ Editar
+        </a>
+
+        <a
+            href="#"
+            class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-xl"
+        >
+            🔄 Cambiar Plan
+        </a>
+
+        <a
+            href="#"
+            class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl"
+        >
+            📅 Renovar Suscripción
+        </a>
+
+        <a
+            href="#"
+            class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl"
+        >
+            ⛔ Suspender
+        </a>
+
+    </div>
+
+</div>
+
+{% endblock %}

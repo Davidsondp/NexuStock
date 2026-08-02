@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Crear cuenta | NexuStock
+    </title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+</head>
+
+
+<body class="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-800 to-purple-900 flex items-center justify-center px-4">
+
+
+<div class="w-full max-w-md">
+
+
+    <!-- TARJETA PRINCIPAL -->
+
+    <div class="bg-white rounded-3xl shadow-2xl p-8">
+
+
+        <!-- LOGO -->
+
+        <div class="text-center mb-8">
+
+
+            <div class="mx-auto w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+
+                <span class="text-white text-3xl font-bold">
+                    N
+                </span>
+
+            </div>
+
+
+            <h1 class="mt-5 text-3xl font-bold text-gray-800">
+
+                Crear cuenta
+
+            </h1>
+
+
+            <p class="text-gray-500 mt-2">
+
+                Comienza a gestionar tu inventario con NexuStock
+
+            </p>
+
+
+        </div>
+
+
+
+
+        <!-- MENSAJES FLASH -->
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+
+            {% if messages %}
+
+                {% for categoria, mensaje in messages %}
+
+
+                    <div class="mb-5 p-4 rounded-xl text-sm font-medium
+
+                    {% if categoria == 'success' %}
+
+                        bg-green-100 text-green-700
+
+                    {% elif categoria == 'danger' %}
+
+                        bg-red-100 text-red-700
+
+                    {% elif categoria == 'warning' %}
+
+                        bg-yellow-100 text-yellow-700
+
+                    {% else %}
+
+                        bg-blue-100 text-blue-700
+
+                    {% endif %}
+
+                    ">
+
+                        {{ mensaje }}
+
+                    </div>
+
+
+                {% endfor %}
+
+            {% endif %}
+
+
+        {% endwith %}
+
+
+
+
+
+        <!-- FORMULARIO -->
+
+
+        <form 
+            method="POST"
+            id="registroForm"
+            onsubmit="desactivarBoton()"
+        >
+
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+
+
+
+            <!-- EMPRESA -->
+
+
+            <div class="mb-4">
+
+
+                <label 
+                    for="empresa"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                >
+
+                    🏢 Nombre de empresa
+
+                </label>
+
+
+
+                <input
+
+                    id="empresa"
+
+                    type="text"
+
+                    name="empresa"
+
+                    maxlength="120"
+
+                    autocomplete="organization"
+
+                    value="{{ request.form.get('empresa','') }}"
+
+                    required
+
+                    placeholder="Ej: Almacén Don Pedro"
+
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 
+                    focus:ring-2 focus:ring-blue-500 focus:outline-none"
+
+                >
+
+
+            </div>
+
+
+
+
+
+            <!-- NOMBRE ADMIN -->
+
+
+            <div class="mb-4">
+
+
+                <label
+                    for="nombre"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                >
+
+                    👤 Nombre administrador
+
+                </label>
+
+
+
+                <input
+
+                    id="nombre"
+
+                    type="text"
+
+                    name="nombre"
+
+                    maxlength="100"
+
+                    autocomplete="name"
+
+                    value="{{ request.form.get('nombre','') }}"
+
+                    required
+
+                    placeholder="Tu nombre"
+
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 
+                    focus:ring-2 focus:ring-blue-500 focus:outline-none"
+
+                >
+
+
+            </div>
+
+
+
+
+
+
+            <!-- EMAIL -->
+
+
+            <div class="mb-4">
+
+
+                <label
+                    for="email"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                >
+
+                    ✉ Correo electrónico
+
+                </label>
+
+
+
+                <input
+
+                    id="email"
+
+                    type="email"
+
+                    name="email"
+
+                    maxlength="150"
+
+                    autocomplete="email"
+
+                    value="{{ request.form.get('email','') }}"
+
+                    required
+
+                    placeholder="correo@empresa.com"
+
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 
+                    focus:ring-2 focus:ring-blue-500 focus:outline-none"
+
+                >
+
+
+            </div>
+
+
+
+
+
+
+
+            <!-- PASSWORD -->
+
+
+            <div class="mb-4">
+
+
+                <label
+                    for="password"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                >
+
+                    🔒 Contraseña
+
+                </label>
+
+
+
+                <div class="relative">
+
+
+                    <input
+
+                        id="password"
+
+                        type="password"
+
+                        name="password"
+
+                        minlength="8"
+
+                        maxlength="128"
+
+                        autocomplete="new-password"
+
+                        required
+
+                        placeholder="Mínimo 8 caracteres"
+
+                        oninput="evaluarPassword()"
+
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 
+                        focus:ring-2 focus:ring-blue-500 focus:outline-none pr-12"
+
+                    >
+
+
+
+                    <button
+
+                        type="button"
+
+                        onclick="mostrarPassword()"
+
+                        class="absolute right-3 top-3 text-gray-500"
+
+                    >
+
+                        👁
+
+                    </button>
+
+
+                </div>
+
+
+
+
+
+                <!-- SEGURIDAD PASSWORD -->
+
+
+                <div class="mt-2">
+
+
+                    <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+
+
+                        <div
+
+                            id="barraPassword"
+
+                            class="h-full w-0 transition-all duration-300"
+
+                        ></div>
+
+
+                    </div>
+
+
+
+                    <p 
+                        id="textoPassword"
+                        class="text-xs mt-1 text-gray-500"
+                    >
+
+                        Seguridad de contraseña
+
+                    </p>
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+
+
+
+
+            <!-- CONFIRMAR PASSWORD -->
+
+
+            <div class="mb-5">
+
+
+                <label
+                    for="confirm_password"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                >
+
+                    🔐 Confirmar contraseña
+
+                </label>
+
+
+
+                <input
+
+                    id="confirm_password"
+
+                    type="password"
+
+                    name="confirm_password"
+
+                    minlength="8"
+
+                    maxlength="128"
+
+                    autocomplete="new-password"
+
+                    required
+
+                    placeholder="Repite tu contraseña"
+
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 
+                    focus:ring-2 focus:ring-blue-500 focus:outline-none"
+
+                >
+
+
+            </div>
+
+
+
+
+
+
+
+            <!-- TERMINOS -->
+
+
+            <div class="flex items-center mb-6">
+
+
+                <input
+
+                    type="checkbox"
+
+                    required
+
+                    class="w-4 h-4 text-blue-600 rounded"
+
+                >
+
+
+                <span class="ml-2 text-sm text-gray-600">
+
+                    Acepto los términos y condiciones de NexuStock
+
+                </span>
+
+
+            </div>
+
+
+
+
+
+
+
+            <!-- BOTON -->
+
+
+            <button
+
+                id="btnCrear"
+
+                type="submit"
+
+                class="w-full bg-blue-600 hover:bg-blue-700 
+                text-white font-semibold py-3 rounded-xl 
+                transition shadow-lg"
+
+            >
+
+                Crear mi cuenta
+
+
+            </button>
+
+
+
+
+        </form>
+
+
+
+
+
+
+
+        <!-- LOGIN -->
+
+
+        <div class="text-center mt-6">
+
+
+            <p class="text-gray-500 text-sm">
+
+
+                ¿Ya tienes una cuenta?
+
+
+                <a
+
+                    href="{{ url_for('login') }}"
+
+                    class="text-blue-600 font-semibold hover:underline"
+
+                >
+
+                    Iniciar sesión
+
+                </a>
+
+
+            </p>
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- FOOTER -->
+
+
+        <div class="text-center mt-6 text-xs text-gray-400">
+
+
+            © 2026 NexuStock ERP SaaS
+
+            <br>
+
+            Inventario inteligente para empresas
+
+
+        </div>
+
+
+
+
+    </div>
+
+
+</div>
+
+
+
+
+
+
+
+<script>
+
+
+function mostrarPassword(){
+
+
+    const password = document.getElementById("password");
+
+
+    if(password.type === "password"){
+
+        password.type="text";
+
+    }
+
+    else{
+
+        password.type="password";
+
+    }
+
+
+}
+
+
+
+
+
+function evaluarPassword(){
+
+
+    let password = document.getElementById("password").value;
+
+
+    let barra = document.getElementById("barraPassword");
+
+    let texto = document.getElementById("textoPassword");
+
+
+    let fuerza = 0;
+
+
+
+    if(password.length >= 8)
+        fuerza++;
+
+
+    if(/[A-Z]/.test(password))
+        fuerza++;
+
+
+    if(/[0-9]/.test(password))
+        fuerza++;
+
+
+    if(/[^A-Za-z0-9]/.test(password))
+        fuerza++;
+
+
+
+
+    if(fuerza === 0){
+
+        barra.style.width="0%";
+
+        texto.innerHTML="Seguridad de contraseña";
+
+    }
+
+
+    if(fuerza === 1){
+
+        barra.style.width="25%";
+
+        texto.innerHTML="Débil";
+
+    }
+
+
+
+    if(fuerza === 2){
+
+        barra.style.width="50%";
+
+        texto.innerHTML="Media";
+
+    }
+
+
+
+    if(fuerza === 3){
+
+        barra.style.width="75%";
+
+        texto.innerHTML="Buena";
+
+    }
+
+
+
+    if(fuerza >= 4){
+
+        barra.style.width="100%";
+
+        texto.innerHTML="Excelente";
+
+    }
+
+
+}
+
+
+
+
+
+function desactivarBoton(){
+
+
+    const boton=document.getElementById("btnCrear");
+
+
+    boton.disabled=true;
+
+
+    boton.innerHTML="Creando cuenta...";
+
+
+}
+
+
+
+
+</script>
+
+
+
+</body>
+
+
+</html>

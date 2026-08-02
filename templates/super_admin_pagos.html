@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}
+Pagos | Super Administrador
+{% endblock %}
+
+{% block header %}
+Facturación SaaS
+{% endblock %}
+
+{% block content %}
+
+<div class="space-y-8">
+
+    <!-- ================================= -->
+    <!-- TÍTULO -->
+    <!-- ================================= -->
+
+    <div class="flex justify-between items-center">
+
+        <div>
+
+            <h1 class="text-4xl font-black text-gray-800">
+                💳 Pagos y Facturación
+            </h1>
+
+            <p class="text-gray-500 mt-2">
+                Control de todos los pagos realizados por los clientes.
+            </p>
+
+        </div>
+
+        <a
+            href="{{ url_for('crear_pago') }}"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl shadow"
+        >
+            ➕ Nuevo Pago
+        </a>
+
+    </div>
+
+    <!-- ================================= -->
+    <!-- KPIs -->
+    <!-- ================================= -->
+
+    <div class="grid lg:grid-cols-4 md:grid-cols-2 gap-6">
+
+        <div class="bg-emerald-100 rounded-2xl shadow p-6">
+
+            <p class="text-gray-500">
+                Ingresos Totales
+            </p>
+
+            <h2 class="text-4xl font-black text-emerald-700 mt-2">
+                ${{ "{:,.0f}".format(ingresos_anuales).replace(",", ".") }}
+            </h2>
+
+        </div>
+
+        <div class="bg-blue-100 rounded-2xl shadow p-6">
+
+            <p class="text-gray-500">
+                Ingresos del Mes
+            </p>
+
+            <h2 class="text-4xl font-black text-blue-700 mt-2">
+                ${{ "{:,.0f}".format(ingresos_mensuales).replace(",", ".") }}
+            </h2>
+
+        </div>
+
+        <div class="bg-purple-100 rounded-2xl shadow p-6">
+
+            <p class="text-gray-500">
+                MRR
+            </p>
+
+            <h2 class="text-4xl font-black text-purple-700 mt-2">
+                ${{ "{:,.0f}".format(mrr).replace(",", ".") }}
+            </h2>
+
+        </div>
+
+        <div class="bg-green-100 rounded-2xl shadow p-6">
+
+            <p class="text-gray-500">
+                Pagos Registrados
+            </p>
+
+            <h2 class="text-4xl font-black text-green-700 mt-2">
+                ${{ pagos|length }}
+            </h2>
+
+        </div>
+
+    </div>
+
+    <!-- ================================= -->
+    <!-- TABLA -->
+    <!-- ================================= -->
+
+    <div class="bg-white rounded-2xl shadow overflow-hidden">
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full">
+
+                <thead class="bg-slate-900 text-white">
+
+                    <tr>
+
+                        <th class="px-6 py-4 text-left">
+                            Empresa
+                        </th>
+
+                        <th class="px-6 py-4 text-center">
+                            Plan
+                        </th>
+
+                        <th class="px-6 py-4 text-center">
+                            Monto
+                        </th>
+
+                        <th class="px-6 py-4 text-center">
+                            Estado
+                        </th>
+
+                        <th class="px-6 py-4 text-center">
+                            Fecha Pago
+                        </th>
+
+                        <th class="px-6 py-4 text-center">
+                            Acciones
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                {% for pago in pagos %}
+
+                    <tr class="border-b hover:bg-gray-50">
+
+                        <td class="px-6 py-4">
+
+                            {% if pago.empresa %}
+                                {{ pago.empresa.nombre }}
+                            {% else %}
+                                —
+                            {% endif %}
+
+                        </td>
+
+                        <td class="text-center">
+
+                            {% if pago.empresa %}
+                                {{ pago.empresa.plan|capitalize }}
+                            {% else %}
+                                —
+                            {% endif %}
+
+                        </td>
+
+                        <td class="text-center font-bold text-emerald-700">
+
+                            ${{ "{:,.0f}".format(pago.monto).replace(",", ".") }}
+
+                        </td>
+
+                        <td class="text-center">
+
+                            {% if pago.estado == "pagado" %}
+
+                                <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full">
+                                    Pagado
+                                </span>
+
+                            {% elif pago.estado == "pendiente" %}
+
+                                <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
+                                    Pendiente
+                                </span>
+
+                            {% else %}
+
+                                <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full">
+                                    Rechazado
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td class="text-center">
+
+                            {% if pago.fecha_pago %}
+                                {{ pago.fecha_pago.strftime("%d/%m/%Y") }}
+                            {% else %}
+                                —
+                            {% endif %}
+
+                        </td>
+
+                        <td class="px-6 py-4">
+
+                            <div class="flex justify-center gap-2">
+
+                                <a
+                                    href="{{ url_for('ver_pago', id=pago.id) }}"
+                                    class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-2 rounded-lg text-sm font-semibold"
+                                >
+                                    Ver
+                                </a>
+
+                                <a
+                                    href="{{ url_for('editar_pago', id=pago.id) }}"
+                                    class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg text-sm font-semibold"
+                                >
+                                    Editar
+                                </a>
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('eliminar_pago', id=pago.id) }}"
+                                    class="inline"
+                                    onsubmit="return confirm('¿Eliminar este pago?');"
+                                >
+
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="{{ csrf_token() }}"
+                                    >
+
+                                    <button
+                                        type="submit"
+                                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-semibold"
+                                    >
+                                        Eliminar
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                {% else %}
+
+                    <tr>
+
+                        <td
+                            colspan="6"
+                            class="py-10 text-center text-gray-500"
+                        >
+
+                            No existen pagos registrados.
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

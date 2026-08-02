@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+Editar Plan SaaS | Super Administrador
+{% endblock %}
+
+
+{% block header %}
+Editar Plan SaaS
+{% endblock %}
+
+
+
+{% block content %}
+
+
+<div class="max-w-5xl mx-auto space-y-8">
+
+
+    <!-- ================================= -->
+    <!-- TITULO -->
+    <!-- ================================= -->
+
+    <div>
+
+        <h1 class="text-4xl font-black text-gray-800">
+
+            ✏️ Editar Plan
+
+        </h1>
+
+
+        <p class="text-gray-500 mt-2">
+
+            Modifica la configuración comercial y técnica del plan.
+
+        </p>
+
+    </div>
+
+
+
+    <!-- ================================= -->
+    <!-- FORMULARIO -->
+    <!-- ================================= -->
+
+
+    <form method="POST"
+      class="bg-white rounded-2xl shadow p-8 space-y-8">
+
+    <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}"
+    >
+
+
+
+        <!-- ================================= -->
+        <!-- INFORMACIÓN GENERAL -->
+        <!-- ================================= -->
+
+
+        <div>
+
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+
+                Información general
+
+            </h2>
+
+
+            <div class="grid md:grid-cols-2 gap-6">
+
+
+                <div>
+
+                    <label class="block text-sm font-semibold mb-2">
+
+                        Nombre del plan
+
+                    </label>
+
+
+                    <input
+                    type="text"
+                    value="{{ plan.nombre }}"
+                    disabled
+                    class="w-full rounded-xl border-gray-300 bg-gray-100"
+                    >
+
+                </div>
+
+
+
+                <div>
+
+                    <label class="block text-sm font-semibold mb-2">
+
+                        Estado
+
+                    </label>
+
+
+                    <label class="flex items-center gap-3 mt-3">
+
+                        <input
+                        type="checkbox"
+                        name="activo"
+                        class="rounded"
+                        {% if plan.activo %}
+                        checked
+                        {% endif %}
+                        >
+
+
+                        <span>
+
+                            Plan activo
+
+                        </span>
+
+
+                    </label>
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+
+
+
+        <!-- ================================= -->
+        <!-- PRECIOS -->
+        <!-- ================================= -->
+
+
+        <div>
+
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+
+                Precios
+
+            </h2>
+
+
+
+            <div class="grid md:grid-cols-2 gap-6">
+
+
+                <div>
+
+                    <label class="block text-sm font-semibold mb-2">
+
+                        Precio mensual (CLP)
+
+                    </label>
+
+
+                    <input
+                    type="number"
+                    name="precio_mensual"
+                    value="{{ plan.precio_mensual }}"
+                    class="w-full rounded-xl border-gray-300"
+                    >
+
+                </div>
+
+
+
+
+                <div>
+
+                    <label class="block text-sm font-semibold mb-2">
+
+                        Precio anual (CLP)
+
+                    </label>
+
+
+                    <input
+                    type="number"
+                    name="precio_anual"
+                    value="{{ plan.precio_anual }}"
+                    class="w-full rounded-xl border-gray-300"
+                    >
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+
+
+
+        <!-- ================================= -->
+        <!-- LIMITES -->
+        <!-- ================================= -->
+
+
+        <div>
+
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+
+                Límites del plan
+
+            </h2>
+
+
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+
+                <div>
+
+                    <label class="block text-sm font-semibold mb-2">
+
+                        Usuarios
+
+                    </label>
+
+
+                    <input
+                    type="number"
+                    name="limite_usuarios"
+                    value="{{ plan.limite_usuarios }}"
+                    class="w-full rounded-xl border-gray-300"
+                    >
+
+                </div>
+
+
+
+
+                <div>
+
+                    <label class="block text-sm font-semibold mb-2">
+
+                        Productos
+
+                    </label>
+
+
+                    <input
+                    type="number"
+                    name="limite_productos"
+                    value="{{ plan.limite_productos }}"
+                    class="w-full rounded-xl border-gray-300"
+                    >
+
+                </div>
+
+
+
+
+                <div>
+
+                    <label class="block text-sm font-semibold mb-2">
+
+                        Movimientos
+
+                    </label>
+
+
+                    <input
+                    type="number"
+                    name="limite_movimientos"
+                    value="{{ plan.limite_movimientos }}"
+                    class="w-full rounded-xl border-gray-300"
+                    >
+
+                </div>
+
+
+
+
+                <div>
+
+                    <label class="block text-sm font-semibold mb-2">
+
+                        Almacenamiento MB
+
+                    </label>
+
+
+                    <input
+                    type="number"
+                    name="almacenamiento_mb"
+                    value="{{ plan.almacenamiento_mb }}"
+                    class="w-full rounded-xl border-gray-300"
+                    >
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+
+
+
+        <!-- ================================= -->
+        <!-- MODULOS -->
+        <!-- ================================= -->
+
+
+        <div>
+
+
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+
+                Módulos habilitados
+
+            </h2>
+
+
+
+            <div class="grid md:grid-cols-2 gap-4">
+
+
+
+                <label class="flex items-center gap-3">
+
+                    <input
+                    type="checkbox"
+                    name="tiene_reportes"
+                    {% if plan.tiene_reportes %}
+                    checked
+                    {% endif %}
+                    >
+
+                    Reportes
+
+
+                </label>
+
+
+
+
+
+                <label class="flex items-center gap-3">
+
+                    <input
+                    type="checkbox"
+                    name="tiene_exportacion"
+                    {% if plan.tiene_exportacion %}
+                    checked
+                    {% endif %}
+                    >
+
+                    Exportación
+
+
+                </label>
+
+
+
+
+
+                <label class="flex items-center gap-3">
+
+                    <input
+                    type="checkbox"
+                    name="tiene_ia"
+                    {% if plan.tiene_ia %}
+                    checked
+                    {% endif %}
+                    >
+
+                    Inteligencia Artificial
+
+
+                </label>
+
+
+
+
+
+                <label class="flex items-center gap-3">
+
+                    <input
+                    type="checkbox"
+                    name="tiene_alertas_avanzadas"
+                    {% if plan.tiene_alertas_avanzadas %}
+                    checked
+                    {% endif %}
+                    >
+
+                    Alertas avanzadas
+
+
+                </label>
+
+
+
+
+
+                <label class="flex items-center gap-3">
+
+                    <input
+                    type="checkbox"
+                    name="tiene_api"
+                    {% if plan.tiene_api %}
+                    checked
+                    {% endif %}
+                    >
+
+                    API
+
+
+                </label>
+
+
+
+
+
+                <label class="flex items-center gap-3">
+
+                    <input
+                    type="checkbox"
+                    name="tiene_multisucursal"
+                    {% if plan.tiene_multisucursal %}
+                    checked
+                    {% endif %}
+                    >
+
+                    Multisucursal
+
+
+                </label>
+
+
+
+            </div>
+
+
+        </div>
+
+
+
+
+
+        <!-- ================================= -->
+        <!-- BOTONES -->
+        <!-- ================================= -->
+
+
+        <div class="flex justify-end gap-4 pt-6">
+
+
+            <a
+            href="{{ url_for('super_admin_planes') }}"
+            class="px-6 py-3 rounded-xl bg-gray-200 hover:bg-gray-300">
+
+                Cancelar
+
+            </a>
+
+
+
+
+            <button
+            type="submit"
+            class="px-6 py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700">
+
+                Guardar cambios
+
+            </button>
+
+
+        </div>
+
+
+
+    </form>
+
+
+
+</div>
+
+
+{% endblock %}

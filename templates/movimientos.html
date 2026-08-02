@@ -2,148 +2,563 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movimientos - NexuStock</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Movimientos | NexuStock</title>
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+
+<script src="https://unpkg.com/lucide@latest"></script>
+
+
 </head>
 
-<body class="bg-gray-100">
 
-    <!-- Barra Superior -->
+<body class="bg-slate-100">
 
-    <div class="bg-blue-600 text-white p-4 shadow">
 
-        <div class="flex justify-between items-center">
 
-            <h1 class="text-2xl font-bold">
-                📦 NexuStock
-            </h1>
+<div class="flex min-h-screen">
 
-            <div class="space-x-6">
 
-                <a href="/dashboard" class="hover:underline">
-                    Dashboard
-                </a>
 
-                <a href="/productos" class="hover:underline">
-                    Productos
-                </a>
 
-                <a href="/movimientos" class="font-bold hover:underline">
-                    Movimientos
-                </a>
 
-            </div>
+<!-- SIDEBAR -->
 
-        </div>
+<aside class="hidden md:flex w-64 bg-slate-900 text-white flex-col">
 
-    </div>
 
-    <!-- Contenido -->
+<div class="p-6 border-b border-slate-700">
 
-    <div class="p-6">
 
-        <h2 class="text-3xl font-bold mb-6">
-            📝 Historial de Movimientos
-        </h2>
+<h1 class="text-2xl font-bold">
+📦 NexuStock
+</h1>
 
-        <div class="bg-white rounded-xl shadow overflow-hidden">
 
-            <table class="w-full">
+<p class="text-sm text-slate-400 mt-1">
+Control inteligente inventario
+</p>
 
-                <thead class="bg-gray-200">
 
-                    <tr>
+</div>
 
-                        <th class="p-3 text-left">
-                            Fecha
-                        </th>
 
-                        <th class="p-3 text-left">
-                            Tipo
-                        </th>
 
-                        <th class="p-3 text-left">
-                            Usuario
-                        </th>
 
-                        <th class="p-3 text-left">
-                            Producto
-                        </th>
 
-                        <th class="p-3 text-left">
-                            Cantidad
-                        </th>
+<nav class="p-4 space-y-2">
 
-                    </tr>
 
-                </thead>
 
-                <tbody>
+<a href="/dashboard"
+class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
 
-                    {% for movimiento in movimientos %}
+<i data-lucide="layout-dashboard"></i>
 
-                    <tr class="border-t">
+Dashboard
 
-                        <td class="p-3">
-                            {{ movimiento.fecha.strftime('%d/%m/%Y %H:%M') }}
-                        </td>
+</a>
 
-                        <td class="p-3">
 
-                            {% if movimiento.tipo == "Entrada" %}
 
-                                <span class="text-green-600 font-bold">
-                                    📥 Entrada
-                                </span>
 
-                            {% else %}
 
-                                <span class="text-red-600 font-bold">
-                                    📤 Salida
-                                </span>
+<a href="/productos"
+class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
 
-                            {% endif %}
+<i data-lucide="package"></i>
 
-                        </td>
+Productos
 
-                        <td class="p-3">
+</a>
 
-                            {% if movimiento.usuario %}
 
-                                {{ movimiento.usuario.nombre }}
 
-                            {% else %}
 
-                                <span class="text-gray-500">
-                                    Sistema
-                                </span>
 
-                            {% endif %}
+<a href="/movimientos"
+class="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-600">
 
-                        </td>
+<i data-lucide="repeat"></i>
 
-                        <td class="p-3">
-                            {{ movimiento.producto.nombre }}
-                        </td>
+Movimientos
 
-                        <td class="p-3">
-                            {{ movimiento.cantidad }}
-                        </td>
+</a>
 
-                    </tr>
 
-                    {% endfor %}
 
-                </tbody>
 
-            </table>
 
-        </div>
+<a href="/usuarios"
+class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
 
-    </div>
+<i data-lucide="users"></i>
+
+Usuarios
+
+</a>
+
+
+
+
+
+<a href="/reportes"
+class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
+
+<i data-lucide="chart-column"></i>
+
+Reportes
+
+</a>
+
+
+
+</nav>
+
+
+
+</aside>
+
+
+
+
+
+
+
+
+<!-- CONTENIDO -->
+
+<main class="flex-1 p-6">
+
+
+
+
+
+<div class="flex justify-between items-center mb-8">
+
+
+<div>
+
+
+<h2 class="text-3xl font-bold text-slate-800">
+
+Historial de Movimientos
+
+</h2>
+
+
+<p class="text-slate-500">
+
+Registro completo de entradas y salidas
+
+</p>
+
+
+</div>
+
+
+
+
+<div class="bg-white shadow rounded-xl px-6 py-4">
+
+
+<p class="text-sm text-slate-500">
+
+Total movimientos
+
+</p>
+
+
+<p class="text-3xl font-bold text-blue-600">
+
+{{ movimientos|length }}
+
+</p>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<!-- TABLA -->
+
+
+<div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+
+
+<div class="p-6">
+
+
+<h3 class="text-xl font-bold mb-5">
+
+📦 Historial inventario
+
+</h3>
+
+
+
+<div class="overflow-x-auto">
+
+
+
+<table class="w-full">
+
+
+
+<thead class="bg-slate-100">
+
+
+<tr>
+
+
+<th class="px-6 py-4 text-left text-slate-600">
+
+Fecha
+
+</th>
+
+
+<th class="px-6 py-4 text-left text-slate-600">
+
+Tipo
+
+</th>
+
+
+<th class="px-6 py-4 text-left text-slate-600">
+
+Producto
+
+</th>
+
+
+<th class="px-6 py-4 text-left text-slate-600">
+
+Cantidad
+
+</th>
+
+
+<th class="px-6 py-4 text-left text-slate-600">
+
+Usuario
+
+</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+
+
+
+<tbody>
+
+
+
+{% for movimiento in movimientos %}
+
+
+
+<tr class="border-t hover:bg-slate-50 transition">
+
+
+
+
+
+<td class="px-6 py-4">
+
+
+<div class="flex items-center gap-2">
+
+
+<i data-lucide="calendar"
+class="w-4">
+</i>
+
+
+{{ movimiento.fecha.strftime('%d/%m/%Y %H:%M') }}
+
+
+</div>
+
+
+</td>
+
+
+
+
+
+
+
+<td class="px-6 py-4">
+
+
+
+{% if movimiento.tipo == "entrada" %}
+
+
+
+<span class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full font-semibold">
+
+
+<i data-lucide="arrow-down-circle"
+class="w-4">
+</i>
+
+
+Entrada
+
+
+</span>
+
+
+
+
+
+{% elif movimiento.tipo == "salida" %}
+
+
+
+
+
+<span class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-4 py-2 rounded-full font-semibold">
+
+
+<i data-lucide="arrow-up-circle"
+class="w-4">
+</i>
+
+
+Salida
+
+
+</span>
+
+
+
+
+
+
+{% else %}
+
+
+
+
+
+<span class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full font-semibold">
+
+
+<i data-lucide="settings"
+class="w-4">
+</i>
+
+
+Ajuste
+
+
+</span>
+
+
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+
+
+
+
+<td class="px-6 py-4 font-semibold">
+
+
+{{ movimiento.producto.nombre }}
+
+
+</td>
+
+
+
+
+
+
+
+<td class="px-6 py-4">
+
+
+<span class="text-xl font-bold text-slate-700">
+
+{{ movimiento.cantidad }}
+
+</span>
+
+
+unidades
+
+
+</td>
+
+
+
+
+
+
+
+<td class="px-6 py-4">
+
+
+
+{% if movimiento.usuario_movimiento %}
+
+
+
+<div class="flex items-center gap-2">
+
+
+<i data-lucide="user"
+class="w-4">
+</i>
+
+
+{{ movimiento.usuario_movimiento.nombre }}
+
+
+</div>
+
+
+
+
+
+{% else %}
+
+
+
+<span class="text-slate-500">
+
+Sistema
+
+</span>
+
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+</tr>
+
+
+
+
+
+
+
+{% else %}
+
+
+
+<tr>
+
+
+<td colspan="5"
+class="text-center py-10 text-slate-500">
+
+
+<i data-lucide="inbox"
+class="mx-auto mb-3">
+</i>
+
+
+No existen movimientos registrados.
+
+
+</td>
+
+
+</tr>
+
+
+
+{% endfor %}
+
+
+
+</tbody>
+
+
+
+</table>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+</main>
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+<script>
+
+lucide.createIcons();
+
+</script>
+
+
 
 </body>
 

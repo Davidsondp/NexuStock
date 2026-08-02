@@ -2,161 +2,637 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reportes - NexuStock</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Reportes | NexuStock</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+
 </head>
 
-<body class="bg-gray-100">
 
-    <div class="bg-blue-600 text-white p-4 shadow">
+<body class="bg-slate-100">
 
-        <div class="flex justify-between items-center">
 
-            <h1 class="text-2xl font-bold">
-                📦 NexuStock
-            </h1>
 
-            <div class="space-x-6">
+<div class="flex min-h-screen">
 
-                <a href="/dashboard">Dashboard</a>
-                <a href="/productos">Productos</a>
-                <a href="/movimientos">Movimientos</a>
-                <a href="/usuarios">Usuarios</a>
-                <a href="/reportes" class="font-bold">
-                    Reportes
-                </a>
 
-            </div>
 
-        </div>
 
-    </div>
 
-    <div class="p-6">
+<!-- SIDEBAR -->
 
-        <h2 class="text-3xl font-bold mb-6">
-            📊 Reportes
-        </h2>
+<aside class="hidden md:flex w-64 bg-slate-900 text-white flex-col">
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
-            <div class="bg-white p-6 rounded-xl shadow">
+<div class="p-6 border-b border-slate-700">
 
-                <h3 class="text-gray-500">
-                    Total Productos
-                </h3>
 
-                <p class="text-4xl font-bold">
-                    {{ total_productos }}
-                </p>
+<h1 class="text-2xl font-bold">
 
-            </div>
+📦 NexuStock
 
-            <div class="bg-white p-6 rounded-xl shadow">
+</h1>
 
-                <h3 class="text-gray-500">
-                    Stock Bajo
-                </h3>
 
-                <p class="text-4xl font-bold text-red-500">
-                    {{ stock_bajo }}
-                </p>
+<p class="text-sm text-slate-400 mt-1">
 
-            </div>
+Sistema ERP Inventario
 
-            <div class="bg-white p-6 rounded-xl shadow">
+</p>
 
-                <h3 class="text-gray-500">
-                    Valor Inventario
-                </h3>
 
-                <p class="text-3xl font-bold text-green-600">
-                    ${{ valor_inventario }}
-                </p>
+</div>
 
-            </div>
 
-        </div>
 
-        <div class="bg-white rounded-xl shadow p-6">
 
-            <h3 class="text-2xl font-bold mb-4">
-                📋 Últimos Movimientos
-            </h3>
 
-            <table class="w-full">
+<nav class="p-4 space-y-2">
 
-                <thead class="bg-gray-200">
 
-                    <tr>
 
-                        <th class="p-3 text-left">
-                            Fecha
-                        </th>
+<a href="/dashboard"
+class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
 
-                        <th class="p-3 text-left">
-                            Tipo
-                        </th>
+<i data-lucide="layout-dashboard"></i>
 
-                        <th class="p-3 text-left">
-                            Producto
-                        </th>
+Dashboard
 
-                        <th class="p-3 text-left">
-                            Cantidad
-                        </th>
+</a>
 
-                    </tr>
 
-                </thead>
 
-                <tbody>
 
-                    {% for movimiento in movimientos %}
+<a href="/productos"
+class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
 
-                    <tr class="border-t">
+<i data-lucide="package"></i>
 
-                        <td class="p-3">
-                            {{ movimiento.fecha }}
-                        </td>
+Productos
 
-                        <td class="p-3">
-                            {{ movimiento.tipo }}
-                        </td>
+</a>
 
-                        <td class="p-3">
-                            {{ movimiento.producto.nombre }}
-                        </td>
 
-                        <td class="p-3">
-                            {{ movimiento.cantidad }}
-                        </td>
 
-                    </tr>
 
-                    {% endfor %}
+<a href="/movimientos"
+class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
 
-                </tbody>
+<i data-lucide="repeat"></i>
 
-            </table>
+Movimientos
 
-        </div>
+</a>
 
-        <div class="mt-6">
 
-            <a
-                href="/exportar-excel"
-                class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
-            >
-                📥 Exportar Excel
-            </a>
 
-        </div>
 
-    </div>
+
+<a href="/usuarios"
+class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
+
+<i data-lucide="users"></i>
+
+Usuarios
+
+</a>
+
+
+
+
+
+<a href="/reportes"
+class="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-600">
+
+<i data-lucide="chart-column"></i>
+
+Reportes
+
+</a>
+
+
+
+
+</nav>
+
+
+</aside>
+
+
+
+
+
+
+
+<!-- CONTENIDO -->
+
+
+<main class="flex-1 p-6">
+
+
+
+
+
+<!-- HEADER -->
+
+
+<div class="flex justify-between items-center mb-8">
+
+
+<div>
+
+
+<h2 class="text-3xl font-bold text-slate-800">
+
+Centro de Reportes
+
+</h2>
+
+
+<p class="text-slate-500">
+
+Análisis inteligente del inventario
+
+</p>
+
+
+</div>
+
+
+
+<a href="/exportar-excel"
+
+class="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl flex items-center gap-2 shadow">
+
+
+<i data-lucide="download"></i>
+
+Exportar Excel
+
+
+</a>
+
+
+</div>
+
+
+
+
+
+
+
+
+<!-- KPI CARDS -->
+
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+
+
+
+
+<div class="bg-white rounded-2xl shadow-sm p-6 border">
+
+<div class="flex justify-between">
+
+
+<div>
+
+<p class="text-slate-500">
+
+Productos
+
+</p>
+
+
+<h3 class="text-4xl font-bold mt-2">
+
+{{ total_productos }}
+
+</h3>
+
+
+</div>
+
+
+<div class="bg-blue-100 text-blue-600 p-3 rounded-xl">
+
+<i data-lucide="package"></i>
+
+</div>
+
+
+</div>
+
+</div>
+
+
+
+
+
+
+
+
+<div class="bg-white rounded-2xl shadow-sm p-6 border">
+
+
+<div class="flex justify-between">
+
+
+<div>
+
+
+<p class="text-slate-500">
+
+Stock bajo
+
+</p>
+
+
+<h3 class="text-4xl font-bold text-red-600 mt-2">
+
+{{ cantidad_stock_bajo }}
+
+</h3>
+
+
+</div>
+
+
+<div class="bg-red-100 text-red-600 p-3 rounded-xl">
+
+<i data-lucide="alert-triangle"></i>
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="bg-white rounded-2xl shadow-sm p-6 border">
+
+
+<div class="flex justify-between">
+
+
+<div>
+
+
+<p class="text-slate-500">
+
+Valor inventario
+
+</p>
+
+
+<h3 class="text-3xl font-bold text-green-600 mt-2">
+
+
+${{ "{:,.0f}".format(valor_inventario) }}
+
+
+</h3>
+
+
+</div>
+
+
+<div class="bg-green-100 text-green-600 p-3 rounded-xl">
+
+<i data-lucide="wallet"></i>
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="bg-white rounded-2xl shadow-sm p-6 border">
+
+
+<div class="flex justify-between">
+
+
+<div>
+
+
+<p class="text-slate-500">
+
+Unidades
+
+</p>
+
+
+<h3 class="text-4xl font-bold text-purple-600 mt-2">
+
+
+{{ unidades_totales }}
+
+
+</h3>
+
+
+</div>
+
+
+<div class="bg-purple-100 text-purple-600 p-3 rounded-xl">
+
+
+<i data-lucide="boxes"></i>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<!-- MOVIMIENTOS -->
+
+<div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+
+
+<div class="p-6">
+
+
+<h3 class="text-xl font-bold mb-5">
+
+Últimos movimientos
+
+</h3>
+
+
+
+<div class="overflow-x-auto">
+
+
+<table class="w-full">
+
+
+<thead class="bg-slate-100">
+
+
+<tr>
+
+<th class="text-left p-4">
+Fecha
+</th>
+
+
+<th class="text-left p-4">
+Tipo
+</th>
+
+
+<th class="text-left p-4">
+Producto
+</th>
+
+
+<th class="text-left p-4">
+Cantidad
+</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+<tbody>
+
+
+{% for movimiento in movimientos %}
+
+
+<tr class="border-t hover:bg-slate-50">
+
+
+<td class="p-4">
+
+{{ movimiento.fecha.strftime('%d/%m/%Y %H:%M') }}
+
+</td>
+
+
+
+<td class="p-4">
+
+
+{% if movimiento.tipo == "entrada" %}
+
+
+<span class="px-3 py-1 rounded-full bg-green-100 text-green-700 font-semibold">
+
+Entrada
+
+</span>
+
+
+{% elif movimiento.tipo == "salida" %}
+
+
+<span class="px-3 py-1 rounded-full bg-red-100 text-red-700 font-semibold">
+
+Salida
+
+</span>
+
+
+{% else %}
+
+
+<span class="px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 font-semibold">
+
+Ajuste
+
+</span>
+
+
+{% endif %}
+
+
+</td>
+
+
+
+
+<td class="p-4 font-medium">
+
+{{ movimiento.producto.nombre }}
+
+</td>
+
+
+
+
+<td class="p-4">
+
+{{ movimiento.cantidad }}
+
+</td>
+
+
+
+</tr>
+
+
+
+{% else %}
+
+
+<tr>
+
+<td colspan="4" class="p-6 text-center text-slate-500">
+
+Sin movimientos registrados
+
+</td>
+
+</tr>
+
+
+{% endfor %}
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+<!-- TOP PRODUCTOS -->
+
+
+<div class="bg-white rounded-2xl shadow-sm border mt-8 p-6">
+
+
+<h3 class="text-xl font-bold mb-5">
+
+🔥 Productos con mayor salida
+
+</h3>
+
+
+
+
+{% for producto in productos_mas_vendidos %}
+
+
+<div class="flex justify-between py-3 border-b">
+
+
+<span>
+
+{{ producto.nombre }}
+
+</span>
+
+
+<span class="font-bold text-blue-600">
+
+{{ producto.salidas }}
+
+</span>
+
+
+</div>
+
+
+
+{% else %}
+
+
+<p class="text-slate-500">
+
+No existen datos todavía.
+
+</p>
+
+
+{% endfor %}
+
+
+
+</div>
+
+
+
+
+
+</main>
+
+
+
+</div>
+
+
+
+
+<script>
+
+lucide.createIcons();
+
+</script>
+
+
 
 </body>
 

@@ -12,22 +12,7 @@
 import os
 import math
 import mercadopago
-import logging
-logger = logging.getLogger(__name__)
 from datetime import datetime, timedelta, UTC
-from transbank.webpay.webpay_plus.transaction import Transaction
-from transbank.common.options import WebpayOptions
-from transbank.common.integration_type import IntegrationType
-from transbank.common.integration_commerce_codes import IntegrationCommerceCodes
-from transbank.common.integration_api_keys import IntegrationApiKeys
-
-webpay_transaction = Transaction(
-    WebpayOptions(
-        IntegrationCommerceCodes.WEBPAY_PLUS,
-        IntegrationApiKeys.WEBPAY,
-        IntegrationType.TEST
-    )
-)
 from io import BytesIO
 from functools import wraps
 from dotenv import load_dotenv
@@ -40,7 +25,7 @@ from flask import (Flask,render_template,request,redirect,url_for,
 from flask_wtf.csrf import (CSRFProtect,CSRFError)
 from flask_mail import (Mail,Message)
 from itsdangerous import (URLSafeTimedSerializer,BadSignature,
-                          SignatureExpired)
+    SignatureExpired)
 from openpyxl import Workbook
 from werkzeug.security import (generate_password_hash,check_password_hash)
 from models import (
@@ -1681,9 +1666,12 @@ def dashboard():
 
 
     valor_inventario = sum(
-    (p.stock or 0) * float(p.costo_promedio or 0)
-    for p in productos
-)
+
+        p.stock * p.precio
+
+        for p in productos
+
+    )
 
 
 
@@ -1786,9 +1774,12 @@ def dashboard():
 
 
     dinero_inmovilizado = sum(
-    (p.stock or 0) * float(p.costo_promedio or 0)
-    for p in productos
-)
+
+        p.stock * p.precio
+
+        for p in productos_sobre_stock
+
+    )
 
 
 # ===============================
@@ -2200,43 +2191,32 @@ def pagar_mercadopago(pago_id):
 
                 "currency_id": "CLP",
 
-                "unit_price": float(
-                    plan_obj.precio_mensual
-                )
+                "unit_price": float(plan_obj.precio_mensual)
 
             }
 
         ],
 
-        "external_reference": str(
-            pago.id
-        ),
+        "external_reference": str(pago.id),
 
         "back_urls": {
 
             "success": url_for(
-                "mercadopago_success",
+                "mi_plan",
                 _external=True
             ),
 
             "failure": url_for(
-                "mercadopago_failure",
+                "mi_plan",
                 _external=True
             ),
 
             "pending": url_for(
-                "mercadopago_pending",
+                "mi_plan",
                 _external=True
             )
 
-        },
-
-        "notification_url": url_for(
-            "webhook_mercadopago",
-            _external=True
-        ),
-
-        "auto_return": "approved"
+        }
 
     }
 
@@ -2270,6 +2250,7 @@ def pagar_mercadopago(pago_id):
             url_for("mi_plan")
         )
 
+
     if respuesta.get("status") != 201:
 
         print("Mercado Pago respondió con error:")
@@ -2284,6 +2265,7 @@ def pagar_mercadopago(pago_id):
             url_for("mi_plan")
         )
 
+
     # ----------------------------------------
     # Guardar datos devueltos por Mercado Pago
     # ----------------------------------------
@@ -2294,361 +2276,16 @@ def pagar_mercadopago(pago_id):
 
     db.session.commit()
 
+
     print("PREFERENCE ID:")
-    print(
-        pago.preference_id
-    )
+    print(pago.preference_id)
 
     print("URL DE PAGO:")
-    print(
-        pago.url_pago
-    )
+    print(pago.url_pago)
+
 
     return redirect(
         pago.url_pago
-    )
-
-
-# ==================================================
-# MERCADO PAGO - SUCCESS
-# ==================================================
-
-@app.route("/mercadopago/success")
-def mercadopago_success():
-
-    payment_id = request.args.get("payment_id")
-    status = request.args.get("status")
-    preference_id = request.args.get("preference_id")
-
-    print("=" * 60)
-    print("PAGO APROBADO")
-    print("payment_id:", payment_id)
-    print("status:", status)
-    print("preference_id:", preference_id)
-    print("=" * 60)
-
-    pago = Pago.query.filter_by(
-        preference_id=preference_id
-    ).first()
-
-    if not pago:
-
-        flash(
-            "No se encontró el pago.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("mi_plan")
-        )
-
-    pago.estado = "pagado"
-
-    pago.fecha_pago = datetime.utcnow()
-
-    pago.codigo_transaccion = payment_id
-
-# ----------------------------------------
-# ACTIVAR PLAN
-# ----------------------------------------
-
-    empresa = pago.empresa
-    plan = pago.plan
-    empresa.plan = plan.nombre.strip().lower()
-    empresa.estado = "activo"
-    empresa.fecha_inicio_plan = datetime.utcnow()
-    empresa.fecha_vencimiento = (
-        datetime.utcnow() + timedelta(days=30)
-        )
-
-    db.session.commit()
-
-    flash(
-        "Pago realizado correctamente.",
-        "success"
-    )
-
-    return redirect(
-        url_for("mi_plan")
-    )
-
-
-# ==================================================
-# MERCADO PAGO - FAILURE
-# ==================================================
-
-@app.route("/mercadopago/failure")
-def mercadopago_failure():
-
-    return "FAILURE"
-
-
-# ==================================================
-# MERCADO PAGO - PENDING
-# ==================================================
-
-@app.route("/mercadopago/pending")
-def mercadopago_pending():
-
-    return "PENDING"
-
-# =========================================
-# WEBHOOK MERCADO PAGO
-# =========================================
-
-@app.route("/webhook/mercadopago", methods=["POST"])
-def webhook_mercadopago():
-
-    datos = request.get_json(silent=True)
-
-    print("=" * 60)
-    print("WEBHOOK RECIBIDO")
-    print(datos)
-    print("=" * 60)
-
-    if not datos:
-        return "", 200
-
-    tipo = datos.get("type")
-    accion = datos.get("action")
-    print("Tipo:", tipo)
-    print("Acción:", accion)
-    if tipo != "payment":
-        return "", 200
-    payment_id = datos.get("data", {}).get("id")
-
-    print("ID Pago Mercado Pago:", payment_id)
-
-    if not payment_id:
-        return "", 200
-    print("Consultando pago en Mercado Pago...")
-    respuesta = sdk_mp.payment().get(payment_id)
-    print("=" * 60)
-    print("RESPUESTA PAYMENT")
-    print(respuesta)
-    print("=" * 60)
-
-    return "", 200
-
-# ==================================================
-# WEBPAY PLUS
-# ==================================================
-
-WEBPAY_COMMERCE_CODE = os.getenv(
-    "WEBPAY_COMMERCE_CODE",
-    "597055555532"
-)
-
-WEBPAY_API_KEY = os.getenv(
-    "WEBPAY_API_KEY",
-    "579B464545613031323334353637383930"
-)
-
-webpay_options = WebpayOptions(
-    commerce_code=WEBPAY_COMMERCE_CODE,
-    api_key=WEBPAY_API_KEY,
-    integration_type=IntegrationType.TEST
-)
-
-webpay_transaction = Transaction(webpay_options)
-
-# ==================================================
-# PAGAR WEBPAY
-# ==================================================
-
-@app.route("/pagar/webpay/<int:pago_id>")
-@login_requerido
-def pagar_webpay(pago_id):
-
-    usuario_actual = obtener_usuario_actual()
-
-    if not usuario_actual:
-        return redirect(url_for("login"))
-
-    empresa = usuario_actual.empresa
-
-    pago = Pago.query.get_or_404(pago_id)
-
-    if pago.empresa_id != empresa.id:
-
-        flash(
-            "Pago no válido.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("mi_plan")
-        )
-
-    plan = PlanSaaS.query.get_or_404(
-        pago.plan_id
-    )
-
-    buy_order = f"NEXU-{pago.id}"
-
-    session_id = str(
-        empresa.id
-    )
-
-    return_url = url_for(
-        "webpay_commit",
-        _external=True
-    )
-
-    print("=" * 60)
-    print("CREANDO TRANSACCIÓN WEBPAY")
-    print("BUY ORDER:", buy_order)
-    print("SESSION:", session_id)
-    print("MONTO:", int(plan.precio_mensual))
-    print("RETURN URL:", return_url)
-    print("=" * 60)
-
-    try:
-
-        respuesta = webpay_transaction.create(
-            buy_order=buy_order,
-            session_id=session_id,
-            amount=int(plan.precio_mensual),
-            return_url=return_url
-        )
-
-        print("RESPUESTA WEBPAY")
-        print(respuesta)
-
-    except Exception as e:
-
-        print("ERROR WEBPAY")
-        print(e)
-
-        flash(
-            f"Error Webpay: {e}",
-            "danger"
-        )
-
-        return redirect(
-            url_for("mi_plan")
-        )
-
-    pago.codigo_transaccion = respuesta["token"]
-
-    pago.proveedor = "webpay"
-
-    db.session.commit()
-
-    return redirect(
-        respuesta["url"] + "?token_ws=" + respuesta["token"]
-    )
-
-# ==================================================
-# WEBPAY COMMIT
-# ==================================================
-
-@app.route("/webpay/commit", methods=["GET", "POST"])
-@login_requerido
-def webpay_commit():
-
-    token = request.values.get("token_ws")
-
-    if not token:
-
-        flash(
-            "No se recibió el token de Webpay.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("mi_plan")
-        )
-
-    try:
-
-        respuesta = webpay_transaction.commit(token)
-
-        print("=" * 60)
-        print("RESPUESTA COMMIT WEBPAY")
-        print(respuesta)
-        print("=" * 60)
-
-    except Exception as e:
-
-        print("ERROR COMMIT WEBPAY")
-        print(e)
-
-        flash(
-            f"Error confirmando pago: {e}",
-            "danger"
-        )
-
-        return redirect(
-            url_for("mi_plan")
-        )
-
-    estado = respuesta.get("status")
-    buy_order = respuesta.get("buy_order")
-
-    if estado != "AUTHORIZED":
-
-        flash(
-            "El pago no fue autorizado.",
-            "warning"
-        )
-
-        return redirect(
-            url_for("mi_plan")
-        )
-
-    try:
-
-        pago_id = int(
-            buy_order.replace("NEXU-", "")
-        )
-
-    except Exception:
-
-        flash(
-            "Orden inválida.",
-            "danger"
-        )
-
-        return redirect(
-            url_for("mi_plan")
-        )
-
-    pago = Pago.query.get_or_404(pago_id)
-
-    empresa = pago.empresa
-
-    plan = PlanSaaS.query.get_or_404(
-        pago.plan_id
-    )
-
-    pago.estado = "pagado"
-
-    pago.fecha_pago = datetime.utcnow()
-
-    pago.fecha_confirmacion = datetime.utcnow()
-
-    pago.codigo_transaccion = respuesta.get("authorization_code")
-
-    pago.metodo_pago = "Webpay Plus"
-
-    pago.proveedor = "webpay"
-
-    empresa.plan = plan.nombre.lower()
-
-    empresa.fecha_inicio_plan = datetime.utcnow()
-
-    empresa.fecha_vencimiento = datetime.utcnow() + timedelta(days=30)
-
-    db.session.commit()
-
-    flash(
-        "Pago realizado correctamente.",
-        "success"
-    )
-
-    return redirect(
-        url_for("mi_plan")
     )
 
 # ==================================================
@@ -2694,7 +2331,6 @@ def checkout(pago_id):
         plan=plan
 
     )
-
 
 #==================================================
 #==================================================
@@ -5688,79 +5324,6 @@ def productos():
     )
 
 # ==================================================
-# EXPORTAR PRODUCTOS EXCEL
-# ==================================================
-
-@app.route("/exportar-excel")
-@login_requerido
-def exportar_excel():
-
-    usuario_actual = obtener_usuario_actual()
-
-    if not usuario_actual:
-        return redirect(url_for("login"))
-
-
-    empresa = usuario_actual.empresa
-
-
-    productos = Producto.query.filter_by(
-        empresa_id=empresa.id
-    ).all()
-
-
-    import io
-    import openpyxl
-
-    from flask import send_file
-
-
-    archivo = io.BytesIO()
-
-
-    wb = openpyxl.Workbook()
-
-    ws = wb.active
-
-    ws.title = "Productos"
-
-
-    ws.append([
-        "Código",
-        "Nombre",
-        "Categoría",
-        "Stock",
-        "Costo compra",
-        "Precio venta"
-    ])
-
-
-    for producto in productos:
-
-        ws.append([
-            producto.codigo,
-            producto.nombre,
-            producto.categoria,
-            producto.stock,
-            float(producto.costo_compra or 0),
-            float(producto.precio_venta or 0)
-        ])
-
-
-    wb.save(archivo)
-
-
-    archivo.seek(0)
-
-
-    return send_file(
-        archivo,
-        download_name="productos_nexustock.xlsx",
-        as_attachment=True,
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-
-# ==================================================
 # BUSCAR PRODUCTO POR CÓDIGO / BARRAS / QR
 # ==================================================
 @app.route("/buscar-producto/<codigo>")
@@ -6017,7 +5580,7 @@ def nuevo_producto():
 
                 stock_minimo=stock_minimo,
 
-                precio_venta=precio,
+                precio=precio,
 
                 unidades_por_caja=unidades_por_caja
 

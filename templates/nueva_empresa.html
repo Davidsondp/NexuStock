@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}
+Nueva Empresa | Super Administrador
+{% endblock %}
+
+{% block header %}
+Nueva Empresa SaaS
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto">
+
+    <div class="bg-white rounded-2xl shadow-xl p-10">
+
+        <div class="mb-8">
+
+            <h1 class="text-4xl font-black text-gray-800">
+                🏢 Registrar Empresa
+            </h1>
+
+            <p class="text-gray-500 mt-2">
+                Crea una nueva empresa dentro de NexuStock SaaS.
+            </p>
+
+        </div>
+
+        <form method="POST" class="space-y-8">
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+            <div class="grid md:grid-cols-2 gap-6">
+
+                <div>
+
+                    <label class="block font-semibold mb-2">
+                        Nombre
+                    </label>
+
+                    <input
+                        type="text"
+                        name="nombre"
+                        required
+                        class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label class="block font-semibold mb-2">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        name="email"
+                        class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label class="block font-semibold mb-2">
+                        Teléfono
+                    </label>
+
+                    <input
+                        type="text"
+                        name="telefono"
+                        class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label class="block font-semibold mb-2">
+                        Ciudad
+                    </label>
+
+                    <input
+                        type="text"
+                        name="ciudad"
+                        class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label class="block font-semibold mb-2">
+                        País
+                    </label>
+
+                    <input
+                        type="text"
+                        name="pais"
+                        value="Chile"
+                        class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+                    >
+
+                </div>
+
+                <div>
+
+                    <label class="block font-semibold mb-2">
+                        Plan
+                    </label>
+
+                    <select
+                        name="plan"
+                        class="w-full border rounded-xl px-4 py-3"
+                    >
+
+                        {% for plan in planes %}
+
+                        <option value="{{ plan.nombre|lower }}">
+                            {{ plan.nombre }}
+                        </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label class="block font-semibold mb-2">
+                        Estado
+                    </label>
+
+                    <select
+                        name="estado"
+                        class="w-full border rounded-xl px-4 py-3"
+                    >
+
+                        <option value="activo">
+                            Activo
+                        </option>
+
+                        <option value="suspendido">
+                            Suspendido
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label class="block font-semibold mb-2">
+                        Fecha de vencimiento
+                    </label>
+
+                    <input
+                        type="date"
+                        name="fecha_vencimiento"
+                        class="w-full border rounded-xl px-4 py-3"
+                    >
+
+                </div>
+
+            </div>
+
+            <div>
+
+                <label class="block font-semibold mb-2">
+                    Dirección
+                </label>
+
+                <textarea
+                    name="direccion"
+                    rows="3"
+                    class="w-full border rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500"
+                ></textarea>
+
+            </div>
+
+            <div class="flex justify-end gap-4">
+
+                <a
+                    href="{{ url_for('super_admin_empresas') }}"
+                    class="px-6 py-3 rounded-xl bg-gray-300 hover:bg-gray-400 font-semibold"
+                >
+                    Cancelar
+                </a>
+
+                <button
+                    type="submit"
+                    class="px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg"
+                >
+                    Guardar Empresa
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

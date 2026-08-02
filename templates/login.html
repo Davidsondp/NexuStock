@@ -3,137 +3,519 @@
 
 <head>
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
 
-    <title>NexuStock - Login</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+
+<title>NexuStock | Iniciar Sesión</title>
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script src="https://unpkg.com/lucide@latest"></script>
+
 
 </head>
 
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
 
-    <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-xl">
 
-        <div class="text-center mb-8">
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-blue-600 flex items-center justify-center px-4">
 
-            <h1 class="text-4xl font-bold text-blue-600">
-                📦 NexuStock
-            </h1>
 
-            <p class="text-gray-500 mt-2">
-                Control inteligente de inventario
-            </p>
 
-        </div>
+<div class="w-full max-w-md">
 
-        <form method="POST">
 
-            <div class="mb-4">
 
-                <label class="block mb-2 text-gray-700">
-                    Correo electrónico
-                </label>
+<!-- LOGO -->
 
-                <input
-                    type="email"
-                    name="email"
-                    placeholder="correo@empresa.com"
-                    class="w-full border rounded-lg px-4 py-3"
-                    required
-                >
+<div class="text-center text-white mb-8">
 
-            </div>
 
-            <div class="mb-4">
+<div class="flex justify-center mb-5">
 
-                <label class="block mb-2 text-gray-700">
-                    Contraseña
-                </label>
 
-                <div class="relative">
+<div class="bg-white/20 backdrop-blur-lg p-5 rounded-3xl shadow-xl">
 
-                    <input
-                        id="password"
-                        type="password"
-                        name="password"
-                        placeholder="********"
-                        class="w-full border rounded-lg px-4 py-3"
-                        required
-                    >
 
-                    <button
-                        type="button"
-                        onclick="togglePassword()"
-                        class="absolute right-3 top-3"
-                    >
-                        👁
-                    </button>
+<i data-lucide="boxes"
+class="w-14 h-14 text-white">
+</i>
 
-                </div>
 
-            </div>
+</div>
 
-            <div class="mb-6">
 
-                <label class="flex items-center">
+</div>
 
-                    <input
-                        type="checkbox"
-                        class="mr-2"
-                    >
 
-                    Recordarme
 
-                </label>
+<h1 class="text-5xl font-black tracking-tight">
 
-            </div>
+NexuStock
 
-            <button
-                type="submit"
-                class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
-            >
-                Iniciar Sesión
-            </button>
+</h1>
 
-        </form>
 
-        <div class="text-center mt-6">
 
-            <a
-             href="/olvide-password"
-             class="text-blue-600 hover:underline"
-             >
-             ¿Olvidaste tu contraseña?
-            </a>
+<p class="text-blue-100 mt-3 text-lg">
 
-        </div>
+Gestión inteligente de inventario
 
-        {% if mensaje %}
-        <div class="mt-6 text-center text-green-600 font-semibold">
-            {{ mensaje }}
-        </div>
-        {% endif %}
+</p>
 
-    </div>
 
-    <script>
+</div>
 
-        function togglePassword() {
 
-            const input =
-                document.getElementById("password");
 
-            if (input.type === "password") {
-                input.type = "text";
-            } else {
-                input.type = "password";
-            }
 
-        }
 
-    </script>
+<!-- CARD -->
+
+
+<div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8">
+
+
+
+
+
+<!-- MENSAJES -->
+
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+
+
+{% if messages %}
+
+
+{% for categoria, mensaje in messages %}
+
+
+<div class="mb-5 p-4 rounded-xl text-center font-semibold
+
+{% if categoria == 'success' %}
+
+bg-green-100 text-green-700
+
+{% elif categoria == 'danger' %}
+
+bg-red-100 text-red-700
+
+{% elif categoria == 'warning' %}
+
+bg-yellow-100 text-yellow-700
+
+{% else %}
+
+bg-blue-100 text-blue-700
+
+{% endif %}
+
+">
+
+
+{{ mensaje }}
+
+
+</div>
+
+
+{% endfor %}
+
+
+{% endif %}
+
+
+{% endwith %}
+
+
+
+
+
+<h2 class="text-2xl font-bold text-slate-800 mb-6">
+
+Bienvenido nuevamente
+
+</h2>
+
+
+
+
+
+
+<form method="POST"
+autocomplete="on">
+
+
+<input
+
+type="hidden"
+
+name="csrf_token"
+
+value="{{ csrf_token() }}"
+
+>
+
+
+
+
+
+
+<!-- EMAIL -->
+
+
+<div class="mb-5">
+
+
+<label class="block text-slate-700 font-semibold mb-2">
+
+Correo electrónico
+
+</label>
+
+
+
+<div class="relative">
+
+
+<i data-lucide="mail"
+class="absolute left-4 top-3.5 w-5 text-slate-400">
+</i>
+
+
+
+
+<input
+
+type="email"
+
+name="email"
+
+placeholder="correo@empresa.com"
+
+autocomplete="email"
+
+required
+
+aria-label="Correo electrónico"
+
+
+class="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+
+
+>
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+<!-- PASSWORD -->
+
+
+<div class="mb-5">
+
+
+<label class="block text-slate-700 font-semibold mb-2">
+
+Contraseña
+
+</label>
+
+
+
+
+<div class="relative">
+
+
+
+<i data-lucide="lock"
+
+class="absolute left-4 top-3.5 w-5 text-slate-400">
+
+</i>
+
+
+
+
+
+<input
+
+id="password"
+
+type="password"
+
+name="password"
+
+placeholder="********"
+
+autocomplete="current-password"
+
+required
+
+aria-label="Contraseña"
+
+
+class="w-full pl-12 pr-12 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+
+
+>
+
+
+
+
+
+<button
+
+type="button"
+
+onclick="togglePassword()"
+
+aria-label="Mostrar contraseña"
+
+class="absolute right-4 top-3.5 text-slate-400 hover:text-blue-600"
+
+
+>
+
+
+<i data-lucide="eye"
+id="eye"
+class="w-5">
+</i>
+
+
+</button>
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+<!-- OPCIONES -->
+
+
+<div class="flex justify-between items-center mb-6">
+
+
+<label class="flex items-center text-slate-600 text-sm">
+
+
+<input
+
+type="checkbox"
+
+name="recordarme"
+
+class="mr-2 rounded"
+
+
+>
+
+
+Recordarme
+
+
+</label>
+
+
+
+
+
+<a
+
+href="{{ url_for('olvide_password') }}"
+
+class="text-blue-600 hover:underline text-sm font-semibold"
+
+>
+
+¿Olvidaste tu contraseña?
+
+</a>
+
+
+
+</div>
+
+
+
+
+
+
+
+<!-- LOGIN -->
+
+
+<button
+
+type="submit"
+
+class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-lg transition shadow-lg"
+
+
+>
+
+
+Ingresar al sistema
+
+
+</button>
+
+
+
+
+</form>
+
+
+
+
+
+
+
+
+
+<!-- REGISTRO -->
+
+
+<div class="text-center mt-8 border-t pt-6">
+
+
+<p class="text-slate-600">
+
+¿No tienes una cuenta?
+
+</p>
+
+
+
+<a
+
+href="{{ url_for('registro') }}"
+
+class="text-blue-600 font-bold hover:underline"
+
+>
+
+Crear empresa
+
+</a>
+
+
+
+</div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+<p class="text-center text-blue-100 text-sm mt-6">
+
+
+NexuStock AI © 2026
+
+
+</p>
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+<script>
+
+
+function togglePassword(){
+
+
+const password =
+document.getElementById("password");
+
+
+const icon =
+document.getElementById("eye");
+
+
+
+if(password.type === "password"){
+
+
+password.type="text";
+
+
+icon.setAttribute(
+"data-lucide",
+"eye-off"
+);
+
+
+
+}else{
+
+
+password.type="password";
+
+
+icon.setAttribute(
+"data-lucide",
+"eye"
+);
+
+
+
+}
+
+
+
+lucide.createIcons();
+
+
+}
+
+
+
+lucide.createIcons();
+
+
+</script>
+
+
+
 
 </body>
 

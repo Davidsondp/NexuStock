@@ -1,991 +1,1759 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexuStock Dashboard</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>
+NexuStock | Dashboard
+</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script>
+
+tailwind.config = {
+
+    theme: {
+
+        extend: {
+
+            colors: {
+
+                primary: "#2563eb"
+
+            }
+
+        }
+
+    }
+
+}
+
+</script>
+
+
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100">
+<body class="bg-slate-100 min-h-screen">
 
-    <!-- Barra Superior -->
+<!-- ==================================================
+SIDEBAR
+================================================== -->
 
-    <div class="bg-gradient-to-r from-blue-700 to-indigo-700 text-white p-4 shadow-xl">
+<aside class="fixed left-0 top-0 h-screen w-72 bg-gradient-to-b from-blue-700 to-indigo-900 text-white shadow-2xl hidden lg:block">
 
-        <div class="flex justify-between items-center">
 
-            <h1 class="text-2xl font-bold">
-                📦 NexuStock
-            </h1>
-            
-            <div class="flex items-center space-x-4">
-                
-                <a href="/dashboard" class="hover:underline font-bold">
-                    Dashboard
-                </a>
-                
-                <a href="/productos" class="hover:underline">
-                    Productos
-                </a>
-                
-                <a href="/movimientos" class="hover:underline">
-                     Movimientos
-                    </a>
-                    <a href="/escaner" class="hover:underline">
-                        📷 Escáner
-                    </a>
-                    
-                    <a href="/reportes" class="hover:underline">
-                        Reportes
-                    </a>
-                    
-                    <a href="/usuarios" class="hover:underline">
-                        Usuarios
-                    </a>
-                    
-                    <a
-                    href="/logout"
-                    class="bg-red-600 px-4 py-2 rounded-lg hover:bg-red-700 font-semibold"
-                    >
-                    Cerrar Sesión
-                </a>
-            </div>
+<div class="p-6 border-b border-white/20">
 
-        </div>
 
-    </div>
+<h1 class="text-3xl font-extrabold flex items-center gap-3">
 
-    <!-- Contenido -->
+📦 NexuStock
 
-    <div class="p-6">
+</h1>
 
-        <h2 class="text-3xl font-bold mb-6">
-            Dashboard
-        </h2>
 
-       <!-- Tarjetas KPI -->
+<p class="text-blue-200 mt-2 text-sm">
 
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+Sistema inteligente de inventario
 
-    <!-- Productos -->
+</p>
 
-    <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border-l-4 border-blue-500">
-
-        <div class="flex justify-between items-center">
-
-            <div>
-
-                <p class="text-gray-500 text-sm uppercase tracking-wide">
-                    Productos
-                </p>
-
-                <h2 class="text-5xl font-bold text-gray-800 mt-2">
-                    {{ total_productos }}
-                </h2>
-
-            </div>
-
-            <div class="text-5xl">
-                📦
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- Stock Bajo -->
-
-    <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border-l-4 border-red-500">
-
-        <div class="flex justify-between items-center">
-
-            <div>
-
-                <p class="text-gray-500 text-sm uppercase tracking-wide">
-                    Stock Bajo
-                </p>
-
-                <h2 class="text-5xl font-bold text-red-500 mt-2">
-                    {{ stock_bajo }}
-                </h2>
-
-            </div>
-
-            <div class="text-5xl">
-                ⚠️
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- Movimientos -->
-
-    <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border-l-4 border-green-500">
-
-        <div class="flex justify-between items-center">
-
-            <div>
-
-                <p class="text-gray-500 text-sm uppercase tracking-wide">
-                    Movimientos
-                </p>
-
-                <h2 class="text-5xl font-bold text-green-500 mt-2">
-                    {{ total_movimientos }}
-                </h2>
-
-            </div>
-
-            <div class="text-5xl">
-                📈
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- Valor Inventario -->
-
-    <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border-l-4 border-yellow-500">
-
-        <div class="flex justify-between items-center">
-
-            <div>
-
-                <p class="text-gray-500 text-sm uppercase tracking-wide">
-                    Valor Inventario
-                </p>
-
-                <h2 class="text-3xl font-bold text-blue-600 mt-2">
-                    ${{ "%.2f"|format(valor_inventario) }}
-                </h2>
-
-            </div>
-
-            <div class="text-5xl">
-                💰
-            </div>
-
-        </div>
-
-    </div>
 
 </div>
 
-<!-- DASHBOARD IA -->
+<nav class="p-6 space-y-3">
 
-<div class="mt-12">
 
-    <div class="flex items-center gap-3 mb-8">
 
-        <div class="bg-gradient-to-r from-indigo-500 to-blue-600 text-white p-3 rounded-xl shadow-lg">
-            🤖
-        </div>
+<a href="/dashboard"
 
-        <div>
+class="flex items-center gap-3 bg-white/20 px-4 py-3 rounded-xl font-semibold">
 
-            <h2 class="text-4xl font-bold text-gray-800">
-                Dashboard IA
-            </h2>
+🏠 Dashboard
 
-            <p class="text-gray-500">
-                Análisis inteligente del estado actual del inventario
-            </p>
+</a>
 
-        </div>
 
-    </div>
+<a href="/productos"
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+class="flex items-center gap-3 hover:bg-white/10 px-4 py-3 rounded-xl transition">
 
-        <!-- Riesgo de Quiebre -->
+📦 Productos
 
-        <div class="bg-white rounded-3xl shadow-xl border-l-8 border-red-500 p-8 hover:shadow-2xl transition-all duration-300">
+</a>
 
-            <div class="flex justify-between items-center">
+<a href="/movimientos"
 
-                <div>
+class="flex items-center gap-3 hover:bg-white/10 px-4 py-3 rounded-xl transition">
 
-                    <p class="uppercase text-red-600 text-sm font-bold tracking-wider">
-                        Riesgo de Quiebre
-                    </p>
+📊 Movimientos
 
-                    <h3 class="text-6xl font-extrabold text-red-500 mt-3">
-                        {{ riesgo_quiebre }}
-                    </h3>
+</a>
 
-                    <p class="text-gray-500 mt-2">
-                        Productos con riesgo de quedarse sin stock
-                    </p>
+<a href="/reportes"
 
-                </div>
+class="flex items-center gap-3 hover:bg-white/10 px-4 py-3 rounded-xl transition">
 
-                <div class="text-7xl">
-                    ⚠️
-                </div>
+📈 Reportes
 
-            </div>
+</a>
 
-        </div>
+<a href="/usuarios"
 
-        <!-- Dinero Inmovilizado -->
+class="flex items-center gap-3 hover:bg-white/10 px-4 py-3 rounded-xl transition">
 
-        <div class="bg-white rounded-3xl shadow-xl border-l-8 border-yellow-500 p-8 hover:shadow-2xl transition-all duration-300">
+👥 Usuarios
 
-            <div class="flex justify-between items-center">
+</a>
 
-                <div>
+<a href="{{ url_for('mi_plan') }}"
+class="flex items-center gap-3 hover:bg-white/10 px-4 py-3 rounded-xl transition">
 
-                    <p class="uppercase text-yellow-600 text-sm font-bold tracking-wider">
-                        Dinero Inmovilizado
-                    </p>
+💎 Mi Plan
 
-                    <h3 class="text-5xl font-extrabold text-yellow-600 mt-3">
-                        ${{ "%.0f"|format(dinero_inmovilizado) }}
-                    </h3>
+</a>
 
-                    <p class="text-gray-500 mt-2">
-                        Capital detenido en productos de baja rotación
-                    </p>
+{% if usuario_actual and usuario_actual.rol == "super_admin" %}
 
-                </div>
+<a
+    href="{{ url_for('super_admin') }}"
+    class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg hover:from-purple-700 hover:to-indigo-700 transition"
+>
+    🛡️ Panel Super Admin
+</a>
 
-                <div class="text-7xl">
-                    💸
-                </div>
+{% endif %}
 
-            </div>
 
-        </div>
+<a href="/escaner"
 
-        <!-- Compras Recomendadas -->
+class="flex items-center gap-3 hover:bg-white/10 px-4 py-3 rounded-xl transition">
 
-        <div class="bg-white rounded-3xl shadow-xl border-l-8 border-green-500 p-8 hover:shadow-2xl transition-all duration-300">
+📷 Escáner
 
-            <div class="flex justify-between items-center">
+</a>
 
-                <div>
+</nav>
 
-                    <p class="uppercase text-green-600 text-sm font-bold tracking-wider">
-                        Compras Recomendadas
-                    </p>
+<div class="absolute bottom-6 left-6 right-6">
 
-                    <h3 class="text-6xl font-extrabold text-green-500 mt-3">
-                        {{ productos_recomendados|length }}
-                    </h3>
 
-                    <p class="text-gray-500 mt-2">
-                        Productos sugeridos para reposición
-                    </p>
+<a href="/logout"
 
-                </div>
+class="block text-center bg-red-600 hover:bg-red-700 py-3 rounded-xl font-bold transition">
 
-                <div class="text-7xl">
-                    🛒
-                </div>
+🚪 Cerrar sesión
 
-            </div>
+</a>
 
-        </div>
-
-        <!-- Salud del Negocio -->
-
-        <div class="bg-white rounded-3xl shadow-xl border-l-8 border-blue-500 p-8 hover:shadow-2xl transition-all duration-300">
-
-            <div class="text-center">
-
-                <div class="text-6xl mb-4">
-                    ❤️
-                </div>
-
-                <h3 class="text-xl font-bold text-gray-700">
-                    Salud del Negocio
-                </h3>
-
-                <div class="mt-4">
-
-                    <span class="text-7xl font-extrabold text-blue-600">
-                        {{ salud_inventario }}
-                    </span>
-
-                    <span class="text-gray-500 text-2xl">
-                        /100
-                    </span>
-
-                </div>
-
-                <div class="mt-6">
-
-                    {% if color_salud == "green" %}
-
-                        <span class="bg-green-100 text-green-700 px-5 py-3 rounded-full font-bold text-lg">
-                            🟢 {{ estado_salud }}
-                        </span>
-
-                    {% elif color_salud == "yellow" %}
-
-                        <span class="bg-yellow-100 text-yellow-700 px-5 py-3 rounded-full font-bold text-lg">
-                            🟡 {{ estado_salud }}
-                        </span>
-
-                    {% else %}
-
-                        <span class="bg-red-100 text-red-700 px-5 py-3 rounded-full font-bold text-lg">
-                            🔴 {{ estado_salud }}
-                        </span>
-
-                    {% endif %}
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
 
 </div>
 
-<!-- COPILOTO IA -->
 
-<div class="mt-12">
 
-    <div class="bg-white rounded-3xl shadow-xl p-8">
+</aside>
 
-        <div class="flex items-center gap-4 mb-8">
+<!-- ==================================================
+CONTENIDO PRINCIPAL
+================================================== -->
 
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-2xl shadow-lg">
-                🤖
-            </div>
 
-            <div>
+<main class="lg:ml-72 p-6">
 
-                <h2 class="text-4xl font-bold text-gray-800">
-                    ¿Qué debo hacer hoy?
-                </h2>
+<!-- HEADER -->
 
-                <p class="text-gray-500">
-                    Recomendaciones automáticas generadas por NexuStock IA
-                </p>
 
-            </div>
+<header class="bg-white rounded-3xl shadow-xl p-6 mb-8 flex justify-between items-center">
 
-        </div>
 
-        {% if acciones_hoy %}
+<div>
 
-            <div class="space-y-4">
 
-                {% for accion in acciones_hoy %}
+<h2 class="text-4xl font-extrabold text-gray-800">
+    Bienvenido,
+    {{ usuario_actual.nombre }}
+</h2>
 
-                <div class="flex items-start gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-5 rounded-2xl hover:shadow-lg transition-all duration-300">
+<p class="text-gray-500 mt-2">
+    Empresa:
+    <span class="font-semibold text-blue-600">
+        {{ empresa_actual.nombre }}
+    </span>
+</p>
 
-                    <div class="text-2xl">
-                        📌
-                    </div>
+<p class="text-gray-400 text-sm mt-1">
+    Control inteligente de tu inventario en tiempo real.
+</p>
 
-                    <div class="text-gray-700 font-medium">
-                        {{ accion }}
-                    </div>
-
-                </div>
-
-                {% endfor %}
-
-            </div>
-
-        {% else %}
-
-            <div class="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
-
-                <div class="text-5xl mb-3">
-                    ✅
-                </div>
-
-                <h3 class="text-xl font-bold text-green-700">
-                    Todo está bajo control
-                </h3>
-
-                <p class="text-green-600 mt-2">
-                    No hay acciones pendientes para hoy.
-                </p>
-
-            </div>
-
-        {% endif %}
-
-    </div>
 
 </div>
 
-<!-- RECOMENDACIONES IA -->
 
-<div class="mt-12">
 
-    <div class="flex items-center gap-4 mb-8">
 
-        <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-2xl shadow-lg">
-            🧠
-        </div>
 
-        <div>
+<div class="hidden md:flex items-center gap-4">
 
-            <h2 class="text-4xl font-bold text-gray-800">
-                Recomendaciones Inteligentes
-            </h2>
 
-            <p class="text-gray-500">
-                Productos que requieren atención según el análisis automático del inventario
-            </p>
+<div class="bg-blue-100 text-blue-700 px-5 py-3 rounded-2xl font-bold">
 
-        </div>
-
-    </div>
-
-    <div class="bg-white rounded-3xl shadow-xl p-8">
-
-        {% if productos_recomendados %}
-
-            <div class="mb-6">
-
-                <span class="bg-red-100 text-red-700 px-4 py-2 rounded-full font-bold">
-                    ⚠ Reposición Recomendada
-                </span>
-
-            </div>
-
-            <div class="space-y-4">
-
-                {% for producto in productos_recomendados %}
-
-                <div class="flex justify-between items-center bg-gradient-to-r from-red-50 to-orange-50 border-l-4 border-red-500 rounded-2xl p-5 hover:shadow-lg transition-all duration-300">
-
-                    <div>
-
-                        <h3 class="font-bold text-lg text-gray-800">
-                            {{ producto.nombre }}
-                        </h3>
-
-                        <p class="text-gray-500">
-                            Producto con riesgo de agotarse
-                        </p>
-
-                    </div>
-
-                    <div class="text-right">
-
-                        <p class="text-red-600 font-bold text-xl">
-                            Stock: {{ producto.stock }}
-                        </p>
-
-                    </div>
-
-                </div>
-
-                {% endfor %}
-
-            </div>
-
-        {% else %}
-
-            <div class="bg-green-50 border border-green-200 rounded-3xl p-8 text-center">
-
-                <div class="text-6xl mb-4">
-                    ✅
-                </div>
-
-                <h3 class="text-2xl font-bold text-green-700">
-                    Inventario Saludable
-                </h3>
-
-                <p class="text-green-600 mt-3 text-lg">
-                    No hay compras recomendadas por el momento.
-                </p>
-
-            </div>
-
-        {% endif %}
-
-    </div>
+🤖 IA Activa
 
 </div>
-            
-      <!-- ANÁLISIS DE INVENTARIO -->
 
-<div class="mt-12">
 
-    <div class="flex items-center gap-4 mb-8">
+<div class="bg-green-100 text-green-700 px-5 py-3 rounded-2xl font-bold">
 
-        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-2xl shadow-lg">
-            📊
-        </div>
-
-        <div>
-
-            <h2 class="text-4xl font-bold text-gray-800">
-                Análisis de Inventario
-            </h2>
-
-            <p class="text-gray-500">
-                Indicadores automáticos del comportamiento del inventario
-            </p>
-
-        </div>
-
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-        <!-- Productos Sin Movimiento -->
-
-        <div class="bg-white rounded-3xl shadow-xl border-l-8 border-orange-500 p-8 hover:shadow-2xl transition-all duration-300">
-
-            <div class="flex justify-between items-center">
-
-                <div>
-
-                    <p class="uppercase text-orange-600 text-sm font-bold tracking-wider">
-                        Productos Sin Movimiento
-                    </p>
-
-                    <h3 class="text-6xl font-extrabold text-orange-500 mt-3">
-                        {{ total_sin_movimiento }}
-                    </h3>
-
-                    <p class="text-gray-500 mt-3">
-                        Productos que aún no registran entradas ni salidas.
-                    </p>
-
-                </div>
-
-                <div class="text-7xl">
-                    📦
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- Productos con Sobre Stock -->
-
-        <div class="bg-white rounded-3xl shadow-xl border-l-8 border-purple-500 p-8 hover:shadow-2xl transition-all duration-300">
-
-            <div class="flex justify-between items-center">
-
-                <div>
-
-                    <p class="uppercase text-purple-600 text-sm font-bold tracking-wider">
-                        Productos con Sobre Stock
-                    </p>
-
-                    <h3 class="text-6xl font-extrabold text-purple-600 mt-3">
-                        {{ productos_sobre_stock|length }}
-                    </h3>
-
-                    <p class="text-gray-500 mt-3">
-                        Productos con más de 3 veces su stock mínimo.
-                    </p>
-
-                </div>
-
-                <div class="text-7xl">
-                    📈
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
+🟢 Sistema Online
 
 </div>
 
-       <!-- ALERTAS DE STOCK BAJO -->
-
-<div class="mt-12">
-
-    <div class="flex items-center gap-4 mb-6">
-
-        <div class="bg-gradient-to-r from-red-500 to-red-700 text-white p-4 rounded-2xl shadow-lg">
-            ⚠️
-        </div>
-
-        <div>
-
-            <h2 class="text-4xl font-bold text-gray-800">
-                Productos con Stock Bajo
-            </h2>
-
-            <p class="text-gray-500">
-                Productos que requieren reposición inmediata
-            </p>
-
-        </div>
-
-    </div>
-
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
-
-        {% if productos_stock_bajo %}
-
-        <table class="w-full">
-
-            <thead class="bg-gradient-to-r from-red-600 to-red-700 text-white">
-
-                <tr>
-
-                    <th class="text-left p-4">
-                        Producto
-                    </th>
-
-                    <th class="text-left p-4">
-                        Estado
-                    </th>
-
-                    <th class="text-left p-4">
-                        Stock Mínimo
-                    </th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-                {% for producto in productos_stock_bajo %}
-
-                <tr class="border-b hover:bg-red-50 transition duration-200">
-
-                    <td class="p-4 font-semibold text-gray-800">
-                        {{ producto.nombre }}
-                    </td>
-
-                    <td class="p-4">
-
-                        {% if producto.stock == 0 %}
-
-                        <span class="bg-red-600 text-white px-4 py-2 rounded-full font-bold">
-                            🔴 AGOTADO
-                        </span>
-
-                        {% elif producto.stock < producto.stock_minimo %}
-
-                        <span class="bg-yellow-500 text-white px-4 py-2 rounded-full font-bold">
-                            🟡 CRÍTICO ({{ producto.stock }})
-                        </span>
-
-                        {% else %}
-
-                        <span class="bg-green-500 text-white px-4 py-2 rounded-full font-bold">
-                            🟢 NORMAL ({{ producto.stock }})
-                        </span>
-
-                        {% endif %}
-
-                    </td>
-
-                    <td class="p-4 font-bold text-gray-700">
-                        {{ producto.stock_minimo }}
-                    </td>
-
-                </tr>
-
-                {% endfor %}
-
-            </tbody>
-
-        </table>
-
-        {% else %}
-
-        <div class="p-10 text-center">
-
-            <div class="text-6xl mb-4">
-                ✅
-            </div>
-
-            <h3 class="text-2xl font-bold text-green-700">
-                Inventario Saludable
-            </h3>
-
-            <p class="text-green-600 mt-3">
-                No hay productos con stock bajo.
-            </p>
-
-        </div>
-
-        {% endif %}
-
-    </div>
 
 </div>
 
-<!-- PRODUCTOS SIN MOVIMIENTO -->
 
-<div class="mt-12">
+</header>
 
-    <div class="flex items-center gap-4 mb-6">
+<!-- ==================================================
+KPI PRINCIPALES
+================================================== -->
 
-        <div class="bg-gradient-to-r from-orange-500 to-amber-600 text-white p-4 rounded-2xl shadow-lg">
-            📦
-        </div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
 
-        <div>
+<!-- PRODUCTOS -->
 
-            <h2 class="text-4xl font-bold text-gray-800">
-                Productos sin Movimiento
-            </h2>
 
-            <p class="text-gray-500">
-                Productos que aún no registran entradas ni salidas
-            </p>
+<a href="/productos"
 
-        </div>
+class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-blue-600 hover:-translate-y-2 transition duration-300">
 
-    </div>
 
-    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+<div class="flex justify-between items-center">
 
-        {% if productos_sin_movimiento %}
 
-        <table class="w-full">
+<div>
 
-            <thead class="bg-gradient-to-r from-orange-500 to-amber-600 text-white">
 
-                <tr>
+<p class="text-gray-500 uppercase text-sm font-bold">
 
-                    <th class="text-left p-4">
-                        Producto
-                    </th>
+Productos
 
-                    <th class="text-left p-4">
-                        Categoría
-                    </th>
+</p>
 
-                    <th class="text-left p-4">
-                        Stock
-                    </th>
 
-                </tr>
+<h3 class="text-5xl font-black text-gray-800 mt-3">
 
-            </thead>
+{{ total_productos }}
 
-            <tbody>
+</h3>
 
-                {% for producto in productos_sin_movimiento %}
 
-                <tr class="border-b hover:bg-orange-50 transition duration-200">
+<p class="text-blue-600 mt-3 font-semibold">
 
-                    <td class="p-4 font-semibold text-gray-800">
-                        {{ producto.nombre }}
-                    </td>
+Ver inventario →
 
-                    <td class="p-4 text-gray-600">
-                        {{ producto.categoria }}
-                    </td>
+</p>
 
-                    <td class="p-4">
-
-                        <span class="bg-orange-100 text-orange-700 px-4 py-2 rounded-full font-bold">
-                            {{ producto.stock }}
-                        </span>
-
-                    </td>
-
-                </tr>
-
-                {% endfor %}
-
-            </tbody>
-
-        </table>
-
-        {% else %}
-
-        <div class="p-10 text-center">
-
-            <div class="text-6xl mb-4">
-                ✅
-            </div>
-
-            <h3 class="text-2xl font-bold text-green-700">
-                Excelente
-            </h3>
-
-            <p class="text-green-600 mt-3">
-                Todos los productos tienen movimientos registrados.
-            </p>
-
-        </div>
-
-        {% endif %}
-
-    </div>
 
 </div>
 
-<!-- RANKINGS DE VENTAS -->
 
-<div class="mt-12">
 
-    <div class="flex items-center gap-4 mb-8">
+<div class="text-6xl bg-blue-100 rounded-2xl p-4">
 
-        <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-2xl shadow-lg">
-            📊
-        </div>
+📦
 
-        <div>
+</div>
 
-            <h2 class="text-4xl font-bold text-gray-800">
-                Ranking de Ventas
-            </h2>
 
-            <p class="text-gray-500">
-                Productos con mejor y peor rendimiento comercial
-            </p>
+</div>
 
-        </div>
 
-    </div>
+</a>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- STOCK BAJO -->
 
-        <!-- MÁS VENDIDOS -->
 
-        <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+<a href="/productos-stock-bajo"
 
-            <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-5">
+class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-red-600 hover:-translate-y-2 transition duration-300">
 
-                <h3 class="text-2xl font-bold">
-                    🏆 Productos Más Vendidos
-                </h3>
 
-            </div>
+<div class="flex justify-between items-center">
 
-            {% if productos_mas_vendidos %}
 
-            <div class="p-6">
+<div>
 
-                {% for producto in productos_mas_vendidos %}
 
-                <div class="flex justify-between items-center py-4 border-b last:border-0">
+<p class="text-gray-500 uppercase text-sm font-bold">
 
-                    <div class="flex items-center gap-4">
+Alertas Stock
 
-                        {% if loop.index == 1 %}
-                        <span class="text-3xl">🥇</span>
-                        {% elif loop.index == 2 %}
-                        <span class="text-3xl">🥈</span>
-                        {% elif loop.index == 3 %}
-                        <span class="text-3xl">🥉</span>
-                        {% else %}
-                        <span class="text-lg font-bold text-gray-500">
-                            #{{ loop.index }}
-                        </span>
-                        {% endif %}
+</p>
 
-                        <span class="font-semibold text-gray-800">
-                            {{ producto.nombre }}
-                        </span>
 
-                    </div>
+<h3 class="text-5xl font-black text-red-600 mt-3">
 
-                    <span class="bg-green-100 text-green-700 px-4 py-2 rounded-full font-bold">
-                        {{ producto.ventas }} uds
-                    </span>
+{{ stock_bajo }}
 
-                </div>
+</h3>
 
-                {% endfor %}
 
-            </div>
+<p class="text-red-600 mt-3 font-semibold">
 
-            {% else %}
+Revisar ahora →
 
-            <div class="p-8 text-center">
+</p>
 
-                <div class="text-5xl mb-3">
-                    📭
-                </div>
 
-                <p class="text-gray-500">
-                    No hay ventas registradas.
-                </p>
+</div>
 
-            </div>
 
-            {% endif %}
 
-        </div>
+<div class="text-6xl bg-red-100 rounded-2xl p-4">
 
-        <!-- MENOS VENDIDOS -->
+⚠️
 
-        <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+</div>
 
-            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-5">
 
-                <h3 class="text-2xl font-bold">
-                    📉 Productos Menos Vendidos
-                </h3>
+</div>
 
-            </div>
 
-            {% if productos_menos_vendidos %}
+</a>
 
-            <div class="p-6">
 
-                {% for producto in productos_menos_vendidos %}
 
-                <div class="flex justify-between items-center py-4 border-b last:border-0">
+<!-- MOVIMIENTOS -->
 
-                    <div class="flex items-center gap-4">
 
-                        <span class="text-xl">
-                            📦
-                        </span>
+<a href="/movimientos"
 
-                        <span class="font-semibold text-gray-800">
-                            {{ producto.nombre }}
-                        </span>
+class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-green-600 hover:-translate-y-2 transition duration-300">
 
-                    </div>
 
-                    <span class="bg-purple-100 text-purple-700 px-4 py-2 rounded-full font-bold">
-                        {{ producto.ventas }} uds
-                    </span>
+<div class="flex justify-between items-center">
 
-                </div>
 
-                {% endfor %}
+<div>
 
-            </div>
 
-            {% else %}
+<p class="text-gray-500 uppercase text-sm font-bold">
 
-            <div class="p-8 text-center">
+Movimientos
 
-                <div class="text-5xl mb-3">
-                    📭
-                </div>
+</p>
 
-                <p class="text-gray-500">
-                    No hay datos de ventas.
-                </p>
 
-            </div>
+<h3 class="text-5xl font-black text-green-600 mt-3">
 
-            {% endif %}
+{{ total_movimientos }}
 
-        </div>
+</h3>
 
-    </div>
+
+<p class="text-green-600 mt-3 font-semibold">
+
+Ver historial →
+
+</p>
+
+
+</div>
+
+
+
+<div class="text-6xl bg-green-100 rounded-2xl p-4">
+
+📊
+
+</div>
+
+
+</div>
+
+
+</a>
+
+<!-- VALOR INVENTARIO -->
+
+
+<a href="/reportes"
+
+class="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-yellow-500 hover:-translate-y-2 transition duration-300">
+
+
+<div class="flex justify-between items-center">
+
+
+<div>
+
+
+<p class="text-gray-500 uppercase text-sm font-bold">
+
+Valor Inventario
+
+</p>
+
+
+<h3 class="text-4xl font-black text-yellow-600 mt-4">
+
+${{ "%.0f"|format(valor_inventario) }}
+
+</h3>
+
+
+<p class="text-yellow-600 mt-3 font-semibold">
+
+Ver análisis →
+
+</p>
+
+
+</div>
+
+
+
+<div class="text-6xl bg-yellow-100 rounded-2xl p-4">
+
+💰
+
+</div>
+
+
+</div>
+
+
+</a>
+
+</div>
+<!-- ==================================================
+DASHBOARD IA
+================================================== -->
+
+<section class="mt-10">
+
+<div class="flex items-center gap-4 mb-8">
+
+
+<div class="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-4 rounded-2xl shadow-xl text-3xl">
+
+🤖
+
+</div>
+
+<div>
+
+<h2 class="text-4xl font-black text-gray-800">
+
+NexuStock IA
+
+</h2>
+
+
+<p class="text-gray-500">
+
+Análisis inteligente del comportamiento del inventario
+
+</p>
+
+
+</div>
+
+
+
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+<!-- RIESGO QUIEBRE -->
+
+
+<div class="bg-white rounded-3xl shadow-xl p-8 border-l-8 border-red-600 hover:shadow-2xl transition">
+
+
+<div class="flex justify-between items-center">
+
+
+<div>
+
+
+<p class="uppercase text-red-600 font-bold text-sm">
+
+Riesgo de quiebre
+
+</p>
+
+
+<h3 class="text-6xl font-black text-red-600 mt-3">
+
+{{ riesgo_quiebre }}
+
+</h3>
+
+
+<p class="text-gray-500 mt-3">
+
+Productos cerca de agotarse
+
+</p>
+
+
+</div>
+
+<div class="text-7xl">
+
+🚨
+
+</div>
+
+
+</div>
+
+
+</div>
+
+<!-- DINERO INMOVILIZADO -->
+
+
+<div class="bg-white rounded-3xl shadow-xl p-8 border-l-8 border-yellow-500 hover:shadow-2xl transition">
+
+
+<div class="flex justify-between items-center">
+
+
+<div>
+
+
+<p class="uppercase text-yellow-600 font-bold text-sm">
+
+Capital inmovilizado
+
+</p>
+
+
+<h3 class="text-5xl font-black text-yellow-600 mt-3">
+
+${{ "%.0f"|format(dinero_inmovilizado) }}
+
+</h3>
+
+
+<p class="text-gray-500 mt-3">
+
+Productos con baja rotación
+
+</p>
+
+
+</div>
+
+
+
+<div class="text-7xl">
+
+💸
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+
+
+<!-- COMPRAS RECOMENDADAS -->
+
+
+<div class="bg-white rounded-3xl shadow-xl p-8 border-l-8 border-green-600 hover:shadow-2xl transition">
+
+
+<div class="flex justify-between">
+
+
+<div>
+
+
+<p class="uppercase text-green-600 font-bold text-sm">
+
+Compras recomendadas
+
+</p>
+
+
+<h3 class="text-6xl font-black text-green-600 mt-3">
+
+{{ productos_recomendados|length }}
+
+</h3>
+
+
+<p class="text-gray-500 mt-3">
+
+Reposiciones sugeridas por IA
+
+</p>
+
+
+</div>
+
+
+
+<div class="text-7xl">
+
+🛒
+
+</div>
+
+
+</div>
+
+
+</div>
+
+<!-- SALUD INVENTARIO -->
+
+
+<div class="bg-white rounded-3xl shadow-xl p-8 border-l-8 border-blue-600">
+
+
+<div class="text-center">
+
+
+<div class="text-6xl">
+
+❤️
+
+</div>
+
+
+<h3 class="text-xl font-bold text-gray-700 mt-4">
+
+Salud del inventario
+
+</h3>
+
+<div class="mt-4">
+
+
+<span class="text-7xl font-black text-blue-600">
+
+{{ salud_inventario }}
+
+</span>
+
+
+<span class="text-gray-400 text-3xl">
+
+/100
+
+</span>
+
+
+</div>
+
+<div class="mt-6">
+
+
+{% if color_salud == "green" %}
+
+
+<span class="bg-green-100 text-green-700 px-6 py-3 rounded-full font-bold text-lg">
+
+🟢 {{ estado_salud }}
+
+</span>
+
+
+{% elif color_salud == "yellow" %}
+
+
+<span class="bg-yellow-100 text-yellow-700 px-6 py-3 rounded-full font-bold text-lg">
+
+🟡 {{ estado_salud }}
+
+</span>
+
+
+{% else %}
+
+
+<span class="bg-red-100 text-red-700 px-6 py-3 rounded-full font-bold text-lg">
+
+🔴 {{ estado_salud }}
+
+</span>
+
+
+{% endif %}
+
+
+</div>
+
+
+</div>
+
 
 </div>
 
 </div>
+
+</section>
+
+<!-- ==================================================
+COPILOTO IA
+================================================== -->
+
+
+<section class="mt-12">
+
+<div class="bg-white rounded-3xl shadow-xl p-8">
+
+
+<div class="flex items-center gap-4 mb-8">
+
+
+<div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-3xl p-4 rounded-2xl">
+
+🧠
+
+</div>
+
+<div>
+
+
+<h2 class="text-4xl font-black text-gray-800">
+
+¿Qué debo hacer hoy?
+
+</h2>
+
+
+<p class="text-gray-500">
+
+Recomendaciones automáticas generadas por NexuStock IA
+
+</p>
+
+
+</div>
+
+</div>
+
+{% if acciones_hoy %}
+
+
+<div class="space-y-4">
+
+
+{% for accion in acciones_hoy %}
+
+<div class="flex gap-4 items-center bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-600 rounded-2xl p-5 hover:shadow-lg transition">
+
+
+<div class="text-3xl">
+
+📌
+
+</div>
+
+
+<p class="font-semibold text-gray-700">
+
+{{ accion }}
+
+</p>
+
+
+</div>
+
+{% endfor %}
+
+
+</div>
+
+{% else %}
+
+<div class="bg-green-50 border border-green-200 rounded-3xl p-8 text-center">
+
+
+<div class="text-6xl mb-4">
+
+✅
+
+</div>
+
+
+<h3 class="text-2xl font-bold text-green-700">
+
+Todo está bajo control
+
+</h3>
+
+
+<p class="text-green-600 mt-2">
+
+No existen acciones pendientes actualmente.
+
+</p>
+
+
+
+</div>
+
+{% endif %}
+
+</div>
+
+
+</section>
+<!-- ==================================================
+RECOMENDACIONES INTELIGENTES IA
+================================================== -->
+
+<section class="mt-12">
+
+<div class="flex items-center gap-4 mb-8">
+
+
+<div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-2xl shadow-xl text-3xl">
+
+🧠
+
+</div>
+
+
+
+<div>
+
+
+<h2 class="text-4xl font-black text-gray-800">
+
+Recomendaciones Inteligentes
+
+</h2>
+
+
+<p class="text-gray-500">
+
+Productos que requieren atención según el análisis automático
+
+</p>
+
+
+</div>
+
+
+
+</div>
+
+<div class="bg-white rounded-3xl shadow-xl p-8">
+
+{% if productos_recomendados %}
+
+<div class="mb-6">
+
+<span class="bg-red-100 text-red-700 px-5 py-3 rounded-full font-bold">
+
+⚠️ Reposición recomendada
+
+</span>
+
+
+</div>
+
+<div class="space-y-4">
+
+
+{% for producto in productos_recomendados %}
+
+
+<div class="flex justify-between items-center bg-gradient-to-r from-red-50 to-orange-50 border-l-8 border-red-500 rounded-2xl p-5 hover:shadow-lg transition">
+
+<div>
+
+
+<h3 class="text-xl font-bold text-gray-800">
+
+{{ producto.nombre }}
+
+</h3>
+
+<p class="text-gray-500">
+
+Necesita reposición inteligente
+
+</p>
+
+
+</div>
+
+<div class="text-right">
+
+
+<span class="bg-red-600 text-white px-5 py-2 rounded-full font-bold">
+
+Stock {{ producto.stock }}
+
+</span>
+
+
+</div>
+
+</div>
+
+
+
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="text-center p-10 bg-green-50 rounded-3xl">
+
+
+<div class="text-6xl">
+
+✅
+
+</div>
+
+
+<h3 class="text-2xl font-bold text-green-700 mt-4">
+
+Inventario saludable
+
+</h3>
+
+
+<p class="text-green-600 mt-2">
+
+No existen compras recomendadas actualmente.
+
+</p>
+
+</div>
+
+{% endif %}
+
+</div>
+
+</section>
+
+<!-- ==================================================
+ANÁLISIS INVENTARIO
+================================================== -->
+
+
+<section class="mt-12">
+
+<div class="flex items-center gap-4 mb-8">
+
+
+<div class="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-4 rounded-2xl text-3xl">
+
+📊
+
+</div>
+
+<div>
+
+<h2 class="text-4xl font-black text-gray-800">
+
+Análisis de Inventario
+
+</h2>
+
+
+<p class="text-gray-500">
+
+Indicadores automáticos del comportamiento del stock
+
+</p>
+
+
+</div>
+
+
+
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+<!-- SIN MOVIMIENTO -->
+
+
+<a href="/productos-sin-movimiento"
+
+
+class="bg-white rounded-3xl shadow-xl p-8 border-l-8 border-orange-500 hover:-translate-y-2 transition">
+
+<div class="flex justify-between items-center">
+
+
+<div>
+
+
+<p class="text-orange-600 uppercase font-bold text-sm">
+
+Productos sin movimiento
+
+</p>
+
+
+
+<h3 class="text-5xl font-black text-orange-500 mt-3">
+
+{{ total_sin_movimiento }}
+
+</h3>
+
+
+
+<p class="text-gray-500 mt-3">
+
+Productos sin rotación
+
+</p>
+
+
+
+</div>
+
+
+
+<div class="text-6xl">
+
+📦
+
+</div>
+
+
+
+</div>
+
+
+
+</a>
+
+
+<!-- SOBRE STOCK -->
+
+<a href="/productos-sobre-stock"
+
+
+class="bg-white rounded-3xl shadow-xl p-8 border-l-8 border-purple-600 hover:-translate-y-2 transition">
+
+<div class="flex justify-between items-center">
+
+<div>
+
+
+<p class="text-purple-600 uppercase font-bold text-sm">
+
+Productos sobre stock
+
+</p>
+
+
+<h3 class="text-5xl font-black text-purple-600 mt-3">
+
+{{ productos_sobre_stock|length }}
+
+</h3>
+
+
+<p class="text-gray-500 mt-3">
+
+Exceso de inventario detectado
+
+</p>
+
+</div>
+
+<div class="text-6xl">
+
+📈
+
+</div>
+
+
+</div>
+
+
+</a>
+
+
+</div>
+
+
+</section>
+
+<!-- ==================================================
+PRODUCTOS SIN MOVIMIENTO
+================================================== -->
+
+<section class="mt-12">
+
+<div class="flex justify-between items-center mb-6">
+
+<div class="flex items-center gap-4">
+
+
+<div class="bg-orange-500 text-white p-4 rounded-2xl text-3xl">
+
+📦
+
+</div>
+
+
+<div>
+
+<h2 class="text-3xl font-black text-gray-800">
+
+Productos sin movimiento
+
+</h2>
+
+<p class="text-gray-500">
+
+Inventario detenido que necesita análisis
+
+</p>
+
+</div>
+
+</div>
+
+<a href="/productos-sin-movimiento"
+
+class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-3 rounded-xl font-bold shadow">
+
+Ver detalle →
+
+</a>
+
+</div>
+<div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+
+{% if productos_sin_movimiento %}
+
+<div class="overflow-x-auto">
+
+
+<table class="w-full">
+<thead class="bg-orange-500 text-white">
+
+
+<tr>
+
+<th class="p-5 text-left">
+Producto
+</th>
+
+<th class="p-5 text-left">
+Categoría
+</th>
+
+
+<th class="p-5 text-left">
+Stock
+</th>
+
+
+<th class="p-5 text-left">
+Estado
+</th>
+
+
+</tr>
+
+
+</thead>
+
+<tbody>
+
+{% for producto in productos_sin_movimiento %}
+
+<tr class="border-b hover:bg-orange-50">
+
+<td class="p-5 font-bold">
+
+{{ producto.nombre }}
+
+</td>
+
+<td class="p-5">
+
+{{ producto.categoria or "Sin categoría" }}
+
+</td>
+
+<td class="p-5">
+
+<span class="bg-orange-100 text-orange-700 px-4 py-2 rounded-full font-bold">
+
+{{ producto.stock }}
+
+</span>
+
+</td>
+
+<td class="p-5">
+
+
+<span class="bg-orange-100 text-orange-700 px-4 py-2 rounded-full font-bold">
+
+📦 Sin movimiento
+
+</span>
+
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% else %}
+
+<div class="p-10 text-center">
+
+
+<div class="text-6xl">
+
+✅
+
+</div>
+
+
+<h3 class="text-2xl font-bold text-green-700 mt-3">
+
+Inventario activo
+
+</h3>
+
+
+<p class="text-green-600">
+
+Todos los productos tienen movimientos.
+
+</p>
+
+</div>
+
+{% endif %}
+
+</div>
+
+</section>
+<!-- ==================================================
+PRODUCTOS SOBRE STOCK
+================================================== -->
+
+<section class="mt-12">
+
+<div class="flex justify-between items-center mb-6">
+
+<div class="flex items-center gap-4">
+
+
+<div class="bg-purple-600 text-white p-4 rounded-2xl text-3xl">
+
+📈
+
+</div>
+
+<div>
+
+
+<h2 class="text-3xl font-black text-gray-800">
+
+Productos Sobre Stock
+
+</h2>
+
+<p class="text-gray-500">
+
+Productos con exceso de inventario
+
+</p>
+
+
+</div>
+
+</div>
+
+<a href="/productos-sobre-stock"
+
+class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-3 rounded-xl font-bold shadow">
+
+Ver detalle →
+
+</a>
+
+</div>
+
+<div class="bg-white rounded-3xl shadow-xl p-8">
+
+{% if productos_sobre_stock %}
+
+<div class="space-y-4">
+
+{% for producto in productos_sobre_stock %}
+
+<div class="flex justify-between items-center bg-purple-50 rounded-2xl p-5 border-l-8 border-purple-600">
+
+<div>
+
+<h3 class="font-bold text-lg text-gray-800">
+
+{{ producto.nombre }}
+
+</h3>
+
+<p class="text-gray-500">
+
+Stock actual: {{ producto.stock }}
+
+</p>
+
+</div>
+
+<span class="bg-purple-600 text-white px-5 py-2 rounded-full font-bold">
+
+Sobre stock
+
+</span>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="text-center p-10">
+
+
+<div class="text-6xl">
+
+✅
+
+</div>
+
+<h3 class="text-2xl font-bold text-green-700 mt-3">
+
+Inventario equilibrado
+
+</h3>
+
+<p class="text-green-600">
+
+No existen productos con exceso de stock.
+
+</p>
+
+
+</div>
+
+{% endif %}
+
+</div>
+
+</section>
+
+<!-- ==================================================
+ALERTAS STOCK BAJO
+================================================== -->
+
+<section class="mt-12">
+
+<div class="flex items-center gap-4 mb-8">
+
+
+<div class="bg-red-600 text-white p-4 rounded-2xl text-3xl shadow">
+
+⚠️
+
+</div>
+
+
+
+<div>
+
+
+<h2 class="text-4xl font-black text-gray-800">
+
+Alertas de Stock
+
+</h2>
+
+
+<p class="text-gray-500">
+
+Productos que requieren reposición
+
+</p>
+
+
+</div>
+
+
+
+</div>
+
+<div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+
+{% if productos_stock_bajo %}
+
+<div class="overflow-x-auto">
+
+<table class="w-full">
+
+<thead class="bg-red-600 text-white">
+
+<tr>
+
+<th class="p-5 text-left">
+Producto
+</th>
+
+<th class="p-5 text-left">
+Stock actual
+</th>
+
+<th class="p-5 text-left">
+Stock mínimo
+</th>
+
+<th class="p-5 text-left">
+Estado
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for producto in productos_stock_bajo %}
+
+<tr class="border-b hover:bg-red-50 transition">
+
+<td class="p-5 font-bold">
+
+{{ producto.nombre }}
+
+</td>
+
+<td class="p-5">
+
+<span class="font-black text-xl">
+
+{{ producto.stock }}
+
+</span>
+
+</td>
+
+<td class="p-5">
+
+{{ producto.stock_minimo }}
+
+</td>
+
+<td class="p-5">
+
+
+{% if producto.stock == 0 %}
+
+
+<span class="bg-red-600 text-white px-4 py-2 rounded-full font-bold">
+
+🔴 AGOTADO
+
+</span>
+
+
+{% else %}
+
+<span class="bg-yellow-500 text-white px-4 py-2 rounded-full font-bold">
+
+🟡 BAJO
+
+</span>
+
+
+{% endif %}
+
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+
+</tbody>
+
+</table>
+
+</div>
+
+{% else %}
+
+<div class="p-10 text-center">
+
+<div class="text-6xl">
+
+🎉
+
+</div>
+
+
+<h3 class="text-2xl font-bold text-green-700">
+
+Sin alertas
+
+</h3>
+
+<p class="text-green-600 mt-2">
+
+El inventario se encuentra saludable.
+
+</p>
+
+
+</div>
+
+{% endif %}
+
+</div>
+
+
+</section>
+
+<!-- ==================================================
+RANKING VENTAS
+================================================== -->
+
+<section class="mt-12">
+
+<div class="flex items-center gap-4 mb-8">
+
+
+<div class="bg-gradient-to-r from-green-600 to-emerald-700 text-white p-4 rounded-2xl text-3xl">
+
+🏆
+
+</div>
+
+<div>
+
+
+<h2 class="text-4xl font-black text-gray-800">
+
+Ranking Comercial
+
+</h2>
+
+
+<p class="text-gray-500">
+
+Productos con mejor rendimiento
+
+</p>
+
+
+</div>
+
+</div>
+
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+
+<!-- MÁS VENDIDOS -->
+
+<div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+
+<div class="bg-gradient-to-r from-green-600 to-emerald-700 text-white p-6">
+
+<h3 class="text-2xl font-bold">
+
+🥇 Más vendidos
+
+</h3>
+
+
+</div>
+
+<div class="p-6">
+
+{% if productos_mas_vendidos %}
+
+{% for producto in productos_mas_vendidos %}
+
+<div class="flex justify-between items-center py-4 border-b">
+
+
+<div class="flex items-center gap-3">
+
+
+<span class="text-2xl">
+
+{% if loop.index == 1 %}
+
+🥇
+
+{% elif loop.index == 2 %}
+
+🥈
+
+{% elif loop.index == 3 %}
+
+🥉
+
+{% else %}
+
+#{{ loop.index }}
+
+{% endif %}
+
+</span>
+
+<span class="font-bold">
+
+{{ producto.nombre }}
+
+</span>
+
+
+</div>
+
+<span class="bg-green-100 text-green-700 px-4 py-2 rounded-full font-bold">
+
+{{ producto.ventas }} uds
+
+</span>
+
+</div>
+
+{% endfor %}
+
+{% else %}
+
+<p class="text-gray-500 text-center">
+
+Sin datos de ventas.
+
+</p>
+
+{% endif %}
+
+</div>
+
+</div>
+
+<!-- MENOS VENDIDOS -->
+
+<div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+
+<div class="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-6">
+
+<h3 class="text-2xl font-bold">
+
+📉 Menos vendidos
+
+</h3>
+
+
+</div>
+
+<div class="p-6">
+
+{% if productos_menos_vendidos %}
+
+{% for producto in productos_menos_vendidos %}
+
+<div class="flex justify-between items-center py-4 border-b">
+
+<div class="flex items-center gap-3">
+
+<span class="text-2xl">
+
+📦
+
+</span>
+
+
+<span class="font-bold">
+
+{{ producto.nombre }}
+
+</span>
+
+
+</div>
+
+<span class="bg-purple-100 text-purple-700 px-4 py-2 rounded-full font-bold">
+
+{{ producto.ventas }} uds
+
+</span>
+
+</div>
+
+{% endfor %}
+
+
+{% else %}
+
+<p class="text-gray-500 text-center">
+
+Sin información disponible.
+
+</p>
+
+{% endif %}
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+
+
+
+
+</main>
+
+
+
+
 
 </body>
+
+
 </html>

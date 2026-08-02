@@ -1,51 +1,44 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salida de Stock - NexuStock</title>
+{% block title %}
+Salida de Stock - NexuStock
+{% endblock %}
 
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+{% block content %}
 
-<body class="bg-gray-100">
+<div class="max-w-2xl mx-auto">
 
-    <div class="bg-blue-600 text-white p-4 shadow">
+    <div class="bg-white rounded-xl shadow p-8">
 
-        <div class="flex justify-between items-center">
-
-            <h1 class="text-2xl font-bold">
-                📦 NexuStock
-            </h1>
-
-            <div class="space-x-6">
-                <a href="/dashboard">Dashboard</a>
-                <a href="/productos">Productos</a>
-                <a href="/movimientos">Movimientos</a>
-            </div>
-
-        </div>
-
-    </div>
-
-    <div class="max-w-2xl mx-auto mt-8 bg-white p-8 rounded-xl shadow">
-
-        <h2 class="text-3xl font-bold mb-6">
+        <h2 class="text-3xl font-bold mb-2">
             📤 Salida de Stock
         </h2>
 
+        <p class="text-gray-500 mb-6">
+            Registra salidas de inventario por cajas o unidades.
+        </p>
+
         <form method="POST">
 
-            <div class="mb-4">
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
 
-                <label class="block mb-2">
+            <!-- PRODUCTO -->
+
+            <div class="mb-5">
+
+                <label class="block font-semibold mb-2">
                     Producto
                 </label>
 
                 <select
                     name="producto_id"
+                    id="producto"
                     class="w-full border rounded-lg px-4 py-3"
+                    required
                 >
 
                     {% for producto in productos %}
@@ -53,16 +46,11 @@
                     <option
                         value="{{ producto.id }}"
                         data-unidades="{{ producto.unidades_por_caja }}"
-
-                        {% if producto_preseleccionado and
-                              producto.id == producto_preseleccionado|int %}
-                        selected
-                        {% endif %}
                     >
 
                         {{ producto.nombre }}
-                        (Stock: {{ producto.stock }})
-                        (Caja: {{ producto.unidades_por_caja }} uds)
+                        | Stock: {{ producto.stock }} unidades
+                        | Caja: {{ producto.unidades_por_caja }} uds
 
                     </option>
 
@@ -72,101 +60,135 @@
 
             </div>
 
-            <div class="mb-4">
+            <!-- CAJAS -->
 
-                <label class="block mb-2">
+            <div class="mb-5">
+
+                <label class="block font-semibold mb-2">
                     Cantidad de cajas
                 </label>
 
                 <input
                     type="number"
                     name="cajas"
-                    min="1"
-                    value="1"
+                    id="cajas"
+                    min="0"
+                    value="0"
                     class="w-full border rounded-lg px-4 py-3"
                 >
 
             </div>
 
-            <div class="mb-6">
+            <!-- UNIDADES -->
 
-                <label class="block mb-2">
-                    Cantidad total de unidades
+            <div class="mb-5">
+
+                <label class="block font-semibold mb-2">
+                    Unidades directas
                 </label>
 
                 <input
                     type="number"
                     name="cantidad"
-                    readonly
-                    required
-                    class="w-full border rounded-lg px-4 py-3 bg-gray-100"
+                    id="cantidad"
+                    min="0"
+                    value="0"
+                    class="w-full border rounded-lg px-4 py-3"
                 >
 
             </div>
 
-            <button
-                type="submit"
-                class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700"
-            >
-                Registrar Salida
-            </button>
+            <!-- TOTAL -->
+
+            <div class="mb-6 bg-red-50 border border-red-200 p-4 rounded-lg">
+
+                <p class="font-semibold text-red-700">
+
+                    Total unidades a retirar:
+
+                    <span id="total">
+                        0
+                    </span>
+
+                </p>
+
+            </div>
+
+            <!-- BOTONES -->
+
+            <div class="flex gap-3">
+
+                <button
+                    type="submit"
+                    class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700"
+                >
+                    📤 Registrar Salida
+                </button>
+
+                <a
+                    href="{{ url_for('movimientos') }}"
+                    class="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600"
+                >
+                    Cancelar
+                </a>
+
+            </div>
 
         </form>
 
     </div>
 
+</div>
+
 <script>
 
-const productoSelect =
-document.querySelector(
-    'select[name="producto_id"]'
-);
+const producto = document.getElementById("producto");
+const cajas = document.getElementById("cajas");
+const cantidad = document.getElementById("cantidad");
+const total = document.getElementById("total");
 
-const cajasInput =
-document.querySelector(
-    'input[name="cajas"]'
-);
-
-const cantidadInput =
-document.querySelector(
-    'input[name="cantidad"]'
-);
-
-function calcularCantidad() {
+function calcular() {
 
     const opcion =
-    productoSelect.options[
-        productoSelect.selectedIndex
-    ];
+        producto.options[
+            producto.selectedIndex
+        ];
 
-    const unidades =
-    parseInt(
-        opcion.dataset.unidades || 1
-    );
+    const unidadesCaja =
+        parseInt(
+            opcion.dataset.unidades || 1
+        );
 
-    const cajas =
-    parseInt(
-        cajasInput.value || 0
-    );
+    const totalUnidades =
+        (
+            parseInt(cajas.value || 0)
+            * unidadesCaja
+        )
+        +
+        parseInt(cantidad.value || 0);
 
-    cantidadInput.value =
-    cajas * unidades;
+    total.textContent =
+        totalUnidades;
+
 }
 
-cajasInput.addEventListener(
+cajas.addEventListener(
     "input",
-    calcularCantidad
+    calcular
 );
 
-productoSelect.addEventListener(
+cantidad.addEventListener(
+    "input",
+    calcular
+);
+
+producto.addEventListener(
     "change",
-    calcularCantidad
+    calcular
 );
 
-calcularCantidad();
+calcular();
 
 </script>
 
-</body>
-
-</html>
+{% endblock %}

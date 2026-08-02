@@ -12,8 +12,6 @@
 
 from datetime import datetime, timedelta
 
-from werkzeug.security import generate_password_hash, check_password_hash
-
 from flask_sqlalchemy import SQLAlchemy
 
 from sqlalchemy import event
@@ -662,19 +660,6 @@ class Usuario(
         default=False
     )
 
-        # ==================================================
-    # METODOS PASSWORD
-    # ==================================================
-
-    def set_password(self, password):
-        self.password = generate_password_hash(password)
-
-
-    def check_password(self, password):
-        return check_password_hash(
-            self.password,
-            password
-        )
 
 
     # ==================================================
@@ -3853,28 +3838,22 @@ class Auditoria(BaseModelMixin, db.Model):
         empresa_id=None,
         usuario_id=None,
         modulo=None,
-        descripcion=None,
-        ip=None,
-        user_agent=None
-        ):
+        descripcion=None
+    ):
 
         return cls(
 
-        accion=accion,
+            accion=accion,
 
-        empresa_id=empresa_id,
+            empresa_id=empresa_id,
 
-        usuario_id=usuario_id,
+            usuario_id=usuario_id,
 
-        modulo=modulo,
+            modulo=modulo,
 
-        descripcion=descripcion,
+            descripcion=descripcion
 
-        ip_usuario=ip,
-
-        user_agent=user_agent
-
-    )
+        )
 
 
 

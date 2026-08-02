@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+
+{% block title %}
+Usuarios Globales - NexuStock
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+
+
+    <div>
+
+        <h1 class="text-4xl font-bold text-gray-800">
+
+            👥 Usuarios Globales
+
+        </h1>
+
+
+        <p class="text-gray-500 mt-2">
+
+            Administración completa de usuarios NexuStock SaaS.
+
+        </p>
+
+
+    </div>
+
+
+
+
+    <a
+        href="{{ url_for('super_admin') }}"
+        class="mt-4 md:mt-0 bg-gray-600 hover:bg-gray-700 text-white px-5 py-3 rounded-lg"
+    >
+
+        ← Volver Panel
+
+    </a>
+
+
+</div>
+
+
+
+
+
+
+<!-- RESUMEN -->
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+
+
+
+<div class="bg-white rounded-xl shadow p-6 border-l-8 border-blue-600">
+
+    <p class="text-gray-500 uppercase text-sm font-bold">
+
+        Total Usuarios
+
+    </p>
+
+
+    <h2 class="text-4xl font-bold text-blue-600 mt-3">
+
+        {{ usuarios|length }}
+
+    </h2>
+
+
+</div>
+
+
+
+
+
+<div class="bg-white rounded-xl shadow p-6 border-l-8 border-red-600">
+
+
+    <p class="text-gray-500 uppercase text-sm font-bold">
+
+        Super Administradores
+
+    </p>
+
+
+    <h2 class="text-4xl font-bold text-red-600 mt-3">
+
+
+        {{ usuarios | selectattr("rol","equalto","super_admin") | list | length }}
+
+
+    </h2>
+
+
+</div>
+
+
+
+
+
+
+<div class="bg-white rounded-xl shadow p-6 border-l-8 border-purple-600">
+
+
+    <p class="text-gray-500 uppercase text-sm font-bold">
+
+        Empresas Asociadas
+
+    </p>
+
+
+    <h2 class="text-4xl font-bold text-purple-600 mt-3">
+
+
+        {{ usuarios | selectattr("empresa") | list | length }}
+
+
+    </h2>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<!-- TABLA -->
+
+
+<div class="bg-white rounded-xl shadow overflow-hidden">
+
+
+<div class="overflow-x-auto">
+
+
+<table class="min-w-full">
+
+
+
+<thead class="bg-gray-100">
+
+
+<tr>
+
+
+<th class="p-4 text-left">
+ID
+</th>
+
+
+<th class="p-4 text-left">
+Usuario
+</th>
+
+
+<th class="p-4 text-left">
+Correo
+</th>
+
+
+<th class="p-4 text-left">
+Rol
+</th>
+
+
+<th class="p-4 text-left">
+Empresa
+</th>
+
+
+<th class="p-4 text-left">
+Estado
+</th>
+
+
+<th class="p-4 text-left">
+Acciones
+</th>
+
+
+</tr>
+
+
+</thead>
+
+
+
+
+
+<tbody>
+
+
+
+{% for usuario in usuarios %}
+
+
+
+<tr class="border-t hover:bg-gray-50">
+
+
+
+
+
+
+<!-- ID -->
+
+<td class="p-4">
+
+{{ usuario.id }}
+
+</td>
+
+
+
+
+
+
+
+<!-- USUARIO -->
+
+
+<td class="p-4">
+
+
+<div class="font-bold">
+
+{{ usuario.nombre }}
+
+</div>
+
+
+</td>
+
+
+
+
+
+
+
+<!-- EMAIL -->
+
+
+<td class="p-4">
+
+
+{{ usuario.email }}
+
+
+</td>
+
+
+
+
+
+
+
+
+<!-- ROL -->
+
+
+<td class="p-4">
+
+
+{% if usuario.rol == "super_admin" %}
+
+
+<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold">
+
+
+🛡️ Super Admin
+
+
+</span>
+
+
+
+{% elif usuario.rol == "admin_empresa" %}
+
+
+
+<span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-bold">
+
+
+🏢 Administrador
+
+
+</span>
+
+
+
+{% elif usuario.rol == "supervisor" %}
+
+
+
+<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-bold">
+
+
+👨‍💼 Supervisor
+
+
+</span>
+
+
+
+{% else %}
+
+
+
+<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">
+
+
+👤 Empleado
+
+
+</span>
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+
+
+
+
+<!-- EMPRESA -->
+
+
+<td class="p-4">
+
+
+{% if usuario.empresa %}
+
+
+{{ usuario.empresa.nombre }}
+
+
+
+{% else %}
+
+
+<span class="text-gray-500">
+
+Sistema
+
+</span>
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+
+
+
+
+<!-- ESTADO -->
+
+
+<td class="p-4">
+
+
+{% if usuario.estado is defined %}
+
+
+
+{% if usuario.estado == "activo" %}
+
+
+<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
+
+🟢 Activo
+
+</span>
+
+
+
+{% else %}
+
+
+
+<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold">
+
+🔴 Inactivo
+
+</span>
+
+
+
+{% endif %}
+
+
+
+{% else %}
+
+
+
+<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
+
+Activo
+
+</span>
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+
+
+
+
+
+<!-- ACCIONES -->
+
+
+<td class="p-4">
+
+
+<div class="flex gap-2">
+
+
+
+
+
+<a
+
+href="{{ url_for('editar_usuario', id=usuario.id) }}"
+
+class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg"
+
+>
+
+✏️
+
+</a>
+
+
+
+
+
+
+
+{% if usuario.rol != "super_admin" %}
+
+
+
+<form
+
+method="POST"
+
+action="{{ url_for('eliminar_usuario', id=usuario.id) }}"
+
+onsubmit="return confirm('¿Eliminar este usuario?')"
+
+>
+
+
+<input
+
+type="hidden"
+
+name="csrf_token"
+
+value="{{ csrf_token() }}"
+
+>
+
+
+
+<button
+
+class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg"
+
+>
+
+🗑️
+
+</button>
+
+
+
+</form>
+
+
+
+{% else %}
+
+
+
+<span
+
+class="bg-gray-200 text-gray-500 px-3 py-2 rounded-lg cursor-not-allowed"
+
+title="No puedes eliminar un Super Administrador"
+
+>
+
+🔒
+
+</span>
+
+
+
+{% endif %}
+
+
+
+
+
+</div>
+
+
+
+</td>
+
+
+
+
+
+</tr>
+
+
+
+
+
+
+{% else %}
+
+
+
+
+<tr>
+
+
+<td colspan="7" class="text-center p-10 text-gray-500">
+
+
+No existen usuarios registrados.
+
+
+</td>
+
+
+</tr>
+
+
+
+{% endfor %}
+
+
+
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+</div>
+
+
+
+
+{% endblock %}
