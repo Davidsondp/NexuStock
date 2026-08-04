@@ -21,10 +21,19 @@ from transbank.common.integration_type import IntegrationType
 from transbank.common.integration_commerce_codes import IntegrationCommerceCodes
 from transbank.common.integration_api_keys import IntegrationApiKeys
 
+WEBPAY_COMMERCE_CODE = os.getenv("WEBPAY_COMMERCE_CODE")
+WEBPAY_API_KEY = os.getenv("WEBPAY_API_KEY")
+
+print("=" * 60)
+print("WEBPAY CONFIG")
+print("Commerce Code:", WEBPAY_COMMERCE_CODE)
+print("API Key:", WEBPAY_API_KEY)
+print("=" * 60)
+
 webpay_transaction = Transaction(
     WebpayOptions(
-        IntegrationCommerceCodes.WEBPAY_PLUS,
-        IntegrationApiKeys.WEBPAY,
+        WEBPAY_COMMERCE_CODE,
+        WEBPAY_API_KEY,
         IntegrationType.TEST
     )
 )
@@ -246,8 +255,6 @@ if os.getenv("FLASK_ENV") != "production":
 
             print("✔ Planes SaaS creados.")
 
-        
-            
 # ==================================================
 # USUARIO ACTUAL DE SESIÓN
 # ==================================================
@@ -563,9 +570,6 @@ def registro():
             db.session.flush()
 
 
-
-
-
 # ======================================
 # CREAR ADMIN EMPRESA
 # ======================================
@@ -598,9 +602,6 @@ def registro():
             db.session.flush()
 
 
-
-
-
 # ======================================
 # CONFIGURACIÓN INICIAL
 # ======================================
@@ -618,9 +619,7 @@ def registro():
 
     alerta_stock_bajo=True,
 
-    alerta_sobre_stock=True
-
-)
+    alerta_sobre_stock=True)
 
 
 
@@ -1672,9 +1671,6 @@ def dashboard():
     total_movimientos = len(movimientos)
 
 
-
-
-
     # ===============================
     # VALOR INVENTARIO
     # ===============================
@@ -1684,8 +1680,6 @@ def dashboard():
     (p.stock or 0) * float(p.costo_promedio or 0)
     for p in productos
 )
-
-
 
 
 
@@ -1710,10 +1704,6 @@ def dashboard():
 
 
 
-
-
-
-
     # ===============================
     # SOBRE STOCK
     # ===============================
@@ -1726,10 +1716,6 @@ def dashboard():
         if p.stock > (p.stock_minimo * 5)
 
     ]
-
-
-
-
 
 
     # ===============================
@@ -1967,6 +1953,18 @@ def dashboard():
         productos_menos_vendidos=productos_menos_vendidos
 
     )
+
+
+
+
+
+##==============================================================
+#SECCION PLANES
+##==============================================================
+
+
+
+
 
 # ==================================================
 # MI PLAN SaaS
@@ -2431,26 +2429,23 @@ def webhook_mercadopago():
     return "", 200
 
 # ==================================================
-# WEBPAY PLUS
+# WEBPAY PLUS (PRUEBAS)
 # ==================================================
 
-WEBPAY_COMMERCE_CODE = os.getenv(
-    "WEBPAY_COMMERCE_CODE",
-    "597055555532"
-)
-
-WEBPAY_API_KEY = os.getenv(
-    "WEBPAY_API_KEY",
-    "579B464545613031323334353637383930"
-)
-
 webpay_options = WebpayOptions(
-    commerce_code=WEBPAY_COMMERCE_CODE,
-    api_key=WEBPAY_API_KEY,
+    commerce_code=IntegrationCommerceCodes.WEBPAY_PLUS,
+    api_key=IntegrationApiKeys.WEBPAY,
     integration_type=IntegrationType.TEST
 )
 
 webpay_transaction = Transaction(webpay_options)
+
+print("=" * 60)
+print("WEBPAY TEST")
+print("Commerce Code:", IntegrationCommerceCodes.WEBPAY_PLUS)
+print("API Key:", IntegrationApiKeys.WEBPAY)
+print("Integration:", IntegrationType.TEST)
+print("=" * 60)
 
 # ==================================================
 # PAGAR WEBPAY
@@ -2614,7 +2609,21 @@ def webpay_commit():
             url_for("mi_plan")
         )
 
-    pago = Pago.query.get_or_404(pago_id)
+    pago = Pago.query.get_or_404(
+        pago_id
+    )
+
+    # Evitar confirmar el mismo pago dos veces
+    if pago.estado == "pagado":
+
+        flash(
+            "Este pago ya fue confirmado.",
+            "info"
+        )
+
+        return redirect(
+            url_for("mi_plan")
+        )
 
     empresa = pago.empresa
 
@@ -2622,28 +2631,46 @@ def webpay_commit():
         pago.plan_id
     )
 
+    # ==========================================
+    # ACTUALIZAR PAGO
+    # ==========================================
+
     pago.estado = "pagado"
 
     pago.fecha_pago = datetime.utcnow()
 
     pago.fecha_confirmacion = datetime.utcnow()
 
-    pago.codigo_transaccion = respuesta.get("authorization_code")
+    pago.codigo_transaccion = respuesta.get(
+        "authorization_code"
+    )
 
     pago.metodo_pago = "Webpay Plus"
 
     pago.proveedor = "webpay"
 
+    # ==========================================
+    # ACTUALIZAR EMPRESA
+    # ==========================================
+
     empresa.plan = plan.nombre.lower()
 
     empresa.fecha_inicio_plan = datetime.utcnow()
 
-    empresa.fecha_vencimiento = datetime.utcnow() + timedelta(days=30)
+    empresa.fecha_vencimiento = (
+        datetime.utcnow()
+        +
+        timedelta(days=30)
+    )
+
+    empresa.estado = "activo"
+
+    empresa.activo = True
 
     db.session.commit()
 
     flash(
-        "Pago realizado correctamente.",
+        "✅ Pago realizado correctamente. Su plan ha sido activado.",
         "success"
     )
 
@@ -2696,11 +2723,15 @@ def checkout(pago_id):
     )
 
 
-#==================================================
-#==================================================
+
+
+
+
+##==================================================
 # NEXUSTOCK SUPER ADMIN 
-#==================================================
-#==================================================
+##==================================================
+
+
 
 
 
@@ -2882,6 +2913,8 @@ def rechazar_cambio_plan(solicitud_id):
     return redirect(
         url_for("super_admin")
     )
+
+
 
 # ==================================================
 # PANEL SUPER ADMIN
@@ -3514,6 +3547,9 @@ def super_admin_editar_empresa(id):
 
     )
 
+#=======================================================================
+# SUPER ADMIN EMPRESA SUSPENDER
+#=======================================================================
 
 @app.route("/super-admin/empresa/<int:id>/suspender",methods=["POST"])
 @login_requerido
@@ -3549,6 +3585,10 @@ def super_admin_suspender_empresa(id):
     return redirect(
         url_for("super_admin_empresas")
     )
+
+#=======================================================================
+# SUPER ADMIN EMPRESA ELIMINAR
+#=======================================================================
 
 @app.route("/super-admin/empresa/<int:id>/eliminar",methods=["POST"])
 @login_requerido
@@ -4889,10 +4929,11 @@ def eliminar_usuario(id):
         url_for("super_admin_usuarios")
     )
 
-#===================================================
+
+
+
 #===================================================
 # NEXUSTOCK PARA CLIENTES
-#===================================================
 #===================================================
 
 
