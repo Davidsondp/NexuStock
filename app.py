@@ -15,6 +15,7 @@ import mercadopago
 import logging
 logger = logging.getLogger(__name__)
 from datetime import datetime, timedelta, UTC
+from sqlalchemy.orm import joinedload
 from transbank.webpay.webpay_plus.transaction import Transaction
 from transbank.common.options import WebpayOptions
 from transbank.common.integration_type import IntegrationType
@@ -174,82 +175,144 @@ if os.getenv("FLASK_ENV") != "production":
         if PlanSaaS.query.count() == 0:
 
             db.session.add_all([
+            PlanSaaS(
+            nombre="Prueba",
+            descripcion="Prueba gratuita con funciones profesionales limitadas",
+            precio_mensual=0,
+            precio_anual=0,
+            limite_productos=100,
+            limite_usuarios=2,
+            limite_movimientos=500,
+            almacenamiento_mb=500,
+            dias_prueba=30,
+            limite_sucursales=1,
 
-                PlanSaaS(
-                    nombre="Prueba",
-                    descripcion="Plan gratuito",
-                    precio_mensual=0,
-                    precio_anual=0,
-                    limite_productos=100,
-                    limite_usuarios=1,
-                    limite_movimientos=500,
-                    almacenamiento_mb=500,
-                    dias_prueba=30,
-                    limite_sucursales=1,
-                    tiene_reportes=True,
-                    activo=True,
-                    orden=1
-                ),
+            tiene_reportes_avanzados=True,
+            tiene_analisis_ventas=True,
+            tiene_prediccion_agotamiento=True,
+            tiene_recomendacion_compra=True,
 
-                PlanSaaS(
-                    nombre="Básico",
-                    descripcion="Plan para pequeños negocios",
-                    precio_mensual=9990,
-                    precio_anual=99900,
-                    limite_productos=1000,
-                    limite_usuarios=5,
-                    limite_movimientos=5000,
-                    almacenamiento_mb=2000,
-                    dias_prueba=0,
-                    limite_sucursales=1,
-                    tiene_reportes=True,
-                    tiene_exportacion=True,
-                    activo=True,
-                    orden=2
-                ),
+            tiene_exportacion_avanzada=False,
+            tiene_api=False,
 
-                PlanSaaS(
-                    nombre="Profesional",
-                    descripcion="Plan para empresas en crecimiento",
-                    precio_mensual=19990,
-                    precio_anual=199900,
-                    limite_productos=10000,
-                    limite_usuarios=20,
-                    limite_movimientos=50000,
-                    almacenamiento_mb=5000,
-                    dias_prueba=0,
-                    limite_sucursales=5,
-                    tiene_reportes=True,
-                    tiene_exportacion=True,
-                    tiene_alertas_avanzadas=True,
-                    tiene_ia=True,
-                    activo=True,
-                    orden=3
-                ),
+            activo=True,
+            orden=1
+        ),
 
-                PlanSaaS(
-                    nombre="Premium",
-                    descripcion="Plan sin restricciones",
-                    precio_mensual=39990,
-                    precio_anual=399900,
-                    limite_productos=999999,
-                    limite_usuarios=999,
-                    limite_movimientos=999999,
-                    almacenamiento_mb=20000,
-                    dias_prueba=0,
-                    limite_sucursales=999,
-                    tiene_reportes=True,
-                    tiene_exportacion=True,
-                    tiene_alertas_avanzadas=True,
-                    tiene_ia=True,
-                    tiene_api=True,
-                    tiene_multisucursal=True,
-                    activo=True,
-                    destacado=True,
-                    orden=4
-                )
 
-            ])
+            PlanSaaS(
+            nombre="Básico",
+            descripcion="Para almacenes pequeños y negocios que reemplazan Excel o papel",
+            precio_mensual=9990,
+            precio_anual=99900,
+
+            limite_productos=500,
+            limite_usuarios=2,
+            limite_movimientos=5000,
+            almacenamiento_mb=2000,
+
+            limite_sucursales=1,
+
+            tiene_productos=True,
+            tiene_movimientos=True,
+            tiene_proveedores=True,
+            tiene_dashboard=True,
+            tiene_alertas_basicas=True,
+
+            tiene_reportes_avanzados=False,
+            tiene_exportacion_avanzada=False,
+
+            activo=True,
+            orden=2
+        ),
+
+
+            PlanSaaS(
+            nombre="Profesional",
+            descripcion="Para negocios con operación diaria y mayor control",
+            precio_mensual=19990,
+            precio_anual=199900,
+
+            limite_productos=5000,
+            limite_usuarios=10,
+            limite_movimientos=50000,
+            almacenamiento_mb=5000,
+
+            limite_sucursales=3,
+
+            tiene_productos=True,
+            tiene_movimientos=True,
+            tiene_proveedores=True,
+            tiene_dashboard=True,
+            tiene_alertas_basicas=True,
+
+            tiene_roles=True,
+            tiene_reportes_avanzados=True,
+            tiene_exportacion_avanzada=True,
+
+            tiene_analisis_ventas=True,
+            tiene_productos_sin_movimiento=True,
+            tiene_sobrestock=True,
+            tiene_valor_inventario=True,
+
+            tiene_prediccion_agotamiento=True,
+            tiene_recomendacion_compra=True,
+
+            tiene_auditoria=True,
+
+            activo=True,
+            orden=3
+        ),
+
+
+            PlanSaaS(
+            nombre="Empresa",
+            descripcion="Control completo e inteligencia avanzada",
+            precio_mensual=49990,
+            precio_anual=499900,
+
+            limite_productos=None,
+            limite_usuarios=None,
+            limite_movimientos=None,
+
+            almacenamiento_mb=20000,
+            limite_sucursales=None,
+
+            tiene_productos=True,
+            tiene_movimientos=True,
+            tiene_proveedores=True,
+            tiene_dashboard=True,
+
+            tiene_roles=True,
+            tiene_reportes_avanzados=True,
+            tiene_exportacion_avanzada=True,
+
+            tiene_analisis_ventas=True,
+            tiene_productos_sin_movimiento=True,
+            tiene_sobrestock=True,
+            tiene_valor_inventario=True,
+
+            tiene_prediccion_agotamiento=True,
+            tiene_recomendacion_compra=True,
+            tiene_ia_avanzada=True,
+
+            tiene_auditoria=True,
+            tiene_multisucursal=True,
+            tiene_transferencias=True,
+
+            tiene_dashboard_ejecutivo=True,
+            tiene_indicadores_financieros=True,
+
+            tiene_api=True,
+            tiene_reportes_personalizados=True,
+            tiene_soporte_prioritario=True,
+
+            activo=True,
+            destacado=True,
+            orden=4
+        )
+
+    ])
 
             db.session.commit()
 
@@ -283,6 +346,45 @@ def obtener_empresa_actual_obj():
         return None
 
     return Empresa.query.get(usuario.empresa_id)
+
+# ==================================================
+# ACTUALIZAR VALORIZACIÓN DEL PRODUCTO
+# ==================================================
+
+def actualizar_valorizacion_producto(producto):
+    """
+    Recalcula automáticamente los valores financieros
+    del producto.
+
+    - Valor inventario = Stock × Costo promedio
+    - Margen de ganancia
+    """
+
+    stock = int(producto.stock or 0)
+
+    costo = float(producto.costo_promedio or 0)
+
+    precio = float(producto.precio_venta or 0)
+
+    # Valor total del inventario
+
+    producto.valor_inventario = round(
+        stock * costo,
+        2
+    )
+
+    # Margen de ganancia %
+
+    if costo > 0:
+
+        producto.margen_ganancia = round(
+            ((precio - costo) / costo) * 100,
+            2
+        )
+
+    else:
+
+        producto.margen_ganancia = 0
 
 # ==================================================
 # REGISTRAR AUDITORÍA
@@ -537,7 +639,7 @@ def registro():
 # ======================================
 
 
-            hoy = datetime.utcnow().date()
+            hoy = datetime.now(UTC).date()
 
 
 
@@ -646,6 +748,8 @@ def registro():
 
             session["usuario_id"] = usuario.id
 
+            db.session.commi
+
             registrar_auditoria(
                 accion="LOGIN",
                 modulo="Autenticación",
@@ -656,6 +760,8 @@ def registro():
             session["empresa_id"] = empresa.id
 
             session["rol"] = usuario.rol
+
+            session.permanent = True
 
 
             flash(
@@ -974,7 +1080,7 @@ def login():
 # RESTABLECER PASSWORD CON TOKEN
 # ==================================================
 
-@app.route("/reset-password/<token>",methods=["GET", "POST"])
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
 def reset_password(token):
 
     try:
@@ -982,8 +1088,6 @@ def reset_password(token):
         usuario = Usuario.query.filter_by(
             token_reset_password_hash=token
         ).first()
-
-
 
         if not usuario:
 
@@ -1002,14 +1106,13 @@ def reset_password(token):
 
         if (
             usuario.token_expiracion
-            and usuario.token_expiracion < datetime.utcnow()
+            and usuario.token_expiracion < datetime.now(UTC)
         ):
 
             usuario.token_reset_password_hash = None
             usuario.token_expiracion = None
 
             db.session.commit()
-
 
             flash(
                 "El enlace de recuperación expiró.",
@@ -1020,26 +1123,21 @@ def reset_password(token):
                 url_for("login")
             )
 
-
         # ----------------------------------
         # CAMBIAR PASSWORD
         # ----------------------------------
 
         if request.method == "POST":
 
-
             password = request.form.get(
                 "password",
                 ""
             )
 
-
             confirm_password = request.form.get(
                 "confirm_password",
                 ""
             )
-
-
 
             if len(password) < 8:
 
@@ -1052,8 +1150,6 @@ def reset_password(token):
                     request.url
                 )
 
-
-
             if password != confirm_password:
 
                 flash(
@@ -1065,60 +1161,41 @@ def reset_password(token):
                     request.url
                 )
 
-
             usuario.password = generate_password_hash(password)
 
-
-
             usuario.token_reset_password_hash = None
-
             usuario.token_expiracion = None
 
-
-            usuario.ultimo_cambio_password = datetime.utcnow()
-
+            usuario.ultimo_cambio_password = datetime.now(UTC)
             usuario.password_expirada = False
 
-
-
             db.session.commit()
-
-
 
             flash(
                 "Contraseña actualizada correctamente.",
                 "success"
             )
 
-
             return redirect(
                 url_for("login")
             )
-
-
 
         return render_template(
             "reset_password.html"
         )
 
-
-
-    except Exception as e:
-
+    except Exception:
 
         db.session.rollback()
-
 
         logger.exception(
             "Error restableciendo contraseña"
         )
 
-
         flash(
             "Error interno.",
             "danger"
         )
-
 
         return redirect(
             url_for("login")
@@ -1152,8 +1229,8 @@ def olvide_password():
             usuario.token_reset_password_hash = token
 
             usuario.token_expiracion = (
-                datetime.utcnow() +
-                timedelta(hours=1)
+                datetime.now(UTC)
+                + timedelta(hours=1)
             )
 
             db.session.commit()
@@ -1591,7 +1668,6 @@ def nuevo_usuario():
 @login_requerido
 def dashboard():
 
-
     usuario_actual = obtener_usuario_actual()
 
 
@@ -1616,11 +1692,9 @@ def dashboard():
 
     if usuario_actual.rol == "super_admin":
 
-
         return redirect(
             url_for("super_admin")
         )
-
 
 
 
@@ -1641,11 +1715,9 @@ def dashboard():
 
 
 
-
     # ===============================
     # PRODUCTOS
     # ===============================
-
 
     productos = Producto.query.filter_by(
         empresa_id=empresa_actual.id
@@ -1657,29 +1729,34 @@ def dashboard():
 
 
 
-    # ===============================
-    # MOVIMIENTOS
-    # ===============================
+# ===============================
+# MOVIMIENTOS
+# ===============================
 
-
-    movimientos = Movimiento.query.filter_by(
+    movimientos = (
+    Movimiento.query
+    .options(joinedload(Movimiento.producto))
+    .filter_by(
         empresa_id=empresa_actual.id
-    ).all()
+    )
+    .all()
+    )
 
 
 
     total_movimientos = len(movimientos)
 
 
+
     # ===============================
     # VALOR INVENTARIO
     # ===============================
 
-
-    valor_inventario = sum(
-    (p.stock or 0) * float(p.costo_promedio or 0)
-    for p in productos
-)
+    valor_inventario = 0
+    for producto in productos:
+        valor_inventario += float(
+        producto.calcular_valor_inventario() or 0
+        )
 
 
 
@@ -1687,12 +1764,11 @@ def dashboard():
     # STOCK BAJO
     # ===============================
 
-
     productos_stock_bajo = [
 
         p for p in productos
 
-        if p.stock <= p.stock_minimo
+        if (p.stock or 0) <= (p.stock_minimo or 0)
 
     ]
 
@@ -1708,26 +1784,30 @@ def dashboard():
     # SOBRE STOCK
     # ===============================
 
-
     productos_sobre_stock = [
 
-        p for p in productos
+    p for p in productos
 
-        if p.stock > (p.stock_minimo * 5)
-
+    if (
+        p.stock_maximo
+        and
+        (p.stock or 0) > p.stock_maximo
+    )
     ]
+
 
 
     # ===============================
     # SIN MOVIMIENTO
     # ===============================
 
-
     productos_con_movimiento = set(
 
         m.producto_id
 
         for m in movimientos
+
+        if m.producto_id
 
     )
 
@@ -1748,53 +1828,105 @@ def dashboard():
     )
 
 
+
 # ===============================
 # RECOMENDACIONES IA
 # ===============================
 
+    productos_recomendados = []
 
-    productos_recomendados = productos_stock_bajo
+    for producto in productos:
 
+        if not producto.activo:
+            continue
 
+        demanda = (
 
+            producto.consumo_promedio_diario
+            or
+            producto.demanda_estimada
+            or
+            0
 
-    riesgo_quiebre = len(
+        )
 
-        [
+        punto_reorden = (
 
-            p for p in productos
+            demanda *
+            (producto.tiempo_reposicion_dias or 7)
 
-            if p.stock == 0
+        ) + (
 
-        ]
+            producto.stock_seguridad or 0
+
+        )
+
+        if (producto.stock or 0) <= punto_reorden:
+
+            productos_recomendados.append(
+                producto
+            )
+
+    riesgo_quiebre = sum(
+
+        1
+
+        for producto in productos
+
+        if (producto.stock or 0) <= 0
+
+    )
+
+    # ===============================
+    # CAPITAL INMOVILIZADO REAL
+    # ===============================
+
+    dinero_inmovilizado = sum(
+
+        (producto.stock or 0) *
+        float(producto.costo_promedio or 0)
+
+        for producto in productos_sin_movimiento
 
     )
 
 
-    dinero_inmovilizado = sum(
-    (p.stock or 0) * float(p.costo_promedio or 0)
-    for p in productos
-)
-
-
-# ===============================
-# SALUD INVENTARIO
-# ===============================
-
+    # ===============================
+    # SALUD INVENTARIO
+    # ===============================
 
     salud_inventario = 100
-    salud_inventario -= (stock_bajo * 5)
 
-    salud_inventario -= (
-        total_sin_movimiento * 3)
-    if salud_inventario < 0:
-        salud_inventario = 0
+    penalizacion = 0
+
+    penalizacion += stock_bajo * 3
+
+    penalizacion += total_sin_movimiento * 2
+
+    penalizacion += len(productos_sobre_stock)
+
+    penalizacion += riesgo_quiebre * 5
+
+    salud_inventario = max(
+
+        0,
+
+        min(
+
+            100,
+
+            salud_inventario - penalizacion
+
+        )
+
+    )
+
+
     if salud_inventario >= 80:
 
         estado_salud = "Excelente"
 
         color_salud = "green"
-
 
     elif salud_inventario >= 50:
 
@@ -1802,20 +1934,26 @@ def dashboard():
 
         color_salud = "yellow"
 
-
     else:
 
         estado_salud = "Crítico"
 
         color_salud = "red"
 
-# ===============================
-# COPILOTO IA
-# ===============================
-
+    # ===============================
+    # COPILOTO IA
+    # ===============================
 
     acciones_hoy = []
 
+
+    if riesgo_quiebre > 0:
+
+        acciones_hoy.append(
+
+            f"Existen {riesgo_quiebre} productos agotados. Prioriza su reposición."
+
+        )
 
 
     if stock_bajo > 0:
@@ -1831,15 +1969,34 @@ def dashboard():
 
         acciones_hoy.append(
 
-            f"Analizar {total_sin_movimiento} productos sin movimiento."
+            f"Analizar {total_sin_movimiento} productos sin movimiento para liberar capital."
 
         )
 
-    if productos_sobre_stock:
+
+    if len(productos_sobre_stock) > 0:
 
         acciones_hoy.append(
 
-            "Evaluar reducción de compras para productos con exceso."
+            f"Reducir compras en {len(productos_sobre_stock)} productos con sobre stock."
+
+        )
+
+
+    if salud_inventario >= 80:
+
+        acciones_hoy.append(
+
+            "El inventario presenta un buen estado general."
+
+        )
+
+
+    if not acciones_hoy:
+
+        acciones_hoy.append(
+
+            "No existen acciones pendientes por hoy."
 
         )
 
@@ -1848,60 +2005,55 @@ def dashboard():
     # RANKING VENTAS
     # ===============================
 
-
     ventas = {}
-
-
 
     for movimiento in movimientos:
 
+        if (
+            movimiento.tipo == "salida"
+            and movimiento.producto is not None
+        ):
 
-        if movimiento.tipo == "salida":
+            producto = movimiento.producto
 
+            ventas[producto.id] = {
 
-            producto = movimiento.producto.nombre
+                "nombre": producto.nombre,
 
+                "ventas": ventas.get(
 
-            ventas[producto] = ventas.get(
-                producto,
-                0
-            ) + movimiento.cantidad
+                    producto.id,
 
+                    {
+                        "nombre": producto.nombre,
+                        "ventas": 0
+                    }
 
-    ranking = [
+                )["ventas"] + (movimiento.cantidad or 0)
 
-        {
-            "nombre":nombre,
-            "ventas":cantidad
-        }
+            }
 
-        for nombre,cantidad in ventas.items()
-
-    ]
-
-
+    ranking = list(
+        ventas.values()
+    )
 
     productos_mas_vendidos = sorted(
 
         ranking,
 
-        key=lambda x:x["ventas"],
+        key=lambda x: x["ventas"],
 
         reverse=True
 
     )[:5]
 
-
-
-
     productos_menos_vendidos = sorted(
 
         ranking,
 
-        key=lambda x:x["ventas"]
+        key=lambda x: x["ventas"]
 
     )[:5]
-
 
 
     return render_template(
@@ -1926,29 +2078,42 @@ def dashboard():
 
         valor_inventario=valor_inventario,
 
+
         riesgo_quiebre=riesgo_quiebre,
+
 
         dinero_inmovilizado=dinero_inmovilizado,
 
+
         productos_recomendados=productos_recomendados,
+
 
         salud_inventario=salud_inventario,
 
+
         estado_salud=estado_salud,
+
 
         color_salud=color_salud,
 
+
         acciones_hoy=acciones_hoy,
+
 
         total_sin_movimiento=total_sin_movimiento,
 
+
         productos_sobre_stock=productos_sobre_stock,
+
 
         productos_sin_movimiento=productos_sin_movimiento,
 
+
         productos_stock_bajo=productos_stock_bajo,
 
+
         productos_mas_vendidos=productos_mas_vendidos,
+
 
         productos_menos_vendidos=productos_menos_vendidos
 
@@ -2032,13 +2197,11 @@ def calcular_ingresos_mensuales():
 
     for pago in pagos:
 
-        if hasattr(pago, "estado") and pago.estado != "pagado":
+        if pago.estado != "pagado":
             continue
+        total += float(pago.monto or 0)
 
-        if hasattr(pago, "monto") and pago.monto:
-            total += float(pago.monto)
-
-    return total
+        return total
 
 #======================================================
 #SOLICITAR PLAN
@@ -2352,7 +2515,16 @@ def mercadopago_success():
 
     empresa = pago.empresa
     plan = pago.plan
-    empresa.plan = plan.nombre.strip().lower()
+    empresa.plan = (
+    plan.nombre
+    .strip()
+    .lower()
+    .replace("á", "a")
+    .replace("é", "e")
+    .replace("í", "i")
+    .replace("ó", "o")
+    .replace("ú", "u")
+    )  
     empresa.estado = "activo"
     empresa.fecha_inicio_plan = datetime.utcnow()
     empresa.fecha_vencimiento = (
@@ -2400,7 +2572,7 @@ def webhook_mercadopago():
     datos = request.get_json(silent=True)
 
     print("=" * 60)
-    print("WEBHOOK RECIBIDO")
+    print("WEBHOOK MERCADO PAGO RECIBIDO")
     print(datos)
     print("=" * 60)
 
@@ -2408,25 +2580,186 @@ def webhook_mercadopago():
         return "", 200
 
     tipo = datos.get("type")
-    accion = datos.get("action")
-    print("Tipo:", tipo)
-    print("Acción:", accion)
+
     if tipo != "payment":
         return "", 200
-    payment_id = datos.get("data", {}).get("id")
 
-    print("ID Pago Mercado Pago:", payment_id)
+    payment_id = (
+        datos
+        .get("data", {})
+        .get("id")
+    )
 
     if not payment_id:
         return "", 200
-    print("Consultando pago en Mercado Pago...")
-    respuesta = sdk_mp.payment().get(payment_id)
-    print("=" * 60)
-    print("RESPUESTA PAYMENT")
-    print(respuesta)
-    print("=" * 60)
+
+
+    try:
+
+        respuesta = sdk_mp.payment().get(
+            payment_id
+        )
+
+        print("=" * 60)
+        print("RESPUESTA PAYMENT")
+        print(respuesta)
+        print("=" * 60)
+
+
+    except Exception as e:
+
+        print(
+            "ERROR CONSULTANDO MERCADO PAGO:",
+            e
+        )
+
+        return "", 200
+
+
+    pago_mp = respuesta.get(
+        "response",
+        {}
+    )
+
+
+    estado_mp = pago_mp.get(
+        "status"
+    )
+
+
+    external_reference = pago_mp.get(
+        "external_reference"
+    )
+
+
+    print("ESTADO MP:", estado_mp)
+    print(
+        "EXTERNAL REFERENCE:",
+        external_reference
+    )
+
+
+    if not external_reference:
+        return "", 200
+
+
+    try:
+
+        pago_id = int(
+            external_reference
+        )
+
+    except Exception:
+
+        return "", 200
+
+
+    pago = Pago.query.get(
+        pago_id
+    )
+
+
+    if not pago:
+
+        print(
+            "Pago NexuStock no encontrado:",
+            pago_id
+        )
+
+        return "", 200
+
+
+
+    # =========================================
+    # PAGO APROBADO
+    # =========================================
+
+    if estado_mp == "approved":
+
+
+        # Evita duplicar confirmaciones
+
+        if pago.estado == "pagado":
+
+            return "", 200
+
+
+
+        empresa = pago.empresa
+
+        plan = PlanSaaS.query.get(
+            pago.plan_id
+        )
+
+
+        if not plan:
+
+            return "", 200
+
+
+
+        pago.estado = "pagado"
+
+        pago.fecha_pago = datetime.utcnow()
+
+        pago.fecha_confirmacion = datetime.utcnow()
+
+        pago.metodo_pago = "Mercado Pago"
+
+        pago.proveedor_pago = "mercadopago"
+
+
+
+        empresa.plan = (
+            plan.nombre
+            .strip()
+            .lower()
+        )
+
+
+        empresa.fecha_inicio_plan = (
+            datetime.utcnow()
+        )
+
+
+        empresa.fecha_vencimiento = (
+            datetime.utcnow()
+            +
+            timedelta(days=30)
+        )
+
+
+        empresa.estado = "activo"
+
+        empresa.activo = True
+
+
+        db.session.commit()
+
+
+        print(
+            "Pago Mercado Pago aplicado correctamente"
+        )
+
+
+    elif estado_mp in [
+        "rejected",
+        "cancelled"
+    ]:
+
+
+        pago.estado = estado_mp
+
+        db.session.commit()
+
+
+        print(
+            "Pago Mercado Pago rechazado/cancelado"
+        )
+
 
     return "", 200
+
 
 # ==================================================
 # WEBPAY PLUS (PRUEBAS)
@@ -2526,7 +2859,7 @@ def pagar_webpay(pago_id):
 
     pago.codigo_transaccion = respuesta["token"]
 
-    pago.proveedor = "webpay"
+    pago.proveedor_pago = "webpay"
 
     db.session.commit()
 
@@ -2647,7 +2980,7 @@ def webpay_commit():
 
     pago.metodo_pago = "Webpay Plus"
 
-    pago.proveedor = "webpay"
+    pago.proveedor_pago = "webpay"
 
     # ==========================================
     # ACTUALIZAR EMPRESA
@@ -2721,6 +3054,7 @@ def checkout(pago_id):
         plan=plan
 
     )
+
 
 
 
@@ -2841,29 +3175,41 @@ def aprobar_cambio_plan(solicitud_id):
 
     empresa = solicitud.empresa
 
-    plan = PlanSaaS.query.filter_by(
-        nombre=solicitud.plan_solicitado
+    plan = PlanSaaS.query.filter(
+    db.func.lower(PlanSaaS.nombre) ==
+    solicitud.plan_solicitado.lower()
     ).first()
 
     if not plan:
-
         flash(
             "El plan solicitado no existe.",
             "danger"
-        )
-
+            )
         return redirect(
             url_for("super_admin")
-        )
-
-    empresa.plan = plan.nombre
-
+            )
+    empresa.plan = (
+    plan.nombre
+    .strip()
+    .lower()
+    .replace("á", "a")
+    .replace("é", "e")
+    .replace("í", "i")
+    .replace("ó", "o")
+    .replace("ú", "u")
+)
     empresa.limite_productos = plan.limite_productos
     empresa.limite_usuarios = plan.limite_usuarios
     empresa.limite_movimientos = plan.limite_movimientos
     empresa.almacenamiento_mb = plan.almacenamiento_mb
 
+    empresa.limite_empresas = plan.limite_empresas
+    empresa.limite_sucursales = plan.limite_sucursales
+
     solicitud.estado = "aprobada"
+
+    solicitud.fecha_revision = datetime.utcnow()
+    solicitud.revisado_por = current_user.id
 
     db.session.commit()
 
@@ -3280,7 +3626,7 @@ def super_admin_empresas():
     prueba = 0
     por_vencer = 0
 
-    hoy = datetime.utcnow().date()
+    hoy = datetime.now(UTC).date()
 
     for empresa in empresas:
 
@@ -3952,7 +4298,7 @@ def super_admin_pagos():
     # EMPRESAS MOROSAS
     # ==================================================
 
-    hoy = datetime.utcnow().date()
+    hoy = datetime.now(UTC).date()
 
 
     empresas_morosas = Empresa.query.filter(
@@ -4935,6 +5281,7 @@ def eliminar_usuario(id):
 #===================================================
 # NEXUSTOCK PARA CLIENTES
 #===================================================
+#===================================================
 
 
 
@@ -4967,6 +5314,7 @@ def inteligencia_inventario():
     empresa_actual = obtener_empresa_actual_obj()
 
 
+
     if not empresa_actual:
 
         flash(
@@ -4997,10 +5345,7 @@ def inteligencia_inventario():
 
 
 
-        valor_inventario += (
-            producto.stock *
-            producto.precio
-        )
+        valor_inventario += (producto.stock *producto.precio)
 
 # ------------------------------
 # STOCK BAJO
@@ -5112,9 +5457,17 @@ def entrada_stock():
 
     if not usuario_actual:
 
-        return redirect(
-            url_for("logout")
+        session.clear()
+
+        flash(
+            "Sesión inválida.",
+            "danger"
         )
+
+        return redirect(
+            url_for("login")
+        )
+
 
     empresa_actual = obtener_empresa_actual_obj()
 
@@ -5126,8 +5479,9 @@ def entrada_stock():
         )
 
         return redirect(
-            url_for("dashboard")
+            url_for("logout")
         )
+
 
     productos = Producto.query.filter_by(
         empresa_id=empresa_actual.id
@@ -5135,9 +5489,12 @@ def entrada_stock():
         Producto.nombre.asc()
     ).all()
 
-    producto_preseleccionado = request.args.get(
-        "producto_id"
+
+    producto_preseleccionado = (
+        request.args.get("producto_id")
+        or request.args.get("producto")
     )
+
 
     if request.method == "POST":
 
@@ -5148,26 +5505,33 @@ def entrada_stock():
                     "producto_id",
                     0
                 )
+                or 0
             )
+
 
             cajas = int(
                 request.form.get(
                     "cajas",
                     0
                 )
+                or 0
             )
+
 
             cantidad = int(
                 request.form.get(
                     "cantidad",
                     0
                 )
+                or 0
             )
+
 
             producto = Producto.query.filter_by(
                 id=producto_id,
                 empresa_id=empresa_actual.id
             ).first()
+
 
             if not producto:
 
@@ -5180,12 +5544,16 @@ def entrada_stock():
                     url_for("entrada_stock")
                 )
 
+
+            unidades_caja = int(
+                producto.unidades_por_caja or 1
+            )
+
+
             total_unidades = (
-
-                cajas *
-                producto.unidades_por_caja
-
+                cajas * unidades_caja
             ) + cantidad
+
 
             if total_unidades <= 0:
 
@@ -5198,9 +5566,64 @@ def entrada_stock():
                     url_for("entrada_stock")
                 )
 
-            stock_anterior = producto.stock
 
-            producto.stock += total_unidades
+            # ==========================================
+            # ACTUALIZAR COSTO PROMEDIO
+            # ==========================================
+
+            stock_anterior = int(
+                producto.stock or 0
+            )
+
+
+            costo_anterior = float(
+                producto.costo_promedio or 0
+            )
+
+
+            costo_nuevo = float(
+                producto.costo_compra or 0
+            )
+
+
+            nuevo_stock = (
+                stock_anterior +
+                total_unidades
+            )
+
+
+            if nuevo_stock > 0:
+
+                producto.costo_promedio = (
+
+                    (
+                        stock_anterior *
+                        costo_anterior
+                    )
+                    +
+                    (
+                        total_unidades *
+                        costo_nuevo
+                    )
+
+                ) / nuevo_stock
+
+
+
+            producto.stock = nuevo_stock
+
+
+            producto.ultima_reposicion = datetime.utcnow()
+
+
+            producto.calcular_valor_inventario()
+
+            producto.calcular_margen()
+
+
+            # ==========================================
+            # MOVIMIENTO
+            # ==========================================
 
             movimiento = Movimiento(
 
@@ -5218,16 +5641,48 @@ def entrada_stock():
 
                 stock_nuevo=producto.stock,
 
+                costo_unitario=producto.costo_promedio,
+
+                costo_total=(
+
+                    total_unidades *
+                    float(producto.costo_promedio or 0)
+
+                ),
+
+                referencia_tipo="manual",
+
+                referencia_id=producto.id,
+
+                referencia="Entrada de Stock",
+
+                ip_usuario=request.remote_addr,
+
+                user_agent=request.headers.get(
+                    "User-Agent"
+                ),
+
                 observacion=(
-                    f"Entrada de {cajas} caja(s) y "
-                    f"{cantidad} unidad(es)."
+
+                    f"Entrada registrada por "
+                    f"{usuario_actual.nombre}. "
+                    f"Cajas: {cajas}. "
+                    f"Unidades adicionales: {cantidad}. "
+                    f"Total ingresado: {total_unidades}."
+
                 )
 
             )
 
+
             db.session.add(
                 movimiento
             )
+
+
+            # ==========================================
+            # AUDITORÍA
+            # ==========================================
 
             auditoria = Auditoria.crear(
 
@@ -5236,55 +5691,60 @@ def entrada_stock():
                 modulo="inventario",
 
                 descripcion=(
-                    f"Entrada de "
+
+                    f"{usuario_actual.nombre} "
+                    f"registró entrada de "
                     f"{total_unidades} unidades "
-                    f"del producto "
-                    f"{producto.nombre}."
+                    f"de {producto.nombre}."
+
                 ),
 
                 empresa_id=empresa_actual.id,
 
-                usuario_id=usuario_actual.id,
-
-                ip_usuario=request.remote_addr,
-
-                user_agent=request.headers.get(
-                    "User-Agent"
-                )
+                usuario_id=usuario_actual.id
 
             )
+
 
             db.session.add(
                 auditoria
             )
 
+
             db.session.commit()
+
 
             flash(
                 "Entrada registrada correctamente.",
                 "success"
             )
 
+
             return redirect(
                 url_for("movimientos")
             )
+
 
         except Exception:
 
             db.session.rollback()
 
+
             logger.exception(
-                "Error registrando entrada."
+                "Error registrando entrada de stock."
             )
 
+
             flash(
-                "Ocurrió un error al registrar la entrada.",
+                "Error al registrar entrada.",
                 "danger"
             )
+
 
             return redirect(
                 url_for("entrada_stock")
             )
+
 
     return render_template(
 
@@ -5292,7 +5752,11 @@ def entrada_stock():
 
         productos=productos,
 
-        producto_preseleccionado=producto_preseleccionado
+        producto_preseleccionado=producto_preseleccionado,
+
+        usuario_actual=usuario_actual,
+
+        empresa_actual=empresa_actual
 
     )
 
@@ -5307,13 +5771,24 @@ def salida_stock():
 
     usuario_actual = obtener_usuario_actual()
 
+
     if not usuario_actual:
 
-        return redirect(
-            url_for("logout")
+        session.clear()
+
+        flash(
+            "Sesión inválida.",
+            "danger"
         )
 
+        return redirect(
+            url_for("login")
+        )
+
+
+
     empresa_actual = obtener_empresa_actual_obj()
+
 
     if not empresa_actual:
 
@@ -5323,177 +5798,468 @@ def salida_stock():
         )
 
         return redirect(
-            url_for("dashboard")
+            url_for("logout")
         )
 
+
+
     productos = Producto.query.filter_by(
+
         empresa_id=empresa_actual.id
+
     ).order_by(
+
         Producto.nombre.asc()
+
     ).all()
+
+
+
+    producto_preseleccionado = (
+
+        request.args.get("producto_id")
+
+        or
+
+        request.args.get("producto")
+
+    )
+
+
 
     if request.method == "POST":
 
+
         try:
 
+
             producto_id = int(
+
                 request.form.get(
+
                     "producto_id",
+
                     0
+
                 )
+
+                or 0
+
             )
+
+
 
             cajas = int(
+
                 request.form.get(
+
                     "cajas",
+
                     0
+
                 )
+
+                or 0
+
             )
+
+
 
             cantidad = int(
+
                 request.form.get(
+
                     "cantidad",
+
                     0
+
                 )
+
+                or 0
+
             )
 
+
+
+
             producto = Producto.query.filter_by(
+
                 id=producto_id,
+
                 empresa_id=empresa_actual.id
+
             ).first()
+
+
+
 
             if not producto:
 
+
                 flash(
+
                     "Producto no encontrado.",
+
                     "danger"
+
                 )
 
+
                 return redirect(
+
                     url_for("salida_stock")
+
                 )
+
+
+
+
+
+            unidades_por_caja = int(
+
+                producto.unidades_por_caja or 1
+
+            )
+
+
+
 
             total_unidades = (
 
-                cajas *
-                producto.unidades_por_caja
+                cajas * unidades_por_caja
 
             ) + cantidad
 
+
+
+
+
             if total_unidades <= 0:
 
+
                 flash(
+
                     "Debe ingresar una cantidad válida.",
+
                     "warning"
+
                 )
 
+
                 return redirect(
+
                     url_for("salida_stock")
+
                 )
+
+
+
+
 
             if total_unidades > producto.stock:
 
+
                 flash(
+
                     "Stock insuficiente.",
+
                     "danger"
+
                 )
+
 
                 return redirect(
+
                     url_for("salida_stock")
+
                 )
 
-            stock_anterior = producto.stock
 
-            producto.stock -= total_unidades
+
+
+
+
+            # ==========================================
+            # ACTUALIZAR STOCK
+            # ==========================================
+
+
+            stock_anterior = int(
+
+                producto.stock or 0
+
+            )
+
+
+
+            producto.stock = (
+
+                stock_anterior -
+
+                total_unidades
+
+            )
+
+
+
+
+
+
+            # ==========================================
+            # ACTUALIZAR INDICADORES
+            # ==========================================
+
+
+            producto.calcular_valor_inventario()
+
+
+            producto.calcular_margen()
+
+
+
+
+
+            # ==========================================
+            # MOVIMIENTO
+            # ==========================================
+
 
             movimiento = Movimiento(
 
+
                 empresa_id=empresa_actual.id,
+
 
                 producto_id=producto.id,
 
+
                 usuario_id=usuario_actual.id,
+
 
                 tipo="salida",
 
+
                 cantidad=total_unidades,
+
 
                 stock_anterior=stock_anterior,
 
+
                 stock_nuevo=producto.stock,
 
+
+                costo_unitario=(
+
+                    producto.costo_promedio or 0
+
+                ),
+
+
+
+                costo_total=(
+
+                    total_unidades *
+
+                    (producto.costo_promedio or 0)
+
+                ),
+
+
+
+                referencia_tipo="manual",
+
+
+                referencia_id=producto.id,
+
+
+                referencia="Salida de Stock",
+
+
+
+                ip_usuario=request.remote_addr,
+
+
+
+                user_agent=request.headers.get(
+
+                    "User-Agent"
+
+                ),
+
+
+
+
                 observacion=(
-                    f"Salida de {cajas} caja(s) y "
-                    f"{cantidad} unidad(es)."
+
+
+                    f"Salida registrada por "
+
+                    f"{usuario_actual.nombre}. "
+
+                    f"Cajas: {cajas}. "
+
+                    f"Unidades adicionales: {cantidad}. "
+
+                    f"Total retirado: {total_unidades}."
+
                 )
 
             )
 
+
+
+
             db.session.add(
+
                 movimiento
+
             )
+
+
+
+
+
+
+            # ==========================================
+            # AUDITORÍA
+            # ==========================================
+
 
             auditoria = Auditoria.crear(
 
+
                 accion="salida_stock",
+
 
                 modulo="inventario",
 
+
+
                 descripcion=(
-                    f"Salida de "
+
+
+                    f"{usuario_actual.nombre} "
+
+                    f"registró una salida de "
+
                     f"{total_unidades} unidades "
+
                     f"del producto "
+
                     f"{producto.nombre}."
+
                 ),
+
+
 
                 empresa_id=empresa_actual.id,
 
-                usuario_id=usuario_actual.id,
 
-                ip=request.remote_addr,
+                usuario_id=usuario_actual.id
 
-                user_agent=request.headers.get(
-                    "User-Agent"
-                )
 
             )
+
+
+
 
             db.session.add(
+
                 auditoria
+
             )
+
+
+
+
 
             db.session.commit()
 
+
+
+
+
             flash(
+
                 "Salida registrada correctamente.",
+
                 "success"
+
             )
 
+
+
+
+
             return redirect(
+
                 url_for("movimientos")
+
             )
+
+
+
+
 
         except Exception:
 
+
             db.session.rollback()
 
+
+
             logger.exception(
-                "Error registrando salida."
+
+                "Error registrando salida de stock."
+
             )
+
+
 
             flash(
-                "Ocurrió un error al registrar la salida.",
+
+                "Error al registrar la salida.",
+
                 "danger"
+
             )
+
+
 
             return redirect(
+
                 url_for("salida_stock")
+
             )
 
-    return render_template("salida_stock.html",
-                           productos=productos
-                           )
 
+
+
+
+
+    return render_template(
+
+
+        "salida_stock.html",
+
+
+
+        productos=productos,
+
+
+
+        producto_preseleccionado=producto_preseleccionado,
+
+
+
+        usuario_actual=usuario_actual,
+
+
+
+        empresa_actual=empresa_actual
+
+
+    )
 
 # ==================================================
 # REPORTES
@@ -5543,7 +6309,7 @@ def reportes():
     valor_inventario = db.session.query(
 
         db.func.sum(
-            Producto.stock * Producto.precio
+            Producto.stock * Producto.costo_promedio
         )
 
     ).filter(
@@ -5710,6 +6476,10 @@ def productos():
 
                 Producto.categoria.ilike(
                     f"%{busqueda}%"
+                ),
+
+                Producto.marca.ilike(
+                    f"%{busqueda}%"
                 )
 
             )
@@ -5727,6 +6497,68 @@ def productos():
     productos=productos,
     busqueda=busqueda
     )
+
+
+@app.route("/productos-sobre-stock")
+@login_requerido
+def productos_sobre_stock():
+
+    productos = Producto.query.filter(
+        Producto.stock > Producto.stock_maximo,
+        Producto.stock_maximo > 0
+    ).all()
+
+
+    unidades_exceso = 0
+    valor_exceso = 0
+
+
+    for producto in productos:
+
+        # cantidad excedente
+        producto.exceso = (
+            producto.stock -
+            producto.stock_maximo
+        )
+
+
+        # valor del exceso de inventario
+        producto.valor_exceso = (
+            producto.exceso *
+            float(producto.costo_promedio or 0)
+        )
+
+
+        unidades_exceso += producto.exceso
+
+        valor_exceso += producto.valor_exceso
+
+
+
+    return render_template(
+        "productos_sobre_stock.html",
+        productos=productos,
+        unidades_exceso=unidades_exceso,
+        valor_exceso=valor_exceso
+    )
+
+
+@app.route("/productos-sin-movimiento")
+@login_requerido
+def productos_sin_movimiento():
+
+    productos_sin_movimiento = Producto.query.filter(
+        Producto.dias_sin_movimiento > 0
+    ).order_by(
+        Producto.dias_sin_movimiento.desc()
+    ).all()
+
+
+    return render_template(
+        "productos_sin_movimiento.html",
+        productos_sin_movimiento=productos_sin_movimiento
+    )
+
 
 # ==================================================
 # EXPORTAR PRODUCTOS EXCEL
@@ -5910,10 +6742,14 @@ def nuevo_producto():
     usuario_actual = obtener_usuario_actual()
 
     if not usuario_actual:
-
         return redirect(
             url_for("logout")
         )
+
+
+    # ==================================================
+    # PERMISOS
+    # ==================================================
 
     if usuario_actual.rol not in [
         "admin_empresa",
@@ -5930,7 +6766,10 @@ def nuevo_producto():
             url_for("productos")
         )
 
+
+
     empresa_actual = obtener_empresa_actual_obj()
+
 
     if not empresa_actual:
 
@@ -5943,78 +6782,258 @@ def nuevo_producto():
             url_for("dashboard")
         )
 
+# ==================================================
+# VALIDAR LÍMITE DEL PLAN
+# ==================================================
+
+    from permisos import puede_crear_producto
+
+    if not puede_crear_producto(empresa_actual):
+
+        flash(
+        "Has alcanzado el límite de productos permitido por tu plan.",
+        "warning"
+        )
+        
+        return redirect(
+        url_for("productos")
+    )
+
+
+
+    # ==================================================
+    # POST
+    # ==================================================
+
     if request.method == "POST":
 
         try:
 
+
+            # ==================================================
+            # PRODUCTO
+            # ==================================================
+
             codigo = request.form.get(
                 "codigo",
                 ""
-            ).strip()
+            ).strip().upper()
+
 
             codigo_barras = request.form.get(
                 "codigo_barras",
                 ""
             ).strip()
 
+
             nombre = request.form.get(
                 "nombre",
                 ""
             ).strip()
+
 
             categoria = request.form.get(
                 "categoria",
                 ""
             ).strip()
 
+
+            marca = request.form.get(
+                "marca",
+                ""
+            ).strip()
+
+
             descripcion = request.form.get(
                 "descripcion",
                 ""
             ).strip()
 
-            stock = int(
-                request.form.get(
-                    "stock",
-                    0
+
+            imagen_principal = request.form.get(
+                "imagen",
+                ""
+            ).strip()
+
+
+
+            # ==================================================
+            # UNIDAD
+            # ==================================================
+
+            unidad_medida = request.form.get(
+                "unidad_medida",
+                "Unidad"
+            ).strip()
+
+
+
+            unidades_por_caja = max(
+                1,
+                int(
+                    request.form.get(
+                        "unidades_por_caja",
+                        1
+                    )
+                    or 1
                 )
             )
 
-            stock_minimo = int(
-                request.form.get(
-                    "stock_minimo",
-                    0
+
+
+            # ==================================================
+            # INVENTARIO
+            # ==================================================
+
+            stock = max(
+                0,
+                int(
+                    request.form.get(
+                        "stock",
+                        0
+                    )
+                    or 0
                 )
             )
 
-            precio = float(
-                request.form.get(
-                    "precio",
-                    0
+
+            stock_minimo = max(
+                0,
+                int(
+                    request.form.get(
+                        "stock_minimo",
+                        0
+                    )
+                    or 0
                 )
             )
 
-            unidades_por_caja = int(
-                request.form.get(
-                    "unidades_por_caja",
-                    1
+
+            stock_maximo = max(
+                stock_minimo,
+                int(
+                    request.form.get(
+                        "stock_maximo",
+                        0
+                    )
+                    or 0
                 )
             )
+
+
+            punto_reorden = max(
+                stock_minimo,
+                int(
+                    request.form.get(
+                        "punto_reorden",
+                        0
+                    )
+                    or 0
+                )
+            )
+
+
+            ubicacion = request.form.get(
+                "ubicacion",
+                ""
+            ).strip()
+
+
+
+            tiempo_reposicion_dias = max(
+                1,
+                int(
+                    request.form.get(
+                        "tiempo_reposicion_dias",
+                        7
+                    )
+                    or 7
+                )
+            )
+
+
+
+            # ==================================================
+            # COMERCIAL
+            # ==================================================
+
+            costo_compra = max(
+                0,
+                float(
+                    request.form.get(
+                        "costo_compra",
+                        0
+                    )
+                    or 0
+                )
+            )
+
+
+
+            precio_venta = max(
+                0,
+                float(
+                    request.form.get(
+                        "precio_venta",
+                        0
+                    )
+                    or 0
+                )
+            )
+
+
+
+            tasa_iva = max(
+                0,
+                float(
+                    request.form.get(
+                        "tasa_iva",
+                        19
+                    )
+                    or 19
+                )
+            )
+
+
+
+            # ==================================================
+            # PROVEEDOR
+            # ==================================================
+
+            proveedor_id = request.form.get(
+                "proveedor_id"
+            )
+
+
+            proveedor_id = (
+                int(proveedor_id)
+                if proveedor_id
+                else None
+            )
+
+
+
+            # ==================================================
+            # VALIDACIONES
+            # ==================================================
 
             if not codigo:
 
                 flash(
-                    "Debe ingresar un código.",
+                    "El código es obligatorio.",
                     "warning"
                 )
 
                 return redirect(
                     url_for("nuevo_producto")
                 )
+
+
 
             if not nombre:
 
                 flash(
-                    "Debe ingresar un nombre.",
+                    "El nombre es obligatorio.",
                     "warning"
                 )
 
@@ -6022,14 +7041,16 @@ def nuevo_producto():
                     url_for("nuevo_producto")
                 )
 
-            producto_existente = Producto.query.filter_by(
 
+
+            existe = Producto.query.filter_by(
                 empresa_id=empresa_actual.id,
-
                 codigo=codigo
-
             ).first()
-            if producto_existente:
+
+
+
+            if existe:
 
                 flash(
                     "Ya existe un producto con ese código.",
@@ -6040,9 +7061,18 @@ def nuevo_producto():
                     url_for("nuevo_producto")
                 )
 
+
+
+            # ==================================================
+            # CREAR PRODUCTO
+            # ==================================================
+
             producto = Producto(
 
                 empresa_id=empresa_actual.id,
+
+
+                # Identificación
 
                 codigo=codigo,
 
@@ -6052,25 +7082,85 @@ def nuevo_producto():
 
                 categoria=categoria,
 
+                marca=marca,
+
                 descripcion=descripcion,
+
+                imagen_principal=imagen_principal,
+
+
+
+                # Inventario
 
                 stock=stock,
 
                 stock_minimo=stock_minimo,
 
-                precio_venta=precio,
+                stock_maximo=stock_maximo,
 
-                unidades_por_caja=unidades_por_caja
+                punto_reorden=punto_reorden,
+
+                ubicacion=ubicacion,
+
+
+
+                unidad_medida=unidad_medida,
+
+                unidades_por_caja=unidades_por_caja,
+
+
+
+                # Reposición inteligente
+
+                tiempo_reposicion_dias=tiempo_reposicion_dias,
+
+
+
+                # Comercial
+
+                proveedor_id=proveedor_id,
+
+
+                costo_compra=costo_compra,
+
+
+                # Inicialmente igual al costo compra
+
+                costo_promedio=costo_compra,
+
+
+                precio_venta=precio_venta,
+
+
+                tasa_iva=tasa_iva
 
             )
 
-            db.session.add(
-                producto
-            )
+
+
+            db.session.add(producto)
+
 
             db.session.flush()
 
+
+
+            # ==================================================
+            # CÁLCULOS AUTOMÁTICOS
+            # ==================================================
+
+            producto.calcular_valor_inventario()
+
+            producto.calcular_margen()
+
+
+
+            # ==================================================
+            # MOVIMIENTO INICIAL
+            # ==================================================
+
             if stock > 0:
+
 
                 movimiento = Movimiento(
 
@@ -6088,13 +7178,27 @@ def nuevo_producto():
 
                     stock_nuevo=stock,
 
-                    observacion="Stock inicial del producto."
+                    costo_unitario=costo_compra,
+
+                    costo_total=(
+                        stock *
+                        costo_compra
+                    ),
+
+                    observacion=(
+                        "Stock inicial creado."
+                    )
 
                 )
 
-                db.session.add(
-                    movimiento
-                )
+
+                db.session.add(movimiento)
+
+
+
+            # ==================================================
+            # AUDITORÍA
+            # ==================================================
 
             auditoria = Auditoria.crear(
 
@@ -6118,39 +7222,84 @@ def nuevo_producto():
 
             )
 
-            db.session.add(
-                auditoria
-            )
+
+            db.session.add(auditoria)
+
+
 
             db.session.commit()
+
+
+
             flash(
                 "Producto creado correctamente.",
                 "success"
             )
 
+
+
             return redirect(
                 url_for("productos")
             )
 
-        except Exception:
+
+
+        except ValueError:
+
 
             db.session.rollback()
 
-            logger.exception(
-                "Error creando producto."
-            )
 
             flash(
-                "Ocurrió un error al crear el producto.",
-                "danger"
+                "Error en los valores ingresados.",
+                "warning"
             )
+
 
             return redirect(
                 url_for("nuevo_producto")
             )
 
+
+
+        except Exception:
+
+
+            db.session.rollback()
+
+
+            logger.exception(
+                "Error creando producto"
+            )
+
+
+            flash(
+                "Error interno creando producto.",
+                "danger"
+            )
+
+
+            return redirect(
+                url_for("nuevo_producto")
+            )
+
+
+
+    # ==================================================
+    # GET
+    # ==================================================
+
+    proveedores = Proveedor.query.filter_by(
+        empresa_id=empresa_actual.id
+    ).order_by(
+        Proveedor.nombre.asc()
+    ).all()
+
+
+
     return render_template(
-        "nuevo_producto.html"
+        "nuevo_producto.html",
+        proveedores=proveedores
     )
 
 
@@ -6164,13 +7313,23 @@ def movimientos():
 
     usuario_actual = obtener_usuario_actual()
 
+
     if not usuario_actual:
 
-        return redirect(
-            url_for("logout")
+        session.clear()
+
+        flash(
+            "Sesión inválida.",
+            "danger"
         )
 
+        return redirect(
+            url_for("login")
+        )
+
+
     empresa_actual = obtener_empresa_actual_obj()
+
 
     if not empresa_actual:
 
@@ -6180,18 +7339,132 @@ def movimientos():
         )
 
         return redirect(
-            url_for("dashboard")
+            url_for("logout")
         )
 
-    movimientos = Movimiento.query.filter_by(
+
+    # ==================================================
+    # FILTROS
+    # ==================================================
+
+    tipo = request.args.get(
+        "tipo",
+        ""
+    )
+
+
+    busqueda = request.args.get(
+        "busqueda",
+        ""
+    ).strip()
+
+
+
+    # ==================================================
+    # CONSULTA BASE
+    # ==================================================
+
+    consulta = Movimiento.query.filter_by(
 
         empresa_id=empresa_actual.id
 
-    ).order_by(
+    )
+
+
+
+    if tipo:
+
+        consulta = consulta.filter(
+
+            Movimiento.tipo == tipo
+
+        )
+
+
+
+    if busqueda:
+
+        consulta = consulta.join(
+
+            Producto,
+
+            Movimiento.producto_id == Producto.id
+
+        ).filter(
+
+            Producto.nombre.ilike(
+                f"%{busqueda}%"
+            )
+
+        )
+
+
+
+    # ==================================================
+    # PAGINACIÓN
+    # ==================================================
+
+    pagina = request.args.get(
+        "pagina",
+        1,
+        type=int
+    )
+
+
+    movimientos = consulta.order_by(
 
         Movimiento.fecha.desc()
 
-    ).all()
+    ).paginate(
+
+        page=pagina,
+
+        per_page=50,
+
+        error_out=False
+
+    )
+
+
+
+    # ==================================================
+    # MÉTRICAS
+    # ==================================================
+
+    total_movimientos = db.session.query(
+        db.func.count(Movimiento.id)
+    ).filter(
+        Movimiento.empresa_id == empresa_actual.id
+    ).scalar()
+
+
+
+    total_entradas = db.session.query(
+        db.func.count(Movimiento.id)
+    ).filter(
+        Movimiento.empresa_id == empresa_actual.id,
+        Movimiento.tipo == "entrada"
+    ).scalar()
+
+
+
+    total_salidas = db.session.query(
+        db.func.count(Movimiento.id)
+    ).filter(
+        Movimiento.empresa_id == empresa_actual.id,
+        Movimiento.tipo == "salida"
+    ).scalar()
+
+
+
+    movimientos_hoy = db.session.query(
+        db.func.count(Movimiento.id)
+    ).filter(
+        Movimiento.empresa_id == empresa_actual.id,
+        db.func.date(Movimiento.fecha) == db.func.current_date()
+    ).scalar()
+
+
 
     return render_template(
 
@@ -6201,7 +7474,19 @@ def movimientos():
 
         empresa_actual=empresa_actual,
 
-        movimientos=movimientos
+        movimientos=movimientos,
+
+        tipo=tipo,
+
+        busqueda=busqueda,
+
+        total_movimientos=total_movimientos,
+
+        total_entradas=total_entradas,
+
+        total_salidas=total_salidas,
+
+        movimientos_hoy=movimientos_hoy
 
     )
 
@@ -6211,6 +7496,7 @@ def movimientos():
 # ==================================================
 
 @app.route("/stock-bajo")
+@app.route("/productos-stock-bajo")
 @login_requerido
 def stock_bajo():
 
@@ -6386,6 +7672,8 @@ def sobre_stock():
         valor_exceso=valor_exceso
 
     )
+
+
 
 
 # ==================================================
@@ -6714,53 +8002,31 @@ def editar_producto(id):
         try:
 
 
+
             codigo = request.form.get(
                 "codigo",
                 ""
             ).strip()
-
 
             nombre = request.form.get(
                 "nombre",
                 ""
             ).strip()
 
-
             categoria = request.form.get(
                 "categoria",
                 ""
             ).strip()
 
-
-            stock = request.form.get(
-                "stock",
-                0
-            )
-
-
-            stock_minimo = request.form.get(
-                "stock_minimo",
-                0
-            )
-
-
-            precio = request.form.get(
-                "precio",
-                0
-            )
-
+            marca = request.form.get(
+                "marca",
+                ""
+            ).strip()
 
             codigo_barras = request.form.get(
                 "codigo_barras",
                 ""
             ).strip()
-
-
-            unidades_por_caja = request.form.get(
-                "unidades_por_caja",
-                1
-            )
-
 
             descripcion = request.form.get(
                 "descripcion",
@@ -6768,15 +8034,99 @@ def editar_producto(id):
             ).strip()
 
 
+            # ======================================
+            # INVENTARIO
+            # ======================================
+
+            stock = request.form.get(
+                "stock",
+                0
+            )
+
+            stock_minimo = request.form.get(
+                "stock_minimo",
+                0
+            )
+
+            stock_maximo = request.form.get(
+                "stock_maximo",
+                0
+            )
+
+            unidad_medida = request.form.get(
+                "unidad_medida",
+                "unidad"
+            ).strip()
+
+            ubicacion = request.form.get(
+                "ubicacion",
+                ""
+            ).strip()
+
+            proveedor_id = request.form.get(
+                "proveedor_id"
+            )
+
+            tiempo_reposicion_dias = request.form.get(
+                "tiempo_reposicion_dias",
+                7
+            )
+
+
+            # ======================================
+            # PRECIOS
+            # ======================================
+
+            costo_compra = request.form.get(
+                "costo_compra",
+                0
+            )
+
+            precio_venta = request.form.get(
+                "precio_venta",
+                0
+            )
+
+
+            # ======================================
+            # IMPUESTOS
+            # ======================================
+
+            tasa_iva = request.form.get(
+                "tasa_iva",
+                19
+            )
+
+            incluye_iva = (
+                request.form.get(
+                    "incluye_iva"
+                )
+                == "on"
+            )
+
+
+            # ======================================
+            # CONTROL
+            # ======================================
+
+            activo = (
+                request.form.get(
+                    "activo"
+                )
+                == "on"
+            )
+
+
 # ==================================
 # VALIDACIONES
 # ==================================
 
 
-            if not codigo or not nombre:
+
+            if not codigo:
 
                 flash(
-                    "Código y nombre son obligatorios.",
+                    "Debe ingresar un código.",
                     "danger"
                 )
 
@@ -6788,8 +8138,20 @@ def editar_producto(id):
                 )
 
 
+            if not nombre:
 
-            # Evitar código repetido
+                flash(
+                    "Debe ingresar un nombre.",
+                    "danger"
+                )
+
+                return redirect(
+                    url_for(
+                        "editar_producto",
+                        id=id
+                    )
+                )
+
 
             producto_existente = Producto.query.filter(
 
@@ -6800,7 +8162,6 @@ def editar_producto(id):
                 Producto.id != producto.id
 
             ).first()
-
 
 
             if producto_existente:
@@ -6818,10 +8179,56 @@ def editar_producto(id):
                 )
 
 
+            if float(costo_compra or 0) < 0:
+
+                flash(
+                    "El costo no puede ser negativo.",
+                    "warning"
+                )
+
+                return redirect(
+                    url_for(
+                        "editar_producto",
+                        id=id
+                    )
+                )
+
+
+            if float(precio_venta or 0) < 0:
+
+                flash(
+                    "El precio de venta no puede ser negativo.",
+                    "warning"
+                )
+
+                return redirect(
+                    url_for(
+                        "editar_producto",
+                        id=id
+                    )
+                )
+
+
+            if int(stock or 0) < 0:
+
+                flash(
+                    "El stock no puede ser negativo.",
+                    "warning"
+                )
+
+                return redirect(
+                    url_for(
+                        "editar_producto",
+                        id=id
+                    )
+                )
+
+
 
 # ==================================
 # GUARDAR CAMBIOS
 # ==================================
+
 
 
             producto.codigo = codigo
@@ -6830,21 +8237,112 @@ def editar_producto(id):
 
             producto.categoria = categoria
 
-            producto.stock = int(stock)
-
-            producto.stock_minimo = int(stock_minimo)
-
-            producto.precio = float(precio)
+            producto.marca = marca
 
             producto.codigo_barras = codigo_barras
-
-            producto.unidades_por_caja = int(
-                unidades_por_caja
-            )
 
             producto.descripcion = descripcion
 
 
+            # ==================================
+            # INVENTARIO
+            # ==================================
+
+            producto.stock = int(
+                stock or 0
+            )
+
+            producto.stock_minimo = int(
+                stock_minimo or 0
+            )
+
+            producto.stock_maximo = int(
+                stock_maximo or 0
+            )
+
+            producto.unidad_medida = unidad_medida
+
+            producto.ubicacion = ubicacion
+
+            producto.tiempo_reposicion_dias = int(
+                tiempo_reposicion_dias or 7
+            )
+
+            if proveedor_id:
+
+                producto.proveedor_id = int(
+                    proveedor_id
+                )
+
+            else:
+
+                producto.proveedor_id = None
+
+
+            # ==================================
+            # PRECIOS
+            # ==================================
+
+            producto.costo_compra = float(
+                costo_compra or 0
+            )
+
+            producto.precio_venta = float(
+                precio_venta or 0
+            )
+
+            if not producto.costo_promedio:
+
+                producto.costo_promedio = (
+                    producto.costo_compra
+                )
+
+
+            # ==================================
+            # IMPUESTOS
+            # ==================================
+
+            producto.tasa_iva = float(
+                tasa_iva or 19
+            )
+
+            producto.incluye_iva = incluye_iva
+
+            producto.activo = activo
+
+
+            # ==================================
+            # INDICADORES AUTOMÁTICOS
+            # ==================================
+
+            producto.calcular_margen()
+
+            producto.calcular_valor_inventario()
+
+
+            # ==================================
+            # ACTUALIZAR INDICADORES
+            # ==================================
+
+            if producto.costo_promedio <= 0:
+
+                producto.costo_promedio = (
+                    producto.costo_compra
+                )
+
+            producto.calcular_margen()
+
+            producto.calcular_valor_inventario()
+
+            if producto.stock <= producto.stock_minimo:
+
+                producto.punto_reorden = max(
+
+                    producto.stock_minimo,
+
+                    producto.stock_seguridad or 0
+
+                )
 
             # ==================================
             # AUDITORÍA
@@ -7035,59 +8533,116 @@ def calcular_prediccion_producto(producto):
     }
 
 
-# ==================================================
-# PREDICCION INVENTARIO
-# ==================================================
-
 @app.route("/prediccion-inventario")
 @login_requerido
 def prediccion_inventario():
-    usuario_actual = obtener_usuario_actual()
-    empresa_actual = obtener_empresa_actual_obj()
-    if not empresa_actual:
-        flash(
-            "Empresa no encontrada",
-            "danger"
-        )
 
-        return redirect(
-            url_for("dashboard")
-        )
-
-    productos = Producto.query.filter_by(
-        empresa_id=empresa_actual.id
+    productos = Producto.query.filter(
+        Producto.activo == True
     ).all()
+
 
     predicciones = []
 
+
     for producto in productos:
 
-
-        resultado = calcular_prediccion_producto(
-            producto
+        consumo_diario = float(
+            producto.consumo_promedio_diario or 0
         )
 
 
-        predicciones.append(
-            resultado
-        )
+        stock_actual = producto.stock or 0
+
+
+        # Si no existe consumo histórico
+        if consumo_diario <= 0:
+
+            dias_stock = 999
+            estado = "estable"
+            compra_recomendada = 0
+
+
+        else:
+
+            dias_stock = int(
+                stock_actual / consumo_diario
+            )
+
+
+            # Estado del inventario
+
+            if dias_stock <= 7:
+
+                estado = "critico"
+
+
+            elif dias_stock <= 30:
+
+                estado = "atencion"
+
+
+            else:
+
+                estado = "estable"
+
+
+
+            # Compra sugerida:
+            # llevar inventario al stock máximo
+
+            if stock_actual < producto.stock_maximo:
+
+                compra_recomendada = (
+                    producto.stock_maximo -
+                    stock_actual
+                )
+
+            else:
+
+                compra_recomendada = 0
+
+
+
+        predicciones.append({
+
+            "producto": producto.nombre,
+
+            "stock": stock_actual,
+
+            "consumo_diario": round(
+                consumo_diario,
+                2
+            ),
+
+            "dias_stock": dias_stock,
+
+            "estado": estado,
+
+            "compra_recomendada": compra_recomendada
+
+        })
+
+
+
+    # ordenar primero los productos críticos
+
+    prioridad = {
+        "critico": 1,
+        "atencion": 2,
+        "estable": 3
+    }
+
 
     predicciones.sort(
-        key=lambda x:x["dias_stock"]
+        key=lambda x: prioridad[x["estado"]]
     )
 
 
 
     return render_template(
-
         "prediccion_inventario.html",
-
-        predicciones=predicciones,
-
-        usuario_actual=usuario_actual,
-
-        empresa_actual=empresa_actual
-
+        predicciones=predicciones
     )
 
 # ==================================================

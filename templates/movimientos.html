@@ -1,164 +1,31 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends "base.html" %}
 
-<head>
+{% block title %}
+Movimientos - NexuStock
+{% endblock %}
 
-<meta charset="UTF-8">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block content %}
 
-<title>Movimientos | NexuStock</title>
+<div class="max-w-7xl mx-auto">
 
 
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- HEADER -->
 
-
-<script src="https://unpkg.com/lucide@latest"></script>
-
-
-</head>
-
-
-<body class="bg-slate-100">
-
-
-
-<div class="flex min-h-screen">
-
-
-
-
-
-<!-- SIDEBAR -->
-
-<aside class="hidden md:flex w-64 bg-slate-900 text-white flex-col">
-
-
-<div class="p-6 border-b border-slate-700">
-
-
-<h1 class="text-2xl font-bold">
-📦 NexuStock
-</h1>
-
-
-<p class="text-sm text-slate-400 mt-1">
-Control inteligente inventario
-</p>
-
-
-</div>
-
-
-
-
-
-<nav class="p-4 space-y-2">
-
-
-
-<a href="/dashboard"
-class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
-
-<i data-lucide="layout-dashboard"></i>
-
-Dashboard
-
-</a>
-
-
-
-
-
-<a href="/productos"
-class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
-
-<i data-lucide="package"></i>
-
-Productos
-
-</a>
-
-
-
-
-
-<a href="/movimientos"
-class="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-600">
-
-<i data-lucide="repeat"></i>
-
-Movimientos
-
-</a>
-
-
-
-
-
-<a href="/usuarios"
-class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
-
-<i data-lucide="users"></i>
-
-Usuarios
-
-</a>
-
-
-
-
-
-<a href="/reportes"
-class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800">
-
-<i data-lucide="chart-column"></i>
-
-Reportes
-
-</a>
-
-
-
-</nav>
-
-
-
-</aside>
-
-
-
-
-
-
-
-
-<!-- CONTENIDO -->
-
-<main class="flex-1 p-6">
-
-
-
-
-
-<div class="flex justify-between items-center mb-8">
+<div class="flex flex-col md:flex-row md:justify-between md:items-center mb-8">
 
 
 <div>
 
+<h1 class="text-3xl font-bold text-slate-800">
+📦 Historial de Movimientos
+</h1>
 
-<h2 class="text-3xl font-bold text-slate-800">
-
-Historial de Movimientos
-
-</h2>
-
-
-<p class="text-slate-500">
-
-Registro completo de entradas y salidas
-
+<p class="text-slate-500 mt-2">
+Control completo de entradas, salidas y ajustes de inventario.
 </p>
+
+</div>
 
 
 </div>
@@ -166,30 +33,182 @@ Registro completo de entradas y salidas
 
 
 
-<div class="bg-white shadow rounded-xl px-6 py-4">
+<!-- TARJETAS -->
 
+<div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+
+
+<div class="bg-white rounded-xl shadow p-5">
 
 <p class="text-sm text-slate-500">
-
 Total movimientos
-
 </p>
-
 
 <p class="text-3xl font-bold text-blue-600">
-
-{{ movimientos|length }}
-
+{{ total_movimientos }}
 </p>
 
+</div>
+
+
+
+<div class="bg-white rounded-xl shadow p-5">
+
+<p class="text-sm text-slate-500">
+Entradas
+</p>
+
+<p class="text-3xl font-bold text-green-600">
+{{ total_entradas }}
+</p>
 
 </div>
 
 
 
+<div class="bg-white rounded-xl shadow p-5">
+
+<p class="text-sm text-slate-500">
+Salidas
+</p>
+
+<p class="text-3xl font-bold text-red-600">
+{{ total_salidas }}
+</p>
+
 </div>
 
 
+
+<div class="bg-white rounded-xl shadow p-5">
+
+<p class="text-sm text-slate-500">
+Hoy
+</p>
+
+<p class="text-3xl font-bold text-purple-600">
+{{ movimientos_hoy }}
+</p>
+
+</div>
+
+
+</div>
+
+
+
+
+
+<!-- FILTROS -->
+
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+
+
+<form method="GET"
+class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+
+<input
+
+type="text"
+
+name="busqueda"
+
+value="{{ busqueda }}"
+
+placeholder="Buscar producto..."
+
+class="border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500"
+
+>
+
+
+
+<select
+
+name="tipo"
+
+class="border rounded-lg px-4 py-3"
+
+>
+
+
+<option value="">
+Todos los movimientos
+</option>
+
+
+<option value="entrada"
+{% if tipo=="entrada" %}selected{% endif %}
+>
+Entrada
+</option>
+
+
+<option value="salida"
+{% if tipo=="salida" %}selected{% endif %}
+>
+Salida
+</option>
+
+
+<option value="ajuste"
+{% if tipo=="ajuste" %}selected{% endif %}
+>
+Ajuste
+</option>
+
+
+<option value="devolucion"
+{% if tipo=="devolucion" %}selected{% endif %}
+>
+Devolución
+</option>
+
+
+<option value="transferencia"
+{% if tipo=="transferencia" %}selected{% endif %}
+>
+Transferencia
+</option>
+
+
+</select>
+
+
+
+<button
+
+type="submit"
+
+class="bg-blue-600 text-white rounded-lg px-5 py-3 hover:bg-blue-700"
+
+>
+
+🔎 Buscar
+
+</button>
+
+
+
+<a
+
+href="{{ url_for('movimientos') }}"
+
+class="bg-gray-500 text-white rounded-lg px-5 py-3 text-center"
+
+>
+
+Limpiar
+
+</a>
+
+
+
+</form>
+
+
+</div>
 
 
 
@@ -199,26 +218,13 @@ Total movimientos
 <!-- TABLA -->
 
 
-<div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
-
-
-<div class="p-6">
-
-
-<h3 class="text-xl font-bold mb-5">
-
-📦 Historial inventario
-
-</h3>
-
+<div class="bg-white rounded-xl shadow overflow-hidden">
 
 
 <div class="overflow-x-auto">
 
 
-
 <table class="w-full">
-
 
 
 <thead class="bg-slate-100">
@@ -227,38 +233,38 @@ Total movimientos
 <tr>
 
 
-<th class="px-6 py-4 text-left text-slate-600">
-
+<th class="px-5 py-4 text-left">
 Fecha
-
 </th>
 
 
-<th class="px-6 py-4 text-left text-slate-600">
-
+<th class="px-5 py-4 text-left">
 Tipo
-
 </th>
 
 
-<th class="px-6 py-4 text-left text-slate-600">
-
+<th class="px-5 py-4 text-left">
 Producto
-
 </th>
 
 
-<th class="px-6 py-4 text-left text-slate-600">
-
+<th class="px-5 py-4 text-left">
 Cantidad
-
 </th>
 
 
-<th class="px-6 py-4 text-left text-slate-600">
+<th class="px-5 py-4 text-left">
+Stock
+</th>
 
+
+<th class="px-5 py-4 text-left">
 Usuario
+</th>
 
+
+<th class="px-5 py-4 text-left">
+Detalle
 </th>
 
 
@@ -269,138 +275,86 @@ Usuario
 
 
 
-
-
-
 <tbody>
 
 
 
-{% for movimiento in movimientos %}
+{% for movimiento in movimientos.items %}
+
+
+<tr class="border-t hover:bg-slate-50">
 
 
 
-<tr class="border-t hover:bg-slate-50 transition">
-
-
-
-
-
-<td class="px-6 py-4">
-
-
-<div class="flex items-center gap-2">
-
-
-<i data-lucide="calendar"
-class="w-4">
-</i>
-
+<td class="px-5 py-4 text-sm">
 
 {{ movimiento.fecha.strftime('%d/%m/%Y %H:%M') }}
-
-
-</div>
-
 
 </td>
 
 
 
 
+<td class="px-5 py-4">
 
 
+{% if movimiento.tipo=="entrada" %}
 
-<td class="px-6 py-4">
-
-
-
-{% if movimiento.tipo == "entrada" %}
-
-
-
-<span class="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full font-semibold">
-
-
-<i data-lucide="arrow-down-circle"
-class="w-4">
-</i>
-
-
-Entrada
-
-
+<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full">
+⬇ Entrada
 </span>
 
 
+{% elif movimiento.tipo=="salida" %}
 
-
-
-{% elif movimiento.tipo == "salida" %}
-
-
-
-
-
-<span class="inline-flex items-center gap-2 bg-red-100 text-red-700 px-4 py-2 rounded-full font-semibold">
-
-
-<i data-lucide="arrow-up-circle"
-class="w-4">
-</i>
-
-
-Salida
-
-
+<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full">
+⬆ Salida
 </span>
 
 
+{% elif movimiento.tipo=="ajuste" %}
+
+<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
+⚙ Ajuste
+</span>
 
 
+{% elif movimiento.tipo=="devolucion" %}
+
+<span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
+↩ Devolución
+</span>
 
 
 {% else %}
 
-
-
-
-
-<span class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-full font-semibold">
-
-
-<i data-lucide="settings"
-class="w-4">
-</i>
-
-
-Ajuste
-
-
+<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+⇄ Transferencia
 </span>
-
-
-
 
 
 {% endif %}
 
 
-
 </td>
 
 
 
 
 
+<td class="px-5 py-4 font-semibold">
 
 
-
-<td class="px-6 py-4 font-semibold">
-
+{% if movimiento.producto %}
 
 {{ movimiento.producto.nombre }}
 
+{% else %}
+
+Producto eliminado
+
+{% endif %}
+
 
 </td>
 
@@ -409,18 +363,16 @@ Ajuste
 
 
 
+<td class="px-5 py-4">
 
-<td class="px-6 py-4">
 
-
-<span class="text-xl font-bold text-slate-700">
+<span class="font-bold text-lg">
 
 {{ movimiento.cantidad }}
 
 </span>
 
-
-unidades
+uds.
 
 
 </td>
@@ -430,59 +382,65 @@ unidades
 
 
 
-
-<td class="px-6 py-4">
-
+<td class="px-5 py-4 text-sm">
 
 
-{% if movimiento.usuario_movimiento %}
+Anterior:
+
+<strong>
+{{ movimiento.stock_anterior }}
+</strong>
+
+
+<br>
+
+
+Nuevo:
+
+<strong>
+{{ movimiento.stock_nuevo }}
+</strong>
+
+
+</td>
 
 
 
-<div class="flex items-center gap-2">
-
-
-<i data-lucide="user"
-class="w-4">
-</i>
-
-
-{{ movimiento.usuario_movimiento.nombre }}
-
-
-</div>
 
 
 
+<td class="px-5 py-4">
 
+
+{% if movimiento.usuario %}
+
+{{ movimiento.usuario.nombre }}
 
 {% else %}
 
-
-
-<span class="text-slate-500">
-
 Sistema
-
-</span>
-
-
-
 
 {% endif %}
 
 
-
 </td>
 
 
 
 
+
+
+<td class="px-5 py-4 text-sm text-slate-600">
+
+
+{{ movimiento.observacion or "Sin detalle" }}
+
+
+</td>
+
+
+
 </tr>
-
-
-
-
 
 
 
@@ -492,21 +450,12 @@ Sistema
 
 <tr>
 
-
-<td colspan="5"
+<td colspan="7"
 class="text-center py-10 text-slate-500">
-
-
-<i data-lucide="inbox"
-class="mx-auto mb-3">
-</i>
-
 
 No existen movimientos registrados.
 
-
 </td>
-
 
 </tr>
 
@@ -519,29 +468,10 @@ No existen movimientos registrados.
 </tbody>
 
 
-
 </table>
 
 
-
 </div>
-
-
-
-</div>
-
-
-
-</div>
-
-
-
-
-
-</main>
-
-
-
 
 
 </div>
@@ -552,14 +482,80 @@ No existen movimientos registrados.
 
 
 
-<script>
-
-lucide.createIcons();
-
-</script>
+<!-- PAGINACIÓN -->
 
 
+<div class="flex justify-between items-center mt-6">
 
-</body>
 
-</html>
+{% if movimientos.has_prev %}
+
+
+<a
+
+href="{{ url_for('movimientos',
+pagina=movimientos.prev_num,
+tipo=tipo,
+busqueda=busqueda) }}"
+
+class="bg-slate-700 text-white px-5 py-3 rounded-lg"
+
+>
+
+⬅ Anterior
+
+</a>
+
+
+{% else %}
+
+<span></span>
+
+{% endif %}
+
+
+
+
+
+<p class="text-slate-500">
+
+Página {{ movimientos.page }}
+de {{ movimientos.pages }}
+
+</p>
+
+
+
+
+
+{% if movimientos.has_next %}
+
+
+<a
+
+href="{{ url_for('movimientos',
+pagina=movimientos.next_num,
+tipo=tipo,
+busqueda=busqueda) }}"
+
+class="bg-blue-600 text-white px-5 py-3 rounded-lg"
+
+>
+
+Siguiente ➡
+
+</a>
+
+
+{% endif %}
+
+
+
+</div>
+
+
+
+</div>
+
+
+{% endblock %}

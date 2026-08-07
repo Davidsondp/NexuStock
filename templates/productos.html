@@ -7,60 +7,38 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
 <title>Productos | NexuStock</title>
-
 
 <script src="https://cdn.tailwindcss.com"></script>
 
-
 <script src="https://unpkg.com/lucide@latest"></script>
-
 
 </head>
 
-
-
 <body class="bg-slate-100">
 
-
-
 <div class="flex min-h-screen">
-
-
-
-
 
 <!-- SIDEBAR -->
 
 <aside class="hidden md:flex w-64 bg-slate-900 text-white flex-col">
 
-
 <div class="p-6 border-b border-slate-700">
-
 
 <h1 class="text-2xl font-bold">
 📦 NexuStock
 </h1>
 
-
 <p class="text-sm text-slate-400 mt-1">
-
 ERP Inventario Inteligente
-
 </p>
-
 
 </div>
 
-
-
-
-
 <nav class="p-4 space-y-2">
 
-
-<a href="/dashboard"
+<a
+href="{{ url_for('dashboard') }}"
 class="flex gap-3 items-center px-4 py-3 rounded-lg hover:bg-slate-800">
 
 <i data-lucide="layout-dashboard"></i>
@@ -69,10 +47,8 @@ Dashboard
 
 </a>
 
-
-
-
-<a href="/productos"
+<a
+href="{{ url_for('productos') }}"
 class="flex gap-3 items-center px-4 py-3 rounded-lg bg-blue-600">
 
 <i data-lucide="package"></i>
@@ -81,11 +57,8 @@ Productos
 
 </a>
 
-
-
-
-
-<a href="/movimientos"
+<a
+href="{{ url_for('movimientos') }}"
 class="flex gap-3 items-center px-4 py-3 rounded-lg hover:bg-slate-800">
 
 <i data-lucide="repeat"></i>
@@ -94,37 +67,28 @@ Movimientos
 
 </a>
 
-
-
-
-
-<a href="/entrada-stock"
+<a
+href="{{ url_for('entrada_stock') }}"
 class="flex gap-3 items-center px-4 py-3 rounded-lg hover:bg-slate-800">
 
 <i data-lucide="arrow-down-circle"></i>
 
-Entrada stock
+Entrada de Stock
 
 </a>
 
-
-
-
-
-<a href="/salida-stock"
+<a
+href="{{ url_for('salida_stock') }}"
 class="flex gap-3 items-center px-4 py-3 rounded-lg hover:bg-slate-800">
 
 <i data-lucide="arrow-up-circle"></i>
 
-Salida stock
+Salida de Stock
 
 </a>
 
-
-
-
-
-<a href="/reportes"
+<a
+href="{{ url_for('reportes') }}"
 class="flex gap-3 items-center px-4 py-3 rounded-lg hover:bg-slate-800">
 
 <i data-lucide="chart-column"></i>
@@ -133,37 +97,19 @@ Reportes
 
 </a>
 
-
-
 </nav>
-
 
 </aside>
 
-
-
-
-
-
-
-
 <!-- CONTENIDO -->
-
 
 <main class="flex-1 p-6">
 
-
-
-
-
 <!-- HEADER -->
-
 
 <div class="flex flex-col md:flex-row justify-between gap-4 mb-8">
 
-
 <div>
-
 
 <h2 class="text-3xl font-bold text-slate-800">
 
@@ -171,72 +117,45 @@ Gestión de Productos
 
 </h2>
 
-
 <p class="text-slate-500">
 
 Administra tu inventario en tiempo real
 
 </p>
 
-
 </div>
-
-
-
-
 
 <div class="flex gap-3">
 
-
-<a href="/nuevo-producto"
-
+<a
+href="{{ url_for('nuevo_producto') }}"
 class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl shadow">
-
 
 <i data-lucide="plus"></i>
 
 Nuevo
 
-
 </a>
 
-
-
-<a href="/exportar-excel"
-
+<a
+href="{{ url_for('exportar_excel') }}"
 class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl shadow">
-
 
 <i data-lucide="download"></i>
 
 Excel
 
-
 </a>
 
-
+</div>
 
 </div>
 
-
-</div>
-
-
-
-
-
-
-
-
-<!-- KPIS -->
-
+<!-- KPIs -->
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 
-
-
 <div class="bg-white rounded-2xl p-6 border shadow-sm">
-
 
 <p class="text-slate-500">
 
@@ -244,49 +163,31 @@ Total productos
 
 </p>
 
-
 <h3 class="text-4xl font-bold text-blue-600">
 
 {{ productos|length }}
 
 </h3>
 
-
 </div>
 
-
-
-
-
-
 <div class="bg-white rounded-2xl p-6 border shadow-sm">
-
 
 <p class="text-slate-500">
 
-Productos encontrados
+Resultados búsqueda
 
 </p>
 
-
 <h3 class="text-4xl font-bold text-green-600">
-
 
 {{ productos|length }}
 
-
 </h3>
-
 
 </div>
 
-
-
-
-
-
 <div class="bg-white rounded-2xl p-6 border shadow-sm">
-
 
 <p class="text-slate-500">
 
@@ -294,460 +195,271 @@ Control inventario
 
 </p>
 
-
 <h3 class="text-xl font-bold text-purple-600 mt-3">
 
 Activo
 
 </h3>
 
+</div>
 
 </div>
 
-
-
-</div>
-
-
-
-
-
-
-
-
-
-<!-- BUSCADOR -->
-
+<!-- ========================= -->
+<!-- A PARTIR DE AQUÍ COMIENZA -->
+<!-- EL FORMULARIO BUSCADOR    -->
+<!-- (PARTE 2)                 -->
+<!-- ========================= -->
+ <!-- BUSCADOR -->
 
 <form method="GET"
-
 class="bg-white rounded-2xl shadow-sm border p-5 mb-8">
 
+    <div class="flex flex-col md:flex-row gap-3">
 
-<div class="flex flex-col md:flex-row gap-3">
+        <div class="relative flex-1">
 
+            <i
+                data-lucide="search"
+                class="absolute left-4 top-3.5 text-slate-400">
+            </i>
 
-<div class="relative flex-1">
+            <input
+                type="text"
+                name="buscar"
+                value="{{ busqueda }}"
+                placeholder="Buscar por nombre, código o categoría..."
+                class="w-full pl-12 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+            >
 
+        </div>
 
-<i data-lucide="search"
+        <button
+            type="submit"
+            class="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700">
 
-class="absolute left-4 top-3.5 text-slate-400">
+            Buscar
 
-</i>
+        </button>
 
-
-<input
-
-type="text"
-
-name="buscar"
-
-value="{{ busqueda }}"
-
-placeholder="Buscar por nombre, código o categoría..."
-
-class="w-full pl-12 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-
->
-
-
-</div>
-
-
-
-
-<button
-
-class="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700">
-
-
-Buscar
-
-
-</button>
-
-
-</div>
-
+    </div>
 
 </form>
-
-
-
-
-
-
-
 
 <!-- TABLA -->
 
-
 <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
 
+    <div class="overflow-x-auto">
 
-<div class="overflow-x-auto">
+        <table class="w-full">
 
+            <thead class="bg-slate-100">
 
-<table class="w-full">
+                <tr>
 
+                    <th class="p-4 text-left">
+                        Código
+                    </th>
 
+                    <th class="p-4 text-left">
+                        Producto
+                    </th>
 
-<thead class="bg-slate-100">
+                    <th class="p-4 text-left">
+                        Categoría
+                    </th>
 
+                    <th class="p-4 text-left">
+                        Stock
+                    </th>
 
-<tr>
+                    <th class="p-4 text-left">
+                        Precio
+                    </th>
 
+                    <th class="p-4 text-left">
+                        Estado
+                    </th>
 
-<th class="p-4 text-left">
-Código
-</th>
+                    <th class="p-4 text-left">
+                        Acciones
+                    </th>
 
+                </tr>
 
-<th class="p-4 text-left">
-Producto
-</th>
+            </thead>
 
+            <tbody>
 
-<th class="p-4 text-left">
-Categoría
-</th>
+            {% for producto in productos %}
 
+                <tr class="border-t hover:bg-slate-50">
 
-<th class="p-4 text-left">
-Stock
-</th>
+                    <td class="p-4">
 
+                        {{ producto.codigo }}
 
-<th class="p-4 text-left">
-Precio
-</th>
+                    </td>
 
+                    <td class="p-4">
 
-<th class="p-4 text-left">
-Estado
-</th>
+                        <p class="font-bold">
 
+                            {{ producto.nombre }}
 
-<th class="p-4 text-left">
-Acciones
-</th>
+                        </p>
 
+                        <p class="text-xs text-slate-500">
 
-</tr>
+                            {{ producto.codigo_barras or "Sin código barra" }}
 
+                        </p>
 
-</thead>
+                    </td>
 
+                    <td class="p-4">
 
+                        {{ producto.categoria or "Sin categoría" }}
 
+                    </td>
 
+                    <td class="p-4">
 
-<tbody>
+                        <span class="font-bold text-lg">
 
+                            {{ producto.stock }}
 
-{% for producto in productos %}
+                        </span>
 
+                        uds
 
+                    </td>
 
-<tr class="border-t hover:bg-slate-50">
+                    <td class="p-4 font-semibold">
 
+                        ${{ "{:,.0f}".format(producto.precio_venta or 0) }}
 
+                    </td>
 
+                    <td class="p-4">
 
+                        {% if producto.stock <= producto.stock_minimo %}
 
-<td class="p-4">
+                            <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold">
 
-{{ producto.codigo }}
+                                ⚠ Bajo
 
-</td>
+                            </span>
 
+                        {% else %}
 
+                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
 
+                                ✓ Disponible
 
+                            </span>
 
+                        {% endif %}
 
+                    </td>
 
-<td class="p-4">
+                    <td class="p-4">
 
+                        <div class="flex gap-2">
 
-<p class="font-bold">
+                            <!-- Entrada -->
 
-{{ producto.nombre }}
+                            <a
+                                href="{{ url_for('entrada_stock', producto_id=producto.id) }}"
+                                class="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition"
+                                title="Registrar entrada">
 
-</p>
+                                <i data-lucide="arrow-down"></i>
 
+                            </a>
 
-<p class="text-xs text-slate-500">
+                            <!-- Salida -->
 
-{{ producto.codigo_barras or "Sin código barra" }}
+                            <a
+                                href="{{ url_for('salida_stock', producto_id=producto.id) }}"
+                                class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition"
+                                title="Registrar salida">
 
-</p>
+                                <i data-lucide="arrow-up"></i>
 
+                            </a>
 
-</td>
+                            <!-- Editar -->
 
+                            <a
+                                href="{{ url_for('editar_producto', id=producto.id) }}"
+                                class="bg-yellow-500 hover:bg-yellow-600 text-white p-2 rounded-lg transition"
+                                title="Editar producto">
 
+                                <i data-lucide="edit"></i>
 
+                            </a>
 
+                            {% if usuario_actual.rol == "admin" %}
 
+                            <form
+                                action="{{ url_for('eliminar_producto', id=producto.id) }}"
+                                method="POST"
+                                onsubmit="return confirm('¿Eliminar producto?')">
 
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
 
-<td class="p-4">
+                                <button
+                                    type="submit"
+                                    class="bg-red-700 hover:bg-red-800 text-white p-2 rounded-lg transition"
+                                    title="Eliminar producto">
 
+                                    <i data-lucide="trash"></i>
 
-{{ producto.categoria or "Sin categoría" }}
+                                </button>
 
+                            </form>
 
-</td>
+                            {% endif %}
 
+                        </div>
 
+                    </td>
 
+                </tr>
 
+            {% else %}
 
+                <tr>
 
+                    <td
+                        colspan="7"
+                        class="text-center p-10 text-slate-500">
 
-<td class="p-4">
+                        No existen productos registrados.
 
+                    </td>
 
-<span class="font-bold text-lg">
+                </tr>
 
-{{ producto.stock }}
+            {% endfor %}
 
-</span>
-
-
-uds
-
-
-</td>
-
-
-
-
-
-
-
-<td class="p-4 font-semibold">
-
-
-${{ "{:,.0f}".format(producto.precio_venta or 0) }}
-
-
-</td>
-
-
-
-
-
-
-
-
-<td class="p-4">
-
-
-
-{% if producto.stock <= producto.stock_minimo %}
-
-
-
-<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold">
-
-⚠ Bajo
-
-</span>
-
-
-
-{% else %}
-
-
-
-<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
-
-✓ Disponible
-
-</span>
-
-
-
-{% endif %}
-
-
-</td>
-
-
-
-
-
-
-
-
-<td class="p-4">
-
-
-<div class="flex gap-2">
-
-
-
-
-
-<a href="/entrada-stock?producto={{ producto.id }}"
-
-class="bg-green-600 text-white p-2 rounded-lg">
-
-<i data-lucide="arrow-down"></i>
-
-</a>
-
-
-
-
-
-
-<a href="/salida-stock?producto={{ producto.id }}"
-
-class="bg-red-600 text-white p-2 rounded-lg">
-
-<i data-lucide="arrow-up"></i>
-
-</a>
-
-
-
-
-
-
-<a href="/editar-producto/{{ producto.id }}"
-
-class="bg-yellow-500 text-white p-2 rounded-lg">
-
-<i data-lucide="edit"></i>
-
-</a>
-
-
-
-
-
-
-{% if usuario_actual.rol == "admin" %}
-
-
-<form
-
-action="{{ url_for('eliminar_producto', id=producto.id) }}"
-
-method="POST"
-
-onsubmit="return confirm('¿Eliminar producto?')">
-
-
-<input
-
-type="hidden"
-
-name="csrf_token"
-
-value="{{ csrf_token() }}"
-
->
-
-
-<button
-
-class="bg-red-600 text-white p-2 rounded-lg">
-
-
-<i data-lucide="trash"></i>
-
-
-</button>
-
-
-</form>
-
-
-
-{% endif %}
-
-
-
-
-
-</div>
-
-
-</td>
-
-
-
-</tr>
-
-
-
-
-
-
-{% else %}
-
-
-
-<tr>
-
-
-<td colspan="7"
-
-class="text-center p-10 text-slate-500">
-
-
-No existen productos registrados.
-
-
-</td>
-
-
-</tr>
-
-
-
-{% endfor %}
-
-
-
-</tbody>
-
-
-</table>
-
-
-</div>
-
-
-</div>
-
-
-
-
-
-
+ </tbody>
 
 </main>
 
-
 </div>
-
-
-
-
 
 <script>
 
-lucide.createIcons();
+    lucide.createIcons();
 
 </script>
-
-
 
 </body>
 

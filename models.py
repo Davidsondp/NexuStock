@@ -972,6 +972,15 @@ class Usuario(
                 timedelta(minutes=30)
             )
 
+    def incrementar_intentos(self):
+        """
+        Alias de compatibilidad.
+        
+        Mantiene funcionando cualquier parte del sistema
+        que todavía invoque incrementar_intentos().
+        """
+        self.registrar_fallo_login()
+
 
 
     def reset_login(self):
@@ -2588,6 +2597,12 @@ class PlanSaaS(BaseModelMixin, db.Model):
         unique=True
     )
 
+    tiene_reportes = db.Column(
+    db.Boolean,
+    default=False,
+    nullable=False
+    )
+
 
     descripcion = db.Column(
         db.Text,
@@ -2601,6 +2616,59 @@ class PlanSaaS(BaseModelMixin, db.Model):
     )
 
 
+# ==================================================
+# FUNCIONES INVENTARIO
+# ==================================================
+
+    tiene_productos = db.Column(
+    db.Boolean,
+    default=True
+    )
+
+    tiene_movimientos = db.Column(
+    db.Boolean,
+    default=True
+    )
+
+    tiene_proveedores = db.Column(
+    db.Boolean,
+    default=True
+    )
+
+    tiene_roles = db.Column(
+    db.Boolean,
+    default=False
+    )
+
+    tiene_dashboard = db.Column(
+    db.Boolean,
+    default=True
+    )
+
+    tiene_alertas_basicas = db.Column(
+    db.Boolean,
+    default=True
+    )
+
+
+# ==================================================
+# ANALÍTICA
+# ==================================================
+
+    tiene_analisis_ventas = db.Column(
+    db.Boolean,
+    default=False
+    )
+
+    tiene_sobrestock = db.Column(
+    db.Boolean,
+    default=False
+    )
+
+    tiene_valor_inventario = db.Column(
+    db.Boolean,
+    default=False
+    )
 
     # --------------------------------------------------
     # PRECIOS
@@ -2626,82 +2694,169 @@ class PlanSaaS(BaseModelMixin, db.Model):
 
 
 
-    # --------------------------------------------------
-    # LIMITES
-    # --------------------------------------------------
+# --------------------------------------------------
+# LÍMITES
+# --------------------------------------------------
 
     limite_productos = db.Column(
-        db.Integer,
-        nullable=True
-    )
-
+    db.Integer,
+    nullable=True
+)
 
     limite_usuarios = db.Column(
-        db.Integer,
-        nullable=True
-    )
-
+    db.Integer,
+    nullable=True
+)
 
     limite_movimientos = db.Column(
-        db.Integer,
-        nullable=True
-    )
-
-
-    almacenamiento_mb = db.Column(
-        db.Integer,
-        nullable=True
-    )
-
-    dias_prueba = db.Column(
     db.Integer,
-    default=0
-    )
+    nullable=True
+)
+
+# Cantidad máxima de empresas (útil para futuros planes corporativos)
+    limite_empresas = db.Column(
+    db.Integer,
+    default=1
+)
 
     limite_sucursales = db.Column(
     db.Integer,
     default=1
-    )
+)
 
-    # --------------------------------------------------
-    # FUNCIONES DISPONIBLES
-    # --------------------------------------------------
+    almacenamiento_mb = db.Column(
+    db.Integer,
+    nullable=True
+)
 
-    tiene_reportes = db.Column(
-        db.Boolean,
-        default=True
-    )
+    dias_prueba = db.Column(
+    db.Integer,
+    default=0
+)
 
+# --------------------------------------------------
+# FUNCIONALIDADES
+# --------------------------------------------------
 
-    tiene_exportacion = db.Column(
-        db.Boolean,
-        default=False
-    )
+# Inventario
+    tiene_productos = db.Column(
+    db.Boolean,
+    default=True
+)
 
+    tiene_movimientos = db.Column(
+    db.Boolean,
+    default=True
+)
 
-    tiene_ia = db.Column(
-        db.Boolean,
-        default=False
-    )
+    tiene_proveedores = db.Column(
+    db.Boolean,
+    default=True
+)
 
+    tiene_dashboard = db.Column(
+    db.Boolean,
+    default=True
+)
 
-    tiene_alertas_avanzadas = db.Column(
-        db.Boolean,
-        default=False
-    )
+    tiene_alertas_basicas = db.Column(
+    db.Boolean,
+    default=True
+)
 
+# Usuarios
+    tiene_roles = db.Column(
+    db.Boolean,
+    default=False
+)
 
-    tiene_api = db.Column(
-        db.Boolean,
-        default=False
-    )
+# Reportes
+    tiene_reportes_avanzados = db.Column(
+    db.Boolean,
+    default=False
+)
 
+    tiene_exportacion_avanzada = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_analisis_ventas = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_productos_sin_movimiento = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_sobrestock = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_valor_inventario = db.Column(
+    db.Boolean,
+    default=False
+)
+
+# Inteligencia
+    tiene_prediccion_agotamiento = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_recomendacion_compra = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_ia_avanzada = db.Column(
+    db.Boolean,
+    default=False
+)
+
+# Empresa
+    tiene_auditoria = db.Column(
+    db.Boolean,
+    default=False
+)
 
     tiene_multisucursal = db.Column(
-        db.Boolean,
-        default=False
-    )
+    db.Boolean,
+    default=False
+)
 
+    tiene_transferencias = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_dashboard_ejecutivo = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_indicadores_financieros = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_api = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_reportes_personalizados = db.Column(
+    db.Boolean,
+    default=False
+)
+
+    tiene_soporte_prioritario = db.Column(
+    db.Boolean,
+    default=False
+)
 
 
     # --------------------------------------------------
@@ -2739,23 +2894,77 @@ class PlanSaaS(BaseModelMixin, db.Model):
 
         funciones = {
 
-            "reportes":
-                self.tiene_reportes,
+    "dashboard":
+        self.tiene_dashboard,
 
-            "exportacion":
-                self.tiene_exportacion,
+    "proveedores":
+        self.tiene_proveedores,
 
-            "ia":
-                self.tiene_ia,
+    "alertas_basicas":
+        self.tiene_alertas_basicas,
 
-            "alertas":
-                self.tiene_alertas_avanzadas,
+    "roles":
+        self.tiene_roles,
 
-            "api":
-                self.tiene_api,
+    "reportes":
+        self.tiene_reportes_avanzados,
 
-            "multisucursal":
-                self.tiene_multisucursal
+    "excel":
+        self.tiene_exportacion_excel,
+
+    "exportacion":
+        self.tiene_exportacion_avanzada,
+
+    "productos_sin_movimiento":
+        self.tiene_productos_sin_movimiento,
+
+    "productos_mas_vendidos":
+        self.tiene_productos_mas_vendidos,
+
+    "sobrestock":
+        self.tiene_sobrestock,
+
+    "valor_inventario":
+        self.tiene_valor_inventario,
+
+    "prediccion":
+        self.tiene_prediccion_agotamiento,
+
+    "pronostico":
+        self.tiene_pronostico_demanda,
+
+    "recomendacion_compra":
+        self.tiene_recomendacion_compra,
+
+    "optimizacion":
+        self.tiene_optimizacion_inventario,
+
+    "ia":
+        self.tiene_ia_avanzada,
+
+    "auditoria":
+        self.tiene_auditoria,
+
+    "multisucursal":
+        self.tiene_multisucursal,
+
+    "transferencias":
+        self.tiene_transferencias,
+
+    "dashboard_ejecutivo":
+        self.tiene_dashboard_ejecutivo,
+
+    "indicadores":
+        self.tiene_indicadores_financieros,
+
+    "api":
+        self.tiene_api,
+
+    "reportes_personalizados":
+        self.tiene_reportes_personalizados,
+
+    "soporte":
+        self.tiene_soporte_prioritario
 
         }
 
@@ -3857,7 +4066,7 @@ class Auditoria(BaseModelMixin, db.Model):
         ip=None,
         user_agent=None
         ):
-
+        
         return cls(
 
         accion=accion,
@@ -3883,8 +4092,6 @@ class Auditoria(BaseModelMixin, db.Model):
         return (
             f"<Auditoria {self.accion}>"
         )
-
-
 
 
 
