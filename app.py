@@ -389,7 +389,6 @@ def actualizar_valorizacion_producto(producto):
 # ==================================================
 # REGISTRAR AUDITORÍA
 # ==================================================
-
 def registrar_auditoria(
     accion,
     modulo,
@@ -397,78 +396,64 @@ def registrar_auditoria(
     empresa=None,
     usuario=None,
     datos_anteriores=None,
-    datos_nuevos=None):
-    """
-    Registra un evento del sistema.
-    """
+    datos_nuevos=None,
+):
+    """Registra un evento del sistema."""
     try:
+        # Si no se envía usuario, obtener el actual
         if usuario is None:
             usuario = obtener_usuario_actual()
-            auditoria = Auditoria(
-                accion=accion,
-                modulo=modulo,
-                descripcion=descripcion,
-                empresa_id=(
-                empresa.id
-                if empresa
-                else (
-                    usuario.empresa_id
-                    if usuario
-                    else None
-                    )),
-                    usuario_id=(
-                        usuario.id
-                        if usuario
-                        else None
-                        ),
 
+        # Determinar empresa_id de forma segura
+        empresa_id = None
+        if empresa:
+            empresa_id = empresa.id
+        elif usuario and hasattr(usuario, "empresa_id"):
+            empresa_id = usuario.empresa_id
+
+        # Determinar usuario_id de forma segura
+        usuario_id = usuario.id if usuario else None
+
+        # Obtener IP y User-Agent de forma segura
+        ip = request.remote_addr if request else None
+        user_agent = request.user_agent.string if request and request.user_agent else None
+
+        # Crear la instancia SIEMPRE (fuera de cualquier IF)
+        auditoria = Auditoria(
+            accion=accion,
+            modulo=modulo,
+            descripcion=descripcion,
+            empresa_id=empresa_id,
+            usuario_id=usuario_id,
             datos_anteriores=datos_anteriores,
-
             datos_nuevos=datos_nuevos,
-
-            ip_usuario=request.remote_addr,
-
-            user_agent=request.user_agent.string
-
+            ip_usuario=ip,
+            user_agent=user_agent,
         )
 
         db.session.add(auditoria)
-
         db.session.commit()
 
     except Exception as e:
-
         db.session.rollback()
-
-        print(
-            "Error registrando auditoría:",
-            e
-        )
+        print("Error registrando auditoría:", e)
 
 
 # ==================================================
 # CONTEXTO GLOBAL PARA PLANTILLAS
 # ==================================================
-
 @app.context_processor
 def contexto_global():
-
     usuario = obtener_usuario_actual()
 
     return {
-
         "usuario_actual": usuario,
-
         "es_super_admin": (
-            usuario is not None
-            and usuario.rol == "super_admin"
+            usuario is not None and usuario.rol == "super_admin"
         ),
-
         "es_admin_empresa": (
-            usuario is not None
-            and usuario.rol == "admin_empresa"
-        )
-
+            usuario is not None and usuario.rol == "admin_empresa"
+        ),
     }
 
 # ==================================================
