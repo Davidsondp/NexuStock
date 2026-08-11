@@ -870,211 +870,96 @@ def inicio():
 # ----------------------------------
 # LOGIN
 # ----------------------------------
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
-
     if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
 
-        email = request.form.get(
-            "email",
-            ""
-        ).strip().lower()
+        usuario = Usuario.query.filter_by(email=email).first()
 
-
-        password = request.form.get(
-            "password",
-            ""
-        )
-
-
-        usuario = Usuario.query.filter_by(
-            email=email
-        ).first()
-
-
-
-# ----------------------------------
-# USUARIO NO EXISTE
-# ----------------------------------
-
+        # ----------------------------------
+        # USUARIO NO EXISTE
+        # ----------------------------------
         if not usuario:
+            flash("Correo o contraseña incorrectos.", "danger")
+            return redirect(url_for("login"))
 
-            flash(
-                "Correo o contraseña incorrectos.",
-                "danger"
-            )
-
-            return redirect(
-                url_for("login")
-            )
-
-
-
-# ----------------------------------
-# CUENTA DESACTIVADA
-# ----------------------------------
-
+        # ----------------------------------
+        # CUENTA DESACTIVADA
+        # ----------------------------------
         if not usuario.activo:
-
-            flash(
-                "Esta cuenta se encuentra desactivada.",
-                "danger"
-            )
-
-            return redirect(
-                url_for("login")
-            )
-
-
+            flash("Esta cuenta se encuentra desactivada.", "danger")
+            return redirect(url_for("login"))
 
         # ----------------------------------
         # CUENTA BLOQUEADA
         # ----------------------------------
-
         if usuario.esta_bloqueado():
-
             flash(
                 "Cuenta bloqueada temporalmente por seguridad.",
-                "danger"
+                "danger",
             )
-
-            return redirect(
-                url_for("login")
-            )
-
-
+            return redirect(url_for("login"))
 
         # ----------------------------------
         # VALIDAR PASSWORD
         # ----------------------------------
-
-        if not check_password_hash(
-            usuario.password,
-            password
-        ):
-
-
+        if not check_password_hash(usuario.password, password):
             usuario.incrementar_intentos()
-
             db.session.commit()
 
+            flash("Correo o contraseña incorrectos.", "danger")
+            return redirect(url_for("login"))
 
-            flash(
-                "Correo o contraseña incorrectos.",
-                "danger"
-            )
-
-
-            return redirect(
-                url_for("login")
-            )
-
-
-
-# ----------------------------------
-# LOGIN CORRECTO
-# ----------------------------------
-
+        # ----------------------------------
+        # LOGIN CORRECTO
+        # ----------------------------------
         usuario.reset_login()
-
-
         usuario.registrar_acceso(
-
             ip=request.remote_addr,
-
-            user_agent=request.headers.get(
-                "User-Agent"
-            )
-
+            user_agent=request.headers.get("User-Agent"),
         )
 
-
-
-# ----------------------------------
-# VALIDACIÓN EMPRESA
-# SUPER ADMIN IGNORA ESTO
-# ----------------------------------
-
+        # ----------------------------------
+        # VALIDACIÓN EMPRESA (SUPER ADMIN IGNORA ESTO)
+        # ----------------------------------
         if usuario.rol != "super_admin":
-
-
             if usuario.empresa:
-
-
                 if usuario.empresa.estado != "activo":
-
-                    flash(
-                        "Su empresa se encuentra suspendida.",
-                        "danger"
-                    )
-
-
+                    flash("Su empresa se encuentra suspendida.", "danger")
                     db.session.commit()
+                    return redirect(url_for("login"))
 
-
-                    return redirect(
-                        url_for("login")
-                    )
-
-
-
-                if empresa_vencida(
-                    usuario.empresa
-                ):
-
-
-                    flash(
-                        "El plan de su empresa ha vencido.",
-                        "danger"
-                    )
-
-
+                if empresa_vencida(usuario.empresa):
+                    flash("El plan de su empresa ha vencido.", "danger")
                     db.session.commit()
-
-
-                    return redirect(
-                        url_for("login")
-                    )
-
-
+                    return redirect(url_for("login"))
 
         # Guardar sesión
-
         session.clear()
-
-
         session["usuario_id"] = usuario.id
-
-        registrar_auditoria(
-            accion="LOGIN",
-            modulo="Autenticación",
-            descripcion=f"Inicio de sesión de {usuario.nombre}",
-            usuario=usuario
-            )
-
-
         session.permanent = True
 
-
+        # ----------------------------------
+        # AUDITORÍA CON PROTECCIÓN ANTI-FALLO
+        # ----------------------------------
+        try:
+            registrar_auditoria(
+                accion="LOGIN",
+                modulo="Autenticación",
+                descripcion=f"Inicio de sesión de {usuario.nombre}",
+                usuario=usuario,
+            )
+        except Exception as e:
+            logger.exception("Error registrando auditoría en login: %s", str(e))
 
         db.session.commit()
 
+        flash(f"Bienvenido a NexuStock, {usuario.nombre}.", "success")
+        return redirect(url_for("dashboard"))
 
-
-        flash(f"Bienvenido a NexuStock, {usuario.nombre}.",
-            "success")
-
-
-        return redirect(
-            url_for("dashboard")
-        )
-
-
-
-    return render_template(
-        "login.html"
-    )
+    return render_template("login.html")
 
 # ==================================================
 # RESTABLECER PASSWORD CON TOKEN
