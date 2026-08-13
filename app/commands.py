@@ -1,0 +1,93 @@
+import click
+from sqlalchemy import text
+
+from .models import PlanSaaS, Usuario, db
+
+
+PLANES = (
+    dict(codigo="prueba", nombre="Prueba", descripcion="Prueba con funciones profesionales",
+         precio_mensual=0, precio_anual=0, dias_prueba=30, limite_productos=100,
+         limite_usuarios=2, limite_movimientos_mes=500, limite_sucursales=1,
+         limite_bodegas=1, almacenamiento_mb=500,
+         funciones={"productos": True, "movimientos": True, "proveedores": True,
+                    "reportes.avanzados": True, "analitica": True, "ia": True,
+                    "auditoria": True}, orden=1),
+    dict(codigo="basico", nombre="Básico", descripcion="Para pequeños negocios",
+         precio_mensual=9990, precio_anual=99900, dias_prueba=0, limite_productos=500,
+         limite_usuarios=2, limite_movimientos_mes=5000, limite_sucursales=1,
+         limite_bodegas=1, almacenamiento_mb=2000,
+         funciones={"productos": True, "movimientos": True, "proveedores": True}, orden=2),
+    dict(codigo="profesional", nombre="Profesional", descripcion="Operación y control avanzado",
+         precio_mensual=19990, precio_anual=199900, dias_prueba=0, limite_productos=5000,
+         limite_usuarios=10, limite_movimientos_mes=50000, limite_sucursales=3,
+         limite_bodegas=3, almacenamiento_mb=5000,
+         funciones={"productos": True, "movimientos": True, "proveedores": True,
+                    "proveedores.avanzados": True, "reportes.avanzados": True,
+                    "exportacion.avanzada": True, "analitica": True, "ia": True,
+                    "auditoria": True}, orden=3),
+    dict(codigo="empresa", nombre="Empresa", descripcion="Control e inteligencia completa",
+         precio_mensual=49990, precio_anual=499900, dias_prueba=0, limite_productos=None,
+         limite_usuarios=None, limite_movimientos_mes=None, limite_sucursales=None,
+         limite_bodegas=None, almacenamiento_mb=20000,
+         funciones={"productos": True, "movimientos": True, "proveedores": True,
+                    "proveedores.avanzados": True, "reportes.avanzados": True,
+                    "reportes.personalizados": True, "exportacion.avanzada": True,
+                    "analitica": True, "ia": True, "auditoria": True,
+                    "multisucursal": True, "multibodega": True, "transferencias": True,
+                    "dashboard.ejecutivo": True, "api": True}, orden=4),
+)
+
+
+def registrar_comandos(app):
+    @app.cli.command("verificar-produccion")
+    def verificar_produccion():
+        """Comprueba conexión, migración aplicada y datos esenciales."""
+        try:
+            db.session.execute(text("SELECT 1"))
+            revision = db.session.execute(
+                text("SELECT version_num FROM alembic_version")
+            ).scalar_one_or_none()
+        except Exception as exc:
+            db.session.rollback()
+            raise click.ClickException(
+                "No fue posible verificar la base de datos o su migración"
+            ) from exc
+        if not revision:
+            raise click.ClickException("La base de datos no tiene una revisión de Alembic aplicada")
+        codigos = set(db.session.scalars(db.select(PlanSaaS.codigo)))
+        faltantes = {datos["codigo"] for datos in PLANES} - codigos
+        if faltantes:
+            raise click.ClickException(
+                "Faltan planes oficiales: " + ", ".join(sorted(faltantes))
+            )
+        click.echo(f"Producción verificada. Revisión de base de datos: {revision}")
+
+    @app.cli.command("seed-planes")
+    def seed_planes():
+        """Crea o actualiza idempotentemente los planes oficiales."""
+        for datos in PLANES:
+            plan = db.session.scalar(db.select(PlanSaaS).where(PlanSaaS.codigo == datos["codigo"]))
+            if plan is None:
+                db.session.add(PlanSaaS(**datos))
+            else:
+                for campo, valor in datos.items():
+                    setattr(plan, campo, valor)
+        db.session.commit()
+        click.echo("Planes oficiales configurados.")
+
+    @app.cli.command("crear-super-admin")
+    @click.option("--nombre", prompt=True)
+    @click.option("--email", prompt=True)
+    @click.password_option(confirmation_prompt=True)
+    def crear_super_admin(nombre, email, password):
+        """Crea una cuenta global fuera de cualquier empresa."""
+        email = email.strip().lower()
+        if db.session.scalar(db.select(Usuario.id).where(Usuario.email == email)):
+            raise click.ClickException("El correo ya está registrado")
+        try:
+            usuario = Usuario(empresa_id=None, nombre=nombre.strip(), email=email,
+                              rol="super_admin", activo=True)
+            usuario.set_password(password); db.session.add(usuario); db.session.commit()
+            click.echo("Super Admin creado correctamente.")
+        except Exception as exc:
+            db.session.rollback(); raise click.ClickException(str(exc)) from exc

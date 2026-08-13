@@ -1,0 +1,5 @@
+{% for category, message in get_flashed_messages(with_categories=true) %}
+
+{{ message }}
+{% endfor %}
+{% block content %}{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block title %}Ingresar | NexuStock{% endblock %}
+{% block content %}<h1>Ingresar</h1><form method="post">{{ form.hidden_tag() }}
+<p>{{ form.email.label }} {{ form.email(autocomplete="email") }}</p>
+<p>{{ form.password.label }} {{ form.password(autocomplete="current-password") }}</p>
+<p>{{ form.recordar() }} {{ form.recordar.label }}</p>{{ form.submit() }}</form>
+<p><a href="{{ url_for('autenticacion.olvide_password') }}">Olvidé mi contraseña</a></p>
+<p><a href="{{ url_for('autenticacion.registro') }}">Crear empresa</a></p>{% endblock %}
