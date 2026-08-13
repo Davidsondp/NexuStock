@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+    <meta
+        name="description"
+        content="Panel global de administración de NexuStock"
+    >
+
+    <title>Super Administración | NexuStock</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/panel_superadministracion.css') }}"
+    >
+</head>
+
+<body>
+    <div class="panel">
+        <aside
+            id="barra-lateral"
+            class="panel__lateral"
+            aria-label="Navegación principal"
+        >
+            <div class="marca">
+                <div class="marca__icono" aria-hidden="true">N</div>
+
+                <div>
+                    <p class="marca__nombre">NexuStock</p>
+                    <span class="marca__ambito">Control global</span>
+                </div>
+            </div>
+
+            <nav class="navegacion" aria-label="Super Administración">
+                <p class="navegacion__titulo">Plataforma</p>
+
+                <button
+                    class="navegacion__enlace"
+                    type="button"
+                    data-seccion="resumen"
+                    aria-current="page"
+                >
+                    <span class="navegacion__icono" aria-hidden="true">⌂</span>
+                    <span>Resumen global</span>
+                </button>
+
+                <button
+                    class="navegacion__enlace"
+                    type="button"
+                    data-seccion="empresas"
+                >
+                    <span class="navegacion__icono" aria-hidden="true">▦</span>
+                    <span>Empresas</span>
+                </button>
+
+                <button
+                    class="navegacion__enlace"
+                    type="button"
+                    data-seccion="planes"
+                >
+                    <span class="navegacion__icono" aria-hidden="true">◇</span>
+                    <span>Planes</span>
+                </button>
+
+                <button
+                    class="navegacion__enlace"
+                    type="button"
+                    data-seccion="suscripciones"
+                >
+                    <span class="navegacion__icono" aria-hidden="true">↻</span>
+                    <span>Suscripciones</span>
+                </button>
+
+                <button
+                    class="navegacion__enlace"
+                    type="button"
+                    data-seccion="pagos"
+                >
+                    <span class="navegacion__icono" aria-hidden="true">$</span>
+                    <span>Pagos</span>
+                </button>
+
+                <p class="navegacion__titulo">Seguridad</p>
+
+                <button
+                    class="navegacion__enlace"
+                    type="button"
+                    data-seccion="auditoria"
+                >
+                    <span class="navegacion__icono" aria-hidden="true">◉</span>
+                    <span>Auditoría</span>
+                </button>
+            </nav>
+
+            <div class="panel__usuario">
+                <div class="usuario">
+                    <div class="usuario__avatar" aria-hidden="true">
+                        {{ current_user.nombre[:1] | upper }}
+                    </div>
+
+                    <div>
+                        <div class="usuario__nombre">
+                            {{ current_user.nombre }}
+                            {{ current_user.apellido or "" }}
+                        </div>
+                        <div class="usuario__rol">Super Admin global</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <button
+            id="cerrar-menu"
+            class="superposicion"
+            type="button"
+            aria-label="Cerrar menú"
+        ></button>
+
+        <div class="panel__principal">
+            <header class="cabecera">
+                <div class="cabecera__grupo">
+                    <button
+                        id="abrir-menu"
+                        class="boton-menu"
+                        type="button"
+                        aria-label="Abrir menú"
+                        aria-controls="barra-lateral"
+                        aria-expanded="false"
+                    >
+                        ☰
+                    </button>
+
+                    <div>
+                        <h1 id="titulo-pagina" class="cabecera__titulo">
+                            Panel global
+                        </h1>
+                        <p class="cabecera__subtitulo">
+                            Administración integral de la plataforma NexuStock
+                        </p>
+                    </div>
+                </div>
+
+                <form
+                    method="post"
+                    action="{{ url_for('autenticacion.salir') }}"
+                >
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="{{ csrf_token() }}"
+                    >
+
+                    <button
+                        class="boton boton--secundario"
+                        type="submit"
+                    >
+                        Cerrar sesión
+                    </button>
+                </form>
+            </header>
+
+            <main class="contenido">
+                {% for categoria, mensaje in
+                    get_flashed_messages(with_categories=true) %}
+                    <div class="mensaje mensaje--{{ categoria }}">
+                        {{ mensaje }}
+                    </div>
+                {% endfor %}
+
+                <section
+                    id="seccion-resumen"
+                    class="seccion-panel"
+                    data-contenido-seccion="resumen"
+                >
+                    <div class="encabezado-seccion">
+                        <div>
+                            <p class="encabezado-seccion__etiqueta">
+                                Vista ejecutiva
+                            </p>
+                            <h2>Resumen global</h2>
+                            <p>
+                                Estado comercial y operativo general de
+                                NexuStock, sin acceso al inventario interno
+                                de las empresas.
+                            </p>
+                        </div>
+
+                        <button
+                            class="boton boton--primario"
+                            type="button"
+                            data-actualizar="resumen"
+                        >
+                            Actualizar datos
+                        </button>
+                    </div>
+
+                    <div class="tarjetas">
+                        <article class="tarjeta tarjeta--metrica">
+                            <div class="metrica__cabecera">
+                                <p class="metrica__nombre">
+                                    Empresas registradas
+                                </p>
+                                <span class="insignia">Global</span>
+                            </div>
+                            <p
+                                id="metrica-empresas"
+                                class="metrica__valor"
+                            >—</p>
+                            <p class="metrica__detalle">
+                                Total de cuentas empresariales
+                            </p>
+                        </article>
+
+                        <article class="tarjeta tarjeta--metrica">
+                            <div class="metrica__cabecera">
+                                <p class="metrica__nombre">
+                                    Empresas activas
+                                </p>
+                                <span class="insignia insignia--exito">
+                                    Activas
+                                </span>
+                            </div>
+                            <p
+                                id="metrica-empresas-activas"
+                                class="metrica__valor"
+                            >—</p>
+                            <p class="metrica__detalle">
+                                Empresas habilitadas actualmente
+                            </p>
+                        </article>
+
+                        <article class="tarjeta tarjeta--metrica">
+                            <div class="metrica__cabecera">
+                                <p class="metrica__nombre">
+                                    Usuarios empresariales
+                                </p>
+                                <span class="insignia">Usuarios</span>
+                            </div>
+                            <p
+                                id="metrica-usuarios"
+                                class="metrica__valor"
+                            >—</p>
+                            <p class="metrica__detalle">
+                                No incluye cuentas Super Admin
+                            </p>
+                        </article>
+
+                        <article class="tarjeta tarjeta--metrica">
+                            <div class="metrica__cabecera">
+                                <p class="metrica__nombre">
+                                    Suscripciones vigentes
+                                </p>
+                                <span class="insignia insignia--exito">
+                                    Vigentes
+                                </span>
+                            </div>
+                            <p
+                                id="metrica-suscripciones"
+                                class="metrica__valor"
+                            >—</p>
+                            <p class="metrica__detalle">
+                                Activas o en periodo de prueba
+                            </p>
+                        </article>
+
+                        <article class="tarjeta tarjeta--metrica">
+                            <div class="metrica__cabecera">
+                                <p class="metrica__nombre">
+                                    Pagos confirmados
+                                </p>
+                                <span class="insignia">Pagos</span>
+                            </div>
+                            <p
+                                id="metrica-pagos"
+                                class="metrica__valor"
+                            >—</p>
+                            <p class="metrica__detalle">
+                                Transacciones confirmadas
+                            </p>
+                        </article>
+
+                        <article class="tarjeta tarjeta--metrica">
+                            <div class="metrica__cabecera">
+                                <p class="metrica__nombre">
+                                    Ingresos confirmados
+                                </p>
+                                <span class="insignia insignia--exito">
+                                    CLP
+                                </span>
+                            </div>
+                            <p
+                                id="metrica-ingresos"
+                                class="metrica__valor"
+                            >—</p>
+                            <p class="metrica__detalle">
+                                Total histórico confirmado
+                            </p>
+                        </article>
+                    </div>
+
+                    <div class="rejilla">
+                        <article class="tarjeta">
+                            <div class="tarjeta__cabecera">
+                                <div>
+                                    <h3 class="tarjeta__titulo">
+                                        Empresas recientes
+                                    </h3>
+                                    <p class="tarjeta__descripcion">
+                                        Últimas empresas registradas
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="tabla-contenedor">
+                                <table class="tabla">
+                                    <thead>
+                                        <tr>
+                                            <th>Empresa</th>
+                                            <th>Identificación</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resumen-empresas">
+                                        <tr>
+                                            <td
+                                                colspan="3"
+                                                class="estado-carga"
+                                            >
+                                                Cargando información…
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </article>
+
+                        <article class="tarjeta">
+                            <div class="tarjeta__cabecera">
+                                <div>
+                                    <h3 class="tarjeta__titulo">
+                                        Actividad reciente
+                                    </h3>
+                                    <p class="tarjeta__descripcion">
+                                        Últimos eventos globales
+                                    </p>
+                                </div>
+                            </div>
+
+                            <ul
+                                id="resumen-actividad"
+                                class="lista-actividad"
+                            >
+                                <li class="estado-carga">
+                                    Cargando actividad…
+                                </li>
+                            </ul>
+                        </article>
+                    </div>
+                </section>
+
+                <section
+                    id="seccion-empresas"
+                    class="seccion-panel"
+                    data-contenido-seccion="empresas"
+                    hidden
+                >
+                    <div class="encabezado-seccion">
+                        <div>
+                            <p class="encabezado-seccion__etiqueta">
+                                Clientes
+                            </p>
+                            <h2>Empresas</h2>
+                            <p>
+                                Consulta y administración del estado de
+                                las empresas registradas.
+                            </p>
+                        </div>
+                    </div>
+
+                    <article class="tarjeta">
+                        <div class="filtros">
+                            <input
+                                id="filtro-empresa-buscar"
+                                class="campo"
+                                type="search"
+                                placeholder="Buscar empresa"
+                                aria-label="Buscar empresa"
+                            >
+
+                            <select
+                                id="filtro-empresa-estado"
+                                class="campo"
+                                aria-label="Filtrar por estado"
+                            >
+                                <option value="">Todos los estados</option>
+                                <option value="activa">Activa</option>
+                                <option value="suspendida">Suspendida</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+
+                            <button
+                                id="buscar-empresas"
+                                class="boton boton--primario"
+                                type="button"
+                            >
+                                Buscar
+                            </button>
+                        </div>
+
+                        <div class="tabla-contenedor">
+                            <table class="tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Empresa</th>
+                                        <th>Correo</th>
+                                        <th>Identificación</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-empresas">
+                                    <tr>
+                                        <td colspan="5" class="estado-carga">
+                                            Selecciona la sección para cargar.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                </section>
+
+                <section
+                    id="seccion-planes"
+                    class="seccion-panel"
+                    data-contenido-seccion="planes"
+                    hidden
+                >
+                    <div class="encabezado-seccion">
+                        <div>
+                            <p class="encabezado-seccion__etiqueta">
+                                Oferta comercial
+                            </p>
+                            <h2>Planes</h2>
+                            <p>
+                                Configuración de precios, límites,
+                                funciones y disponibilidad.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="lista-planes" class="tarjetas">
+                        <article class="tarjeta estado-carga">
+                            Selecciona la sección para cargar.
+                        </article>
+                    </div>
+                </section>
+
+                <section
+                    id="seccion-suscripciones"
+                    class="seccion-panel"
+                    data-contenido-seccion="suscripciones"
+                    hidden
+                >
+                    <div class="encabezado-seccion">
+                        <div>
+                            <p class="encabezado-seccion__etiqueta">
+                                Ciclo comercial
+                            </p>
+                            <h2>Suscripciones</h2>
+                            <p>
+                                Seguimiento global de pruebas,
+                                activaciones y vencimientos.
+                            </p>
+                        </div>
+                    </div>
+
+                    <article class="tarjeta">
+                        <div class="tabla-contenedor">
+                            <table class="tabla">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Empresa</th>
+                                        <th>Plan</th>
+                                        <th>Estado</th>
+                                        <th>Ciclo</th>
+                                        <th>Inicio</th>
+                                        <th>Finalización</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-suscripciones">
+                                    <tr>
+                                        <td colspan="7" class="estado-carga">
+                                            Selecciona la sección para cargar.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                </section>
+
+                <section
+                    id="seccion-pagos"
+                    class="seccion-panel"
+                    data-contenido-seccion="pagos"
+                    hidden
+                >
+                    <div class="encabezado-seccion">
+                        <div>
+                            <p class="encabezado-seccion__etiqueta">
+                                Finanzas
+                            </p>
+                            <h2>Pagos</h2>
+                            <p>
+                                Registro consolidado de pagos y
+                                referencias de los proveedores.
+                            </p>
+                        </div>
+                    </div>
+
+                    <article class="tarjeta">
+                        <div class="tabla-contenedor">
+                            <table class="tabla">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Empresa</th>
+                                        <th>Proveedor</th>
+                                        <th>Referencia</th>
+                                        <th>Estado</th>
+                                        <th>Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-pagos">
+                                    <tr>
+                                        <td colspan="6" class="estado-carga">
+                                            Selecciona la sección para cargar.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                </section>
+
+                <section
+                    id="seccion-auditoria"
+                    class="seccion-panel"
+                    data-contenido-seccion="auditoria"
+                    hidden
+                >
+                    <div class="encabezado-seccion">
+                        <div>
+                            <p class="encabezado-seccion__etiqueta">
+                                Trazabilidad
+                            </p>
+                            <h2>Auditoría</h2>
+                            <p>
+                                Consulta de eventos administrativos y
+                                empresariales registrados por la plataforma.
+                            </p>
+                        </div>
+                    </div>
+
+                    <article class="tarjeta">
+                        <div class="tabla-contenedor">
+                            <table class="tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Acción</th>
+                                        <th>Módulo</th>
+                                        <th>Empresa</th>
+                                        <th>Usuario</th>
+                                        <th>Entidad</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-auditoria">
+                                    <tr>
+                                        <td colspan="6" class="estado-carga">
+                                            Selecciona la sección para cargar.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div
+        id="notificacion"
+        class="notificacion"
+        role="status"
+        aria-live="polite"
+        hidden
+    ></div>
+
+    <script
+        src="{{ url_for('static', filename='js/panel_superadministracion.js') }}"
+        defer
+    ></script>
+</body>
+</html>
