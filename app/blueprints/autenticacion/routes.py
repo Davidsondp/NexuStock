@@ -35,7 +35,7 @@ def _destino_usuario(usuario: Usuario) -> str:
     if usuario.rol == "super_admin" and usuario.empresa_id is None:
         return url_for("panel_superadministracion.inicio")
 
-    return url_for("estado.estado")
+    return url_for("panel.inicio")
 
 
 @autenticacion_bp.route("/registro", methods=["GET", "POST"])

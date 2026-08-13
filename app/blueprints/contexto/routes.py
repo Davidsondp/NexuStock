@@ -19,7 +19,7 @@ def _destino_seguro(destino: str | None) -> str | None:
 def seleccionar():
     if current_user.rol == "super_admin":
         flash("El Super Admin no utiliza ubicaciones empresariales.", "peligro")
-        return redirect(url_for("estado.estado"))
+        return redirect(url_for("panel_superadministracion.inicio"))
     formulario = ContextoForm()
     sucursales = sucursales_autorizadas(current_user)
     formulario.sucursal_id.choices = [(s.id, s.nombre) for s in sucursales]
@@ -40,7 +40,10 @@ def seleccionar():
             )
             db.session.commit()
             flash("Ubicación seleccionada correctamente.", "exito")
-            return redirect(_destino_seguro(request.args.get("siguiente")) or url_for("estado.estado"))
+            return redirect(
+    _destino_seguro(request.args.get("siguiente"))
+    or url_for("panel.inicio")
+)
         except PermissionError:
             flash("La ubicación seleccionada no está autorizada.", "peligro")
     return render_template("contexto/seleccionar.html", form=formulario)

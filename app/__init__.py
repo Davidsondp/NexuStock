@@ -40,6 +40,7 @@ def crear_aplicacion(nombre_configuracion: str | None = None) -> Flask:
     from .blueprints.suscripciones.routes import suscripciones_bp, webhooks_pago_bp
     from .blueprints.superadministracion.routes import superadministracion_bp
     from .blueprints.superadministracion.panel import panel_superadministracion_bp
+    from .blueprints.panel.routes import panel_bp
     app.register_blueprint(estado_bp)
     app.register_blueprint(autenticacion_bp)
     app.register_blueprint(contexto_bp)
@@ -56,6 +57,7 @@ def crear_aplicacion(nombre_configuracion: str | None = None) -> Flask:
     app.register_blueprint(webhooks_pago_bp)
     app.register_blueprint(superadministracion_bp)
     app.register_blueprint(panel_superadministracion_bp)
+    app.register_blueprint(panel_bp)
 
     from .commands import registrar_comandos
     registrar_comandos(app)

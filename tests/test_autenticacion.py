@@ -69,7 +69,7 @@ def test_next_externo_no_se_usa(app, client):
     respuesta = client.post("/autenticacion/ingresar?siguiente=https://malicioso.test", data={
         "email": REGISTRO["email"], "password": REGISTRO["password"]
     })
-    assert respuesta.location.endswith("/estado")
+    assert respuesta.location.endswith("/panel")
 
 
 def test_paginas_autenticacion_cargan(client):

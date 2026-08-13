@@ -1,4 +1,25 @@
-{% extends "base.html" %}{% block title %}Seleccionar ubicación | NexuStock{% endblock %}
-{% block content %}<h1>Seleccionar ubicación</h1><form method="post">{{ form.hidden_tag() }}
-<p>{{ form.sucursal_id.label }} {{ form.sucursal_id() }}</p>
-<p>{{ form.bodega_id.label }} {{ form.bodega_id() }}</p>{{ form.submit() }}</form>{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Seleccionar ubicación | NexuStock{% endblock %}
+
+{% block content %}
+<main>
+    <h1>Seleccionar ubicación</h1>
+
+    <form method="post">
+        {{ form.hidden_tag() }}
+
+        <p>
+            {{ form.sucursal_id.label }}
+            {{ form.sucursal_id() }}
+        </p>
+
+        <p>
+            {{ form.bodega_id.label }}
+            {{ form.bodega_id() }}
+        </p>
+
+        {{ form.submit() }}
+    </form>
+</main>
+{% endblock %}
