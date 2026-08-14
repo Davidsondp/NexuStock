@@ -2,7 +2,13 @@ from decimal import Decimal
 
 import pytest
 
-from app.models import Bodega, Empresa, Inventario, Movimiento, Producto, Sucursal, Usuario, Venta, db
+from app.models import (Bodega,Cliente,Empresa,Inventario,Movimiento,
+    Producto,
+    Sucursal,
+    Usuario,
+    Venta,
+    db,
+)
 from app.services.contexto import ContextoOperacion
 from app.services.inventario import ServicioInventario, StockInsuficiente
 from app.services.ventas import EstadoVentaInvalido, ServicioVentas
@@ -76,3 +82,92 @@ def test_api_venta_en_espanol(app,client):
     r=client.post("/api/ventas",json={"numero":"V-API","bodega_id":ids[1],"items":[{"producto_id":ids[2],"cantidad":2}]})
     assert r.status_code==201 and r.get_json()["estado"]=="borrador"
     assert client.post(f"/api/ventas/{r.get_json()['id']}/reservar").get_json()["estado"]=="reservada"
+
+def test_api_venta_expone_datos_para_panel(app,client,):
+    ids = _preparar(app, client)
+
+    with app.app_context():
+        usuario = db.session.get(Usuario, ids[0])
+
+        cliente = Cliente(
+            empresa_id=usuario.empresa_id,
+            nombre="Cliente de prueba",
+            identificacion_fiscal="12.345.678-9",
+            email="cliente@nexustock.cl",
+            activo=True,
+        )
+
+        db.session.add(cliente)
+        db.session.commit()
+
+        cliente_id = cliente.id
+
+    respuesta = client.post(
+        "/api/ventas",
+        json={
+            "numero": "VTA-PANEL-001",
+            "bodega_id": ids[1],
+            "cliente_id": cliente_id,
+            "moneda": "CLP",
+            "observaciones": "Venta para panel",
+            "items": [
+                {
+                    "producto_id": ids[2],
+                    "cantidad": 2,
+                    "precio_unitario": 250,
+                    "descuento": 20,
+                    "impuesto": 90,
+                }
+            ],
+        },
+    )
+
+    assert respuesta.status_code == 201
+
+    venta = respuesta.get_json()
+
+    campos_venta = {
+        "id",
+        "numero",
+        "estado",
+        "cliente_id",
+        "cliente_nombre",
+        "bodega_id",
+        "fecha_creacion",
+        "confirmada_en",
+        "cancelada_en",
+        "motivo_cancelacion",
+        "moneda",
+        "subtotal",
+        "descuento",
+        "impuesto",
+        "total",
+        "observaciones",
+        "items",
+    }
+
+    assert campos_venta.issubset(venta)
+    assert venta["cliente_nombre"] == "Cliente de prueba"
+    assert venta["observaciones"] == "Venta para panel"
+
+    assert len(venta["items"]) == 1
+
+    item = venta["items"][0]
+
+    campos_item = {
+        "id",
+        "producto_id",
+        "producto_codigo",
+        "producto_nombre",
+        "cantidad",
+        "precio_unitario",
+        "descuento",
+        "impuesto",
+        "total",
+    }
+
+    assert campos_item.issubset(item)
+    assert item["producto_codigo"] == "V-1"
+    assert item["producto_nombre"] == "Vendible"
+    assert item["cantidad"] == "2.000"
+    assert item["total"] == "570.00"

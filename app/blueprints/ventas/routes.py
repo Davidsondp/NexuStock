@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
+from ...models import Cliente, Producto, db
 
 from ...permisos import requerir_permiso
 from ...services.ventas import ErrorVenta, ServicioVentas
@@ -7,11 +8,91 @@ from ...services.ventas import ErrorVenta, ServicioVentas
 ventas_bp = Blueprint("ventas", __name__, url_prefix="/api/ventas")
 
 
-def _serializar(v):
-    return {"id":v.id,"numero":v.numero,"estado":v.estado,"cliente_id":v.cliente_id,
-            "bodega_id":v.bodega_id,"moneda":v.moneda,"subtotal":str(v.subtotal),"descuento":str(v.descuento),
-            "impuesto":str(v.impuesto),"total":str(v.total),"items":[{"id":i.id,"producto_id":i.producto_id,
-            "cantidad":str(i.cantidad),"precio_unitario":str(i.precio_unitario),"total":str(i.total)} for i in v.items]}
+def _fecha_iso(valor):
+    return valor.isoformat() if valor else None
+
+
+def _serializar(venta):
+    cliente = None
+
+    if venta.cliente_id:
+        cliente = db.session.get(
+            Cliente,
+            venta.cliente_id,
+        )
+
+    productos_ids = {
+        item.producto_id
+        for item in venta.items
+    }
+
+    productos = {}
+
+    if productos_ids:
+        productos = {
+            producto.id: producto
+            for producto in db.session.scalars(
+                db.select(Producto).where(
+                    Producto.id.in_(productos_ids),
+                    Producto.empresa_id
+                    == venta.empresa_id,
+                )
+            )
+        }
+
+    return {
+        "id": venta.id,
+        "numero": venta.numero,
+        "estado": venta.estado,
+        "cliente_id": venta.cliente_id,
+        "cliente_nombre": (
+            cliente.nombre
+            if cliente
+            else None
+        ),
+        "bodega_id": venta.bodega_id,
+        "fecha_creacion": _fecha_iso(
+            venta.creado_en
+        ),
+        "confirmada_en": _fecha_iso(
+            venta.confirmada_en
+        ),
+        "cancelada_en": _fecha_iso(
+            venta.cancelada_en
+        ),
+        "motivo_cancelacion":
+            venta.motivo_cancelacion,
+        "moneda": venta.moneda,
+        "subtotal": str(venta.subtotal),
+        "descuento": str(venta.descuento),
+        "impuesto": str(venta.impuesto),
+        "total": str(venta.total),
+        "observaciones": venta.observaciones,
+        "items": [
+            {
+                "id": item.id,
+                "producto_id": item.producto_id,
+                "producto_codigo": (
+                    productos[item.producto_id].codigo
+                    if item.producto_id in productos
+                    else None
+                ),
+                "producto_nombre": (
+                    productos[item.producto_id].nombre
+                    if item.producto_id in productos
+                    else None
+                ),
+                "cantidad": str(item.cantidad),
+                "precio_unitario": str(
+                    item.precio_unitario
+                ),
+                "descuento": str(item.descuento),
+                "impuesto": str(item.impuesto),
+                "total": str(item.total),
+            }
+            for item in venta.items
+        ],
+    }
 
 
 def _error(e): return jsonify({"codigo":getattr(e,"codigo","venta_invalida"),"mensaje":str(e)}),400

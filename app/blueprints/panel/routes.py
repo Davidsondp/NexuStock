@@ -130,3 +130,40 @@ def compras():
         contexto=g.contexto_operacion,
         permisos=permisos,
     )
+
+@panel_bp.get("/ventas")
+@login_required
+@requerir_permiso("ventas.ver")
+@requerir_contexto
+def ventas():
+    empresa_id = current_user.empresa_id
+
+    permisos = {
+        "crear": evaluar_permiso(
+            current_user,
+            "ventas.crear",
+            empresa_id=empresa_id,
+        ).permitido,
+        "reservar": evaluar_permiso(
+            current_user,
+            "ventas.reservar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "confirmar": evaluar_permiso(
+            current_user,
+            "ventas.confirmar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "cancelar": evaluar_permiso(
+            current_user,
+            "ventas.cancelar",
+            empresa_id=empresa_id,
+        ).permitido,
+    }
+
+    return render_template(
+        "panel/ventas.html",
+        empresa=current_user.empresa,
+        contexto=g.contexto_operacion,
+        permisos=permisos,
+    )
