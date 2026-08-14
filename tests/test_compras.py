@@ -1,4 +1,4 @@
-from decimal import Decimal
+﻿from decimal import Decimal
 
 import pytest
 
@@ -155,3 +155,136 @@ def test_api_compras_expone_flujo_en_espanol(app, client):
     assert respuesta.status_code == 201 and respuesta.get_json()["estado"] == "borrador"
     orden_id = respuesta.get_json()["id"]
     assert client.post(f"/api/compras/{orden_id}/confirmar").get_json()["estado"] == "creada"
+
+def test_api_compra_expone_datos_para_panel(
+    app,
+    client,
+):
+    ids = _preparar(app, client)
+
+    respuesta = client.post(
+        "/api/compras",
+        json={
+            "numero": "OC-PANEL-001",
+            "proveedor_id": ids[2],
+            "bodega_destino_id": ids[1],
+            "fecha_entrega_esperada": "2026-09-15",
+            "observaciones": "Compra para reposición",
+            "items": [
+                {
+                    "producto_id": ids[3],
+                    "cantidad": 5,
+                    "precio_unitario": 120,
+                    "descuento": 20,
+                    "impuesto": 110,
+                }
+            ],
+        },
+    )
+
+    assert respuesta.status_code == 201
+
+    orden = respuesta.get_json()
+
+    campos_orden = {
+        "id",
+        "numero",
+        "estado",
+        "proveedor_id",
+        "proveedor_nombre",
+        "bodega_destino_id",
+        "fecha_orden",
+        "fecha_entrega_esperada",
+        "moneda",
+        "subtotal",
+        "descuento",
+        "impuesto",
+        "total",
+        "observaciones",
+        "motivo_cancelacion",
+        "items",
+    }
+
+    assert campos_orden.issubset(orden)
+    assert orden["proveedor_nombre"] == "Proveedor Uno"
+    assert orden["fecha_entrega_esperada"] == "2026-09-15"
+    assert orden["observaciones"] == "Compra para reposición"
+
+    assert len(orden["items"]) == 1
+
+    item = orden["items"][0]
+
+    campos_item = {
+        "id",
+        "producto_id",
+        "producto_codigo",
+        "producto_nombre",
+        "cantidad",
+        "cantidad_recibida",
+        "precio_unitario",
+        "descuento",
+        "impuesto",
+        "total",
+    }
+
+    assert campos_item.issubset(item)
+    assert item["producto_codigo"] == "COMP-1"
+    assert item["producto_nombre"] == "Comprable"
+
+def test_api_edita_borrador_y_recalcula_totales(
+    app,
+    client,
+):
+    ids = _preparar(app, client)
+
+    creacion = client.post(
+        "/api/compras",
+        json={
+            "numero": "OC-EDITAR-1",
+            "proveedor_id": ids[2],
+            "bodega_destino_id": ids[1],
+            "items": [
+                {
+                    "producto_id": ids[3],
+                    "cantidad": 2,
+                    "precio_unitario": 100,
+                }
+            ],
+        },
+    )
+
+    assert creacion.status_code == 201
+
+    orden_id = creacion.get_json()["id"]
+
+    edicion = client.patch(
+        f"/api/compras/{orden_id}",
+        json={
+            "numero": "OC-EDITADA-1",
+            "fecha_entrega_esperada": "2026-10-20",
+            "observaciones": "Orden actualizada",
+            "items": [
+                {
+                    "producto_id": ids[3],
+                    "cantidad": 5,
+                    "precio_unitario": 120,
+                    "descuento": 20,
+                    "impuesto": 110,
+                }
+            ],
+        },
+    )
+
+    assert edicion.status_code == 200
+
+    orden = edicion.get_json()
+
+    assert orden["numero"] == "OC-EDITADA-1"
+    assert orden["estado"] == "borrador"
+    assert orden["fecha_entrega_esperada"] == "2026-10-20"
+    assert orden["observaciones"] == "Orden actualizada"
+    assert orden["subtotal"] == "600.00"
+    assert orden["descuento"] == "20.00"
+    assert orden["impuesto"] == "110.00"
+    assert orden["total"] == "690.00"
+    assert orden["items"][0]["cantidad"] == "5.000"

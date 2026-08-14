@@ -7,17 +7,61 @@ from ...services.compras import ErrorCompra, ServicioCompras
 compras_bp = Blueprint("compras", __name__, url_prefix="/api/compras")
 
 
+def _fecha_iso(valor):
+    return valor.isoformat() if valor else None
+
+
 def _orden(orden):
     return {
-        "id": orden.id, "numero": orden.numero, "estado": orden.estado,
-        "proveedor_id": orden.proveedor_id, "bodega_destino_id": orden.bodega_destino_id,
-        "moneda": orden.moneda, "subtotal": str(orden.subtotal),
-        "descuento": str(orden.descuento), "impuesto": str(orden.impuesto),
+        "id": orden.id,
+        "numero": orden.numero,
+        "estado": orden.estado,
+        "proveedor_id": orden.proveedor_id,
+        "proveedor_nombre": (
+            orden.proveedor.nombre
+            if orden.proveedor
+            else None
+        ),
+        "bodega_destino_id": orden.bodega_destino_id,
+        "fecha_orden": _fecha_iso(orden.fecha_orden),
+        "fecha_entrega_esperada": _fecha_iso(
+            orden.fecha_entrega_esperada
+        ),
+        "moneda": orden.moneda,
+        "subtotal": str(orden.subtotal),
+        "descuento": str(orden.descuento),
+        "impuesto": str(orden.impuesto),
         "total": str(orden.total),
-        "items": [{"id": i.id, "producto_id": i.producto_id,
-                   "cantidad": str(i.cantidad), "cantidad_recibida": str(i.cantidad_recibida),
-                   "precio_unitario": str(i.precio_unitario), "total": str(i.total)}
-                  for i in orden.items],
+        "observaciones": orden.observaciones,
+        "cancelada_en": _fecha_iso(orden.cancelada_en),
+        "motivo_cancelacion": orden.motivo_cancelacion,
+        "items": [
+            {
+                "id": item.id,
+                "producto_id": item.producto_id,
+                "producto_codigo": (
+                    item.producto.codigo
+                    if item.producto
+                    else None
+                ),
+                "producto_nombre": (
+                    item.producto.nombre
+                    if item.producto
+                    else None
+                ),
+                "cantidad": str(item.cantidad),
+                "cantidad_recibida": str(
+                    item.cantidad_recibida
+                ),
+                "precio_unitario": str(
+                    item.precio_unitario
+                ),
+                "descuento": str(item.descuento),
+                "impuesto": str(item.impuesto),
+                "total": str(item.total),
+            }
+            for item in orden.items
+        ],
     }
 
 
@@ -51,6 +95,43 @@ def crear():
                                              "observaciones") if k in datos}
         return jsonify(_orden(ServicioCompras(current_user).crear(**permitidos))), 201
     except (ErrorCompra, TypeError, KeyError, ValueError) as exc:
+        return _error(exc)
+
+@compras_bp.patch("/<int:orden_id>")
+@login_required
+@requerir_permiso("compras.editar")
+def editar(orden_id):
+    try:
+        datos = request.get_json(silent=True) or {}
+
+        permitidos = {
+            clave: datos[clave]
+            for clave in (
+                "numero",
+                "proveedor_id",
+                "bodega_destino_id",
+                "items",
+                "moneda",
+                "fecha_entrega_esperada",
+                "observaciones",
+            )
+            if clave in datos
+        }
+
+        orden = ServicioCompras(
+            current_user
+        ).editar(
+            orden_id,
+            **permitidos,
+        )
+
+        return jsonify(_orden(orden))
+    except (
+        ErrorCompra,
+        TypeError,
+        KeyError,
+        ValueError,
+    ) as exc:
         return _error(exc)
 
 

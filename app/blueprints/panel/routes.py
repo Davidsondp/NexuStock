@@ -88,3 +88,45 @@ def proveedores():
         contexto=g.contexto_operacion,
         permisos=permisos,
     )
+
+@panel_bp.get("/compras")
+@login_required
+@requerir_permiso("compras.ver")
+@requerir_contexto
+def compras():
+    empresa_id = current_user.empresa_id
+
+    permisos = {
+        "crear": evaluar_permiso(
+            current_user,
+            "compras.crear",
+            empresa_id=empresa_id,
+        ).permitido,
+        "editar": evaluar_permiso(
+            current_user,
+            "compras.editar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "enviar": evaluar_permiso(
+            current_user,
+            "compras.enviar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "recibir": evaluar_permiso(
+            current_user,
+            "compras.recibir",
+            empresa_id=empresa_id,
+        ).permitido,
+        "cancelar": evaluar_permiso(
+            current_user,
+            "compras.cancelar",
+            empresa_id=empresa_id,
+        ).permitido,
+    }
+
+    return render_template(
+        "panel/compras.html",
+        empresa=current_user.empresa,
+        contexto=g.contexto_operacion,
+        permisos=permisos,
+    )

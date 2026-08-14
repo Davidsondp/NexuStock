@@ -126,6 +126,181 @@ class ServicioCompras:
         except Exception:
             db.session.rollback(); raise
 
+    def editar(
+        self,
+        orden_id: int,
+        **datos,
+    ) -> OrdenCompra:
+        self._exigir("compras.editar")
+
+        orden = self.obtener(
+            orden_id,
+            bloquear=True,
+        )
+
+        if orden.estado != "borrador":
+            raise EstadoCompraInvalido(
+                "Solo se pueden editar órdenes en borrador"
+            )
+
+        numero = (
+            datos.get("numero", orden.numero)
+            or ""
+        ).strip().upper()
+
+        if not numero:
+            raise ErrorCompra(
+                "El número de orden es obligatorio"
+            )
+
+        proveedor = self._proveedor(
+            int(
+                datos.get(
+                    "proveedor_id",
+                    orden.proveedor_id,
+                )
+            )
+        )
+
+        bodega = self._bodega_autorizada(
+            int(
+                datos.get(
+                    "bodega_destino_id",
+                    orden.bodega_destino_id,
+                )
+            )
+        )
+
+        moneda = (
+            datos.get("moneda", orden.moneda)
+            or "CLP"
+        ).strip().upper()
+
+        if len(moneda) != 3:
+            raise ErrorCompra(
+                "La moneda debe usar un código de tres letras"
+            )
+
+        try:
+            orden.numero = numero
+            orden.proveedor_id = proveedor.id
+            orden.bodega_destino_id = bodega.id
+            orden.moneda = moneda
+
+            if "fecha_entrega_esperada" in datos:
+                orden.fecha_entrega_esperada = _fecha(
+                    datos.get("fecha_entrega_esperada"),
+                    "Fecha de entrega",
+                )
+
+            if "observaciones" in datos:
+                orden.observaciones = (
+                    datos.get("observaciones")
+                    or ""
+                ).strip() or None
+
+            if "items" in datos:
+                items = datos.get("items")
+
+                if not isinstance(items, list) or not items:
+                    raise ErrorCompra(
+                        "La orden debe contener al menos un item"
+                    )
+
+                orden.items.clear()
+                db.session.flush()
+
+                productos_vistos = set()
+
+                for item_datos in items:
+                    producto = self._producto(
+                        int(
+                            item_datos.get(
+                                "producto_id",
+                                0,
+                            )
+                        )
+                    )
+
+                    if producto.id in productos_vistos:
+                        raise ErrorCompra(
+                            "No se puede repetir un producto "
+                            "en la orden"
+                        )
+
+                    productos_vistos.add(producto.id)
+
+                    cantidad = _cantidad_positiva(
+                        item_datos.get("cantidad")
+                    )
+
+                    precio = _decimal_no_negativo(
+                        item_datos.get("precio_unitario"),
+                        "Precio unitario",
+                        CUATRO_DECIMALES,
+                    )
+
+                    descuento = _decimal_no_negativo(
+                        item_datos.get("descuento", 0),
+                        "Descuento",
+                        DOS_DECIMALES,
+                    )
+
+                    impuesto = _decimal_no_negativo(
+                        item_datos.get("impuesto", 0),
+                        "Impuesto",
+                        DOS_DECIMALES,
+                    )
+
+                    bruto = (
+                        cantidad * precio
+                    ).quantize(
+                        DOS_DECIMALES,
+                        rounding=ROUND_HALF_UP,
+                    )
+
+                    if descuento > bruto:
+                        raise ErrorCompra(
+                            "El descuento no puede superar "
+                            "el subtotal del item"
+                        )
+
+                    total = bruto - descuento + impuesto
+
+                    orden.items.append(
+                        OrdenCompraItem(
+                            empresa_id=self.usuario.empresa_id,
+                            producto_id=producto.id,
+                            cantidad=cantidad,
+                            cantidad_recibida=0,
+                            precio_unitario=precio,
+                            descuento=descuento,
+                            impuesto=impuesto,
+                            total=total,
+                        )
+                    )
+
+            self._recalcular(orden)
+            db.session.flush()
+
+            self._auditar(
+                orden,
+                "borrador_editado",
+            )
+
+            db.session.commit()
+
+            return orden
+        except IntegrityError as exc:
+            db.session.rollback()
+            raise ErrorCompra(
+                "El número de orden ya existe o "
+                "los datos están duplicados"
+            ) from exc
+        except Exception:
+            db.session.rollback()
+            raise
+
     def confirmar(self, orden_id: int) -> OrdenCompra:
         self._exigir("compras.crear")
         orden = self.obtener(orden_id, bloquear=True)
