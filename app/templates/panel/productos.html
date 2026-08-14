@@ -25,6 +25,7 @@
 
 <body
     data-api-productos="{{ url_for('productos.listar') }}"
+    data-api-proveedores="{{ url_for('proveedores.listar') }}"
     data-bodega-id="{{ contexto.bodega.id }}"
     data-permiso-crear="{{ permisos.crear | tojson }}"
     data-permiso-editar="{{ permisos.editar | tojson }}"
@@ -77,7 +78,7 @@
                     <span>Compras</span>
                 </a>
 
-                <a class="navegacion__enlace" href="/api/proveedores">
+                <a class="navegacion__enlace" href="{{ url_for('panel.proveedores') }}">
                     <span class="navegacion__icono" aria-hidden="true">◇</span>
                     <span>Proveedores</span>
                 </a>
@@ -553,20 +554,22 @@
 
                 <div class="grupo-campo">
                     <label for="producto-proveedor">
-                        ID del proveedor principal
+                        Proveedor principal
                     </label>
-                    <input
-                        id="producto-proveedor"
-                        class="campo"
-                        name="proveedor_principal_id"
-                        type="number"
-                        min="1"
-                        step="1"
+
+                    <select
+                    id="producto-proveedor"
+                    class="campo"
+                    name="proveedor_principal_id"
                     >
-                    <small>
-                        Déjalo vacío si aún no asignarás proveedor.
-                    </small>
-                </div>
+                    <option value="">
+                        Sin proveedor asignado
+                    </option>
+                </select>
+                <small>
+                    Solo se muestran proveedores activos.
+                </small>
+            </div>
 
                 <div class="grupo-opciones">
                     <label class="opcion">

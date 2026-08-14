@@ -329,3 +329,123 @@ def test_api_lista_inactivos_y_reactiva_producto(app, client):
     }
 
     assert producto_id in ids_finales
+
+def test_api_proveedor_expone_campos_editables(app, client):
+    _preparar(app, client)
+
+    respuesta_creacion = client.post(
+        "/api/proveedores",
+        json={
+            "nombre": "Distribuidora Completa",
+            "identificacion_fiscal": "76.555.444-3",
+            "email": "ventas@distribuidora.cl",
+            "telefono": "+56912345678",
+            "direccion": "Avenida Central 123",
+            "ciudad": "Santiago",
+            "pais": "CL",
+            "sitio_web": "https://distribuidora.cl",
+            "condiciones_pago": "30 días",
+            "dias_entrega": 5,
+            "compra_minima": 50000,
+            "observaciones": "Proveedor prioritario",
+        },
+    )
+
+    assert respuesta_creacion.status_code == 201
+
+    proveedor = respuesta_creacion.get_json()
+
+    campos_esperados = {
+        "id",
+        "nombre",
+        "identificacion_fiscal",
+        "email",
+        "telefono",
+        "direccion",
+        "ciudad",
+        "pais",
+        "sitio_web",
+        "condiciones_pago",
+        "dias_entrega",
+        "compra_minima",
+        "observaciones",
+        "activo",
+    }
+
+    assert campos_esperados.issubset(proveedor)
+
+    assert proveedor["nombre"] == "Distribuidora Completa"
+    assert proveedor["pais"] == "CL"
+    assert proveedor["condiciones_pago"] == "30 días"
+
+def test_api_busca_desactiva_y_reactiva_proveedor(app,client,):
+    _preparar(app, client)
+
+    respuesta_principal = client.post(
+        "/api/proveedores",
+        json={
+            "nombre": "Distribuidora Austral",
+            "identificacion_fiscal": "76.101.101-1",
+            "ciudad": "Puerto Montt",
+        },
+    )
+
+    respuesta_secundaria = client.post(
+        "/api/proveedores",
+        json={
+            "nombre": "Comercial Central",
+            "identificacion_fiscal": "76.202.202-2",
+            "ciudad": "Santiago",
+        },
+    )
+
+    assert respuesta_principal.status_code == 201
+    assert respuesta_secundaria.status_code == 201
+
+    proveedor_id = respuesta_principal.get_json()["id"]
+
+    respuesta_busqueda = client.get(
+        "/api/proveedores?buscar=Austral"
+    )
+
+    assert respuesta_busqueda.status_code == 200
+
+    nombres_encontrados = {
+        proveedor["nombre"]
+        for proveedor in respuesta_busqueda.get_json()["proveedores"]
+    }
+
+    assert nombres_encontrados == {"Distribuidora Austral"}
+
+    respuesta_desactivacion = client.post(
+        f"/api/proveedores/{proveedor_id}/desactivar"
+    )
+
+    assert respuesta_desactivacion.status_code == 200
+    assert respuesta_desactivacion.get_json()["activo"] is False
+
+    listado_activo = client.get("/api/proveedores")
+    ids_activos = {
+        proveedor["id"]
+        for proveedor in listado_activo.get_json()["proveedores"]
+    }
+
+    assert proveedor_id not in ids_activos
+
+    listado_completo = client.get(
+        "/api/proveedores?incluir_inactivos=true"
+    )
+
+    ids_completos = {
+        proveedor["id"]
+        for proveedor in listado_completo.get_json()["proveedores"]
+    }
+
+    assert proveedor_id in ids_completos
+
+    respuesta_reactivacion = client.post(
+        f"/api/proveedores/{proveedor_id}/reactivar"
+    )
+
+    assert respuesta_reactivacion.status_code == 200
+    assert respuesta_reactivacion.get_json()["activo"] is True

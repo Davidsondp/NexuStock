@@ -18,25 +18,60 @@ class ServicioProveedores:
     def __init__(self, usuario):
         self.usuario = usuario
 
-    def listar(self, *, incluir_inactivos=False):
+    def listar(
+        self,
+        *,
+        busqueda=None,
+        incluir_inactivos=False,
+    ):
         self._exigir("proveedores.ver")
+
         consulta = db.select(Proveedor).where(
             Proveedor.empresa_id == self.usuario.empresa_id,
             Proveedor.eliminado.is_(False),
         )
-        if not incluir_inactivos:
-            consulta = consulta.where(Proveedor.activo.is_(True))
-        return list(db.session.scalars(consulta.order_by(Proveedor.nombre)))
 
+        if not incluir_inactivos:
+            consulta = consulta.where(
+                Proveedor.activo.is_(True)
+            )
+
+        if busqueda:
+            patron = f"%{busqueda.strip()}%"
+
+            consulta = consulta.where(
+                db.or_(
+                    Proveedor.nombre.ilike(patron),
+                    Proveedor.identificacion_fiscal.ilike(
+                        patron
+                    ),
+                    Proveedor.email.ilike(patron),
+                    Proveedor.ciudad.ilike(patron),
+                )
+            )
+
+        return list(
+            db.session.scalars(
+                consulta.order_by(Proveedor.nombre)
+            )
+        )
     def obtener(self, proveedor_id: int) -> Proveedor:
         self._exigir("proveedores.ver")
-        proveedor = db.session.scalar(db.select(Proveedor).where(
-            Proveedor.id == proveedor_id,
-            Proveedor.empresa_id == self.usuario.empresa_id,
-            Proveedor.eliminado.is_(False),
-        ))
+
+        proveedor = db.session.scalar(
+            db.select(Proveedor).where(
+                Proveedor.id == proveedor_id,
+                Proveedor.empresa_id
+                == self.usuario.empresa_id,
+                Proveedor.eliminado.is_(False),
+            )
+        )
+
         if not proveedor:
-            raise PermissionError("Proveedor no encontrado en la empresa")
+            raise PermissionError(
+                "Proveedor no encontrado en la empresa"
+            )
+
         return proveedor
 
     def crear(self, **datos) -> Proveedor:
@@ -74,6 +109,18 @@ class ServicioProveedores:
         self._auditar(proveedor, "desactivado")
         db.session.commit(); return proveedor
 
+    def reactivar(self, proveedor_id: int) -> Proveedor:
+        self._exigir("proveedores.eliminar")
+
+        proveedor = self.obtener(proveedor_id)
+        proveedor.activo = True
+
+        self._auditar(proveedor, "reactivado")
+
+        db.session.commit()
+
+        return proveedor
+
     def eliminar_logicamente(self, proveedor_id: int) -> Proveedor:
         self._exigir("proveedores.eliminar")
         proveedor = self.obtener(proveedor_id)
@@ -106,6 +153,36 @@ class ServicioProveedores:
         proveedor.nombre = nombre
         if "identificacion_fiscal" in datos:
             proveedor.identificacion_fiscal = (datos.get("identificacion_fiscal") or "").strip() or None
+
+        if "pais" in datos:
+            pais = (
+                datos.get("pais")
+                or "CL"
+            ).strip().upper()
+
+            if len(pais) != 2 or not pais.isalpha():
+                raise ErrorProveedor(
+                    "El país debe usar un código de dos letras"
+                )
+
+            proveedor.pais = pais
+
+        for campo in (
+            "email",
+            "telefono",
+            "direccion",
+            "ciudad",
+            "sitio_web",
+            "condiciones_pago",
+            "observaciones",
+        ):
+            if campo in datos:
+                setattr(
+                    proveedor,
+                    campo,
+                    (datos[campo] or "").strip() or None,
+                )
+
         for campo in ("email", "telefono", "direccion", "ciudad", "sitio_web",
                       "condiciones_pago", "observaciones"):
             if campo in datos:

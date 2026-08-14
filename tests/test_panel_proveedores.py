@@ -15,11 +15,12 @@ def crear_superadmin(app):
             empresa_id=None,
             nombre="Super",
             apellido="Administrador",
-            email="productos.global@nexustock.cl",
+            email="proveedores.global@nexustock.cl",
             rol="super_admin",
             activo=True,
         )
         usuario.set_password("ClaveSuperAdmin123")
+
         db.session.add(usuario)
         db.session.commit()
 
@@ -28,60 +29,65 @@ def iniciar_superadmin(client):
     return client.post(
         "/autenticacion/ingresar",
         data={
-            "email": "productos.global@nexustock.cl",
+            "email": "proveedores.global@nexustock.cl",
             "password": "ClaveSuperAdmin123",
         },
     )
 
 
-def test_panel_productos_exige_autenticacion(client):
-    respuesta = client.get("/panel/productos")
+def test_panel_proveedores_exige_autenticacion(client):
+    respuesta = client.get("/panel/proveedores")
 
     assert respuesta.status_code == 302
     assert "/autenticacion/ingresar" in respuesta.location
 
 
-def test_usuario_empresarial_puede_ver_productos(app, client):
+def test_usuario_empresarial_puede_ver_proveedores(
+    app,
+    client,
+):
     registrar_empresa(client)
 
-    respuesta = client.get("/panel/productos")
+    respuesta = client.get("/panel/proveedores")
 
     assert respuesta.status_code == 200
-    assert "Productos".encode("utf-8") in respuesta.data
+    assert "Proveedores".encode("utf-8") in respuesta.data
     assert REGISTRO["empresa_nombre"].encode("utf-8") in respuesta.data
 
 
-def test_superadmin_no_accede_a_productos_empresariales(app, client):
+def test_superadmin_no_accede_a_proveedores_empresariales(
+    app,
+    client,
+):
     crear_superadmin(app)
     iniciar_superadmin(client)
 
-    respuesta = client.get("/panel/productos")
+    respuesta = client.get("/panel/proveedores")
 
     assert respuesta.status_code == 403
 
 
-def test_panel_empresarial_enlaza_modulo_productos(client):
+def test_panel_empresarial_enlaza_modulo_proveedores(client):
     registrar_empresa(client)
 
     respuesta = client.get("/panel")
 
     assert respuesta.status_code == 200
-    assert b"/panel/productos" in respuesta.data
+    assert b"/panel/proveedores" in respuesta.data
 
 
-def test_pagina_productos_referencia_api_empresarial(app, client):
+def test_pagina_proveedores_referencia_api_empresarial(
+    app,
+    client,
+):
     registrar_empresa(client)
 
-    respuesta = client.get("/panel/productos")
+    respuesta = client.get("/panel/proveedores")
 
     assert respuesta.status_code == 200
-    assert b"/api/productos" in respuesta.data
     assert b"/api/proveedores" in respuesta.data
-    assert b'id="producto-proveedor"' in respuesta.data
-    assert b"Sin proveedor asignado" in respuesta.data
 
-
-def test_empleado_no_ve_acciones_de_escritura(app, client):
+def test_empleado_no_ve_acciones_de_proveedores(app,client,):
     registrar_empresa(client)
 
     with app.app_context():
@@ -95,7 +101,7 @@ def test_empleado_no_ve_acciones_de_escritura(app, client):
             empresa_id=administrador.empresa_id,
             nombre="Empleado",
             apellido="Consulta",
-            email="empleado.productos@nexustock.cl",
+            email="empleado.proveedores@nexustock.cl",
             rol="empleado",
             activo=True,
         )
@@ -106,19 +112,22 @@ def test_empleado_no_ve_acciones_de_escritura(app, client):
 
         asignacion_principal = db.session.scalar(
             db.select(UsuarioSucursal).where(
-                UsuarioSucursal.empresa_id == administrador.empresa_id,
-                UsuarioSucursal.usuario_id == administrador.id,
+                UsuarioSucursal.empresa_id
+                == administrador.empresa_id,
+                UsuarioSucursal.usuario_id
+                == administrador.id,
                 UsuarioSucursal.es_principal.is_(True),
-                )
-                )
+            )
+        )
+
         db.session.add(
             UsuarioSucursal(
                 empresa_id=administrador.empresa_id,
                 usuario_id=empleado.id,
                 sucursal_id=asignacion_principal.sucursal_id,
                 es_principal=True,
-                )
-                )
+            )
+        )
 
         db.session.commit()
 
@@ -127,12 +136,12 @@ def test_empleado_no_ve_acciones_de_escritura(app, client):
     client.post(
         "/autenticacion/ingresar",
         data={
-            "email": "empleado.productos@nexustock.cl",
+            "email": "empleado.proveedores@nexustock.cl",
             "password": "ClaveEmpleado123",
         },
     )
 
-    respuesta = client.get("/panel/productos")
+    respuesta = client.get("/panel/proveedores")
 
     assert respuesta.status_code == 200
     assert b'data-permiso-crear="false"' in respuesta.data

@@ -2,6 +2,8 @@
 
 const configuracion = Object.freeze({
     api: document.body.dataset.apiProductos,
+    apiProveedores:
+    document.body.dataset.apiProveedores,
     puedeCrear: document.body.dataset.permisoCrear === "true",
     puedeEditar: document.body.dataset.permisoEditar === "true",
     puedeEliminar: document.body.dataset.permisoEliminar === "true",
@@ -9,6 +11,7 @@ const configuracion = Object.freeze({
 
 const estado = {
     productos: [],
+    proveedores: [],
 };
 
 function elemento(id) {
@@ -87,6 +90,61 @@ async function solicitarJson(url, opciones = {}) {
     }
 
     return datos;
+}
+
+function renderizarOpcionesProveedores() {
+    const selector = elemento("producto-proveedor");
+
+    if (!selector) {
+        return;
+    }
+
+    const valorSeleccionado = selector.value;
+
+    limpiar(selector);
+
+    const opcionVacia = document.createElement("option");
+
+    opcionVacia.value = "";
+    opcionVacia.textContent = "Sin proveedor asignado";
+
+    selector.appendChild(opcionVacia);
+
+    estado.proveedores.forEach((proveedor) => {
+        const opcion = document.createElement("option");
+
+        opcion.value = String(proveedor.id);
+        opcion.textContent = proveedor.identificacion_fiscal
+            ? `${proveedor.nombre} · ${proveedor.identificacion_fiscal}`
+            : proveedor.nombre;
+
+        selector.appendChild(opcion);
+    });
+
+    selector.value = valorSeleccionado;
+}
+
+async function cargarOpcionesProveedores() {
+    if (!configuracion.apiProveedores) {
+        return;
+    }
+
+    try {
+        const datos = await solicitarJson(
+            configuracion.apiProveedores
+        );
+
+        estado.proveedores = datos.proveedores || [];
+
+        renderizarOpcionesProveedores();
+    } catch (error) {
+        estado.proveedores = [];
+        renderizarOpcionesProveedores();
+
+        notificar(
+            `No fue posible cargar los proveedores: ${error.message}`
+        );
+    }
 }
 
 function obtenerTokenCsrf() {
@@ -825,7 +883,14 @@ function registrarEventos() {
     );
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    registrarEventos();
-    cargarProductos();
-});
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+        registrarEventos();
+
+        await Promise.all([
+            cargarOpcionesProveedores(),
+            cargarProductos(),
+        ]);
+    }
+);
