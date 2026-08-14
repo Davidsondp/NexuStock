@@ -83,6 +83,18 @@ class ServicioProductos:
         self._auditar(producto, "desactivado")
         db.session.commit(); return producto
 
+    def reactivar(self, producto_id: int) -> Producto:
+        self._exigir("productos.eliminar")
+
+        producto = self.obtener(producto_id)
+        producto.activo = True
+
+        self._auditar(producto, "reactivado")
+
+        db.session.commit()
+
+        return producto
+
     def eliminar_logicamente(self, producto_id: int) -> Producto:
         self._exigir("productos.eliminar")
         producto = self.obtener(producto_id)

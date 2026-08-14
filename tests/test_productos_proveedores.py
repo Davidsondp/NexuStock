@@ -166,3 +166,166 @@ def test_id_ajeno_en_api_responde_403(app, client):
     assert respuesta.status_code == 403
     with app.app_context():
         assert db.session.get(Producto, producto_id).nombre == "Ajeno"
+def test_api_producto_expone_campos_editables(app, client):
+    _preparar(app, client)
+
+    respuesta_creacion = client.post(
+        "/api/productos",
+        json={
+            "codigo": "COMPLETO-1",
+            "codigo_barras": "7801234567890",
+            "nombre": "Producto completo",
+            "descripcion": "Descripción de prueba",
+            "categoria": "Categoría",
+            "subcategoria": "Subcategoría",
+            "marca": "Marca",
+            "unidad_medida": "unidad",
+            "unidades_por_caja": 12,
+            "costo_referencia": 1000,
+            "precio_venta": 1500,
+            "incluye_iva": True,
+            "tasa_impuesto": "0.19",
+            "stock_minimo": 2,
+            "punto_reorden": 4,
+            "stock_maximo": 20,
+            "requiere_serial": False,
+            "controla_lotes": True,
+            "controla_vencimiento": True,
+        },
+    )
+
+    assert respuesta_creacion.status_code == 201
+
+    producto = respuesta_creacion.get_json()
+
+    campos_esperados = {
+        "id",
+        "codigo",
+        "codigo_barras",
+        "nombre",
+        "descripcion",
+        "categoria",
+        "subcategoria",
+        "marca",
+        "unidad_medida",
+        "unidades_por_caja",
+        "costo_referencia",
+        "precio_venta",
+        "incluye_iva",
+        "tasa_impuesto",
+        "stock_minimo",
+        "punto_reorden",
+        "stock_maximo",
+        "requiere_serial",
+        "controla_lotes",
+        "controla_vencimiento",
+        "activo",
+        "proveedor_principal_id",
+    }
+
+    assert campos_esperados.issubset(producto)
+
+def test_api_desactiva_producto_sin_eliminarlo(app, client):
+    _preparar(app, client)
+
+    respuesta_creacion = client.post(
+        "/api/productos",
+        json={
+            "codigo": "DESACTIVAR-1",
+            "nombre": "Producto para desactivar",
+            "precio_venta": 1000,
+        },
+    )
+
+    assert respuesta_creacion.status_code == 201
+
+    producto_id = respuesta_creacion.get_json()["id"]
+
+    respuesta_desactivacion = client.post(
+        f"/api/productos/{producto_id}/desactivar"
+    )
+
+    assert respuesta_desactivacion.status_code == 200
+
+    producto_desactivado = respuesta_desactivacion.get_json()
+
+    assert producto_desactivado["id"] == producto_id
+    assert producto_desactivado["activo"] is False
+
+    respuesta_listado = client.get("/api/productos")
+
+    assert respuesta_listado.status_code == 200
+
+    identificadores_visibles = {
+        producto["id"]
+        for producto in respuesta_listado.get_json()["productos"]
+    }
+
+    assert producto_id not in identificadores_visibles
+
+    with app.app_context():
+        producto_guardado = db.session.get(Producto, producto_id)
+
+        assert producto_guardado is not None
+        assert producto_guardado.activo is False
+        assert producto_guardado.eliminado is False
+
+def test_api_lista_inactivos_y_reactiva_producto(app, client):
+    _preparar(app, client)
+
+    respuesta_creacion = client.post(
+        "/api/productos",
+        json={
+            "codigo": "REACTIVAR-1",
+            "nombre": "Producto para reactivar",
+            "precio_venta": 1500,
+        },
+    )
+
+    assert respuesta_creacion.status_code == 201
+
+    producto_id = respuesta_creacion.get_json()["id"]
+
+    respuesta_desactivacion = client.post(
+        f"/api/productos/{producto_id}/desactivar"
+    )
+
+    assert respuesta_desactivacion.status_code == 200
+
+    listado_activo = client.get("/api/productos")
+    ids_activos = {
+        producto["id"]
+        for producto in listado_activo.get_json()["productos"]
+    }
+
+    assert producto_id not in ids_activos
+
+    listado_completo = client.get(
+        "/api/productos?incluir_inactivos=true"
+    )
+
+    assert listado_completo.status_code == 200
+
+    productos_completos = listado_completo.get_json()["productos"]
+    producto_inactivo = next(
+        producto
+        for producto in productos_completos
+        if producto["id"] == producto_id
+    )
+
+    assert producto_inactivo["activo"] is False
+
+    respuesta_reactivacion = client.post(
+        f"/api/productos/{producto_id}/reactivar"
+    )
+
+    assert respuesta_reactivacion.status_code == 200
+    assert respuesta_reactivacion.get_json()["activo"] is True
+
+    listado_final = client.get("/api/productos")
+    ids_finales = {
+        producto["id"]
+        for producto in listado_final.get_json()["productos"]
+    }
+
+    assert producto_id in ids_finales
