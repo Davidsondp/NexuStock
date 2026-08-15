@@ -745,3 +745,124 @@
         left: 16px;
     }
 }
+
+.ayuda-trazabilidad {
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 0.84rem;
+    line-height: 1.5;
+}
+
+.filtro-vencimiento {
+    display: flex;
+    min-width: 220px;
+    flex-direction: column;
+    gap: 6px;
+    color: #344054;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.resumen-lotes {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.resumen-lote {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid #e4e7ec;
+    border-radius: 14px;
+    background: #ffffff;
+}
+
+.resumen-lote__etiqueta {
+    color: #667085;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.resumen-lote__valor {
+    color: #101828;
+    font-size: 1.35rem;
+}
+
+.resumen-lote--vencido {
+    border-color: #fecaca;
+    background: #fef2f2;
+}
+
+.resumen-lote--hoy,
+.resumen-lote--proximo {
+    border-color: #fde68a;
+    background: #fffbeb;
+}
+
+.lote-numero {
+    font-family: ui-monospace, monospace;
+    font-weight: 700;
+}
+
+.lote-vencimiento__detalle {
+    display: block;
+    margin-top: 4px;
+    color: #667085;
+    font-size: 0.74rem;
+}
+
+.lote-estado {
+    display: inline-flex;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 800;
+}
+
+.lote-estado--vencido {
+    background: #fee2e2;
+    color: #b42318;
+}
+
+.lote-estado--hoy,
+.lote-estado--proximo {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.lote-estado--vigente {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.lote-estado--sin-fecha {
+    background: #f2f4f7;
+    color: #475467;
+}
+
+@media (max-width: 900px) {
+    .resumen-lotes {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .resumen-lotes {
+        grid-template-columns: 1fr;
+    }
+
+    .filtro-vencimiento {
+        width: 100%;
+        min-width: 0;
+    }
+}

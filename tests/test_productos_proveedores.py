@@ -1,6 +1,6 @@
 import pytest
 
-from app.models import Empresa, Inventario, Movimiento, Producto, Proveedor, Usuario, db
+from app.models import ConfiguracionEmpresa, Empresa, Inventario, Movimiento, Producto, Proveedor, Usuario, db
 from app.services.productos import ErrorProducto, LimiteProductosAlcanzado, ServicioProductos
 from app.services.proveedores import ErrorProveedor, ServicioProveedores
 from tests.test_autenticacion import REGISTRO
@@ -16,6 +16,21 @@ def _preparar(app, client):
         }
         db.session.commit()
         return usuario.id
+
+
+
+
+
+def _configurar_rubro(app, rubro):
+    with app.app_context():
+        configuracion = db.session.scalar(
+            db.select(ConfiguracionEmpresa)
+        )
+        configuracion.opciones = {
+            "rubro": rubro,
+            "capacidades": {},
+        }
+        db.session.commit()
 
 
 def test_crear_producto_y_proveedor_auditable(app, client):
@@ -168,6 +183,7 @@ def test_id_ajeno_en_api_responde_403(app, client):
         assert db.session.get(Producto, producto_id).nombre == "Ajeno"
 def test_api_producto_expone_campos_editables(app, client):
     _preparar(app, client)
+    _configurar_rubro(app, "minimarket")
 
     respuesta_creacion = client.post(
         "/api/productos",
@@ -449,3 +465,121 @@ def test_api_busca_desactiva_y_reactiva_proveedor(app,client,):
 
     assert respuesta_reactivacion.status_code == 200
     assert respuesta_reactivacion.get_json()["activo"] is True
+
+
+def test_api_general_rechaza_control_de_lotes(
+    app,
+    client,
+):
+    _preparar(app, client)
+
+    respuesta = client.post(
+        "/api/productos",
+        json={
+            "codigo": "GENERAL-LOTE",
+            "nombre": "Producto manipulado",
+            "precio_venta": 1000,
+            "controla_lotes": True,
+        },
+    )
+
+    assert respuesta.status_code == 400
+    assert (
+        respuesta.get_json()["codigo"]
+        == "producto_invalido"
+    )
+
+    with app.app_context():
+        producto = db.session.scalar(
+            db.select(Producto).where(
+                Producto.codigo
+                == "GENERAL-LOTE"
+            )
+        )
+
+        assert producto is None
+
+
+def test_api_general_rechaza_control_vencimiento(
+    app,
+    client,
+):
+    _preparar(app, client)
+
+    respuesta = client.post(
+        "/api/productos",
+        json={
+            "codigo": "GENERAL-VENCE",
+            "nombre": "Producto manipulado",
+            "precio_venta": 1000,
+            "controla_vencimiento": True,
+        },
+    )
+
+    assert respuesta.status_code == 400
+
+
+def test_api_minimarket_permite_trazabilidad(
+    app,
+    client,
+):
+    _preparar(app, client)
+    _configurar_rubro(app, "minimarket")
+
+    respuesta = client.post(
+        "/api/productos",
+        json={
+            "codigo": "MINI-LOTE",
+            "nombre": "Producto perecible",
+            "precio_venta": 1000,
+            "controla_lotes": True,
+            "controla_vencimiento": True,
+        },
+    )
+
+    assert respuesta.status_code == 201
+
+    producto = respuesta.get_json()
+
+    assert producto["controla_lotes"] is True
+    assert (
+        producto["controla_vencimiento"]
+        is True
+    )
+
+
+def test_api_general_no_habilita_lotes_al_editar(
+    app,
+    client,
+):
+    _preparar(app, client)
+
+    creacion = client.post(
+        "/api/productos",
+        json={
+            "codigo": "GENERAL-EDITAR",
+            "nombre": "Producto general",
+            "precio_venta": 1000,
+        },
+    )
+
+    assert creacion.status_code == 201
+
+    producto_id = creacion.get_json()["id"]
+
+    respuesta = client.patch(
+        f"/api/productos/{producto_id}",
+        json={
+            "controla_lotes": True,
+        },
+    )
+
+    assert respuesta.status_code == 400
+
+    with app.app_context():
+        producto = db.session.get(
+            Producto,
+            producto_id,
+        )
+
+        assert producto.controla_lotes is False

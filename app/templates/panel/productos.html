@@ -621,6 +621,7 @@
                         Requiere número de serie
                     </label>
 
+                    {% if capacidades.control_lotes %}
                     <label class="opcion">
                         <input
                             id="producto-controla-lotes"
@@ -629,7 +630,9 @@
                         >
                         Controla lotes
                     </label>
+                    {% endif %}
 
+                    {% if capacidades.control_vencimientos %}
                     <label class="opcion">
                         <input
                             id="producto-controla-vencimiento"
@@ -638,6 +641,7 @@
                         >
                         Controla vencimiento
                     </label>
+                    {% endif %}
                 </div>
 
                 <div class="formulario-producto__acciones">

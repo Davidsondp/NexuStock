@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from ..models import (Bodega, ConfiguracionEmpresa, Empresa, PlanSaaS, Sucursal,
                       Suscripcion, Usuario, UsuarioSucursal, db, utcnow)
 from .auditoria import registrar_auditoria
+from .perfiles_empresa import CAPACIDADES_POR_RUBRO
 
 
 class ErrorRegistro(ValueError):
@@ -12,13 +13,24 @@ class ErrorRegistro(ValueError):
 
 
 def registrar_empresa(*, empresa_nombre: str, identificacion_fiscal: str | None,
-                      nombre: str, apellido: str | None, email: str, password: str) -> Usuario:
+                      nombre: str, apellido: str | None, email: str, password: str, rubro: str | None = "general") -> Usuario:
     """Crea el tenant inicial completo en una única transacción."""
     plan = db.session.execute(
         db.select(PlanSaaS).where(PlanSaaS.codigo == "prueba", PlanSaaS.activo.is_(True))
     ).scalar_one_or_none()
     if not plan:
         raise ErrorRegistro("El plan de prueba no está configurado")
+
+    codigo_rubro = (
+        str(rubro or "general")
+        .strip()
+        .lower()
+    )
+
+    if codigo_rubro not in CAPACIDADES_POR_RUBRO:
+        raise ErrorRegistro(
+            "El rubro de la empresa no es v?lido"
+        )
 
     email = email.strip().lower()
     if db.session.scalar(db.select(Usuario.id).where(Usuario.email == email)):
@@ -36,7 +48,14 @@ def registrar_empresa(*, empresa_nombre: str, identificacion_fiscal: str | None,
             fecha_inicio=ahora, fecha_fin=ahora + timedelta(days=plan.dias_prueba),
         )
         sucursal = Sucursal(empresa_id=empresa.id, codigo="PRINCIPAL", nombre="Sucursal principal")
-        configuracion = ConfiguracionEmpresa(empresa_id=empresa.id, nombre_comercial=empresa.nombre)
+        configuracion = ConfiguracionEmpresa(
+            empresa_id=empresa.id,
+            nombre_comercial=empresa.nombre,
+            opciones={
+                "rubro": codigo_rubro,
+                "capacidades": {},
+            },
+        )
         db.session.add_all([suscripcion, sucursal, configuracion])
         db.session.flush()
 
@@ -62,4 +81,3 @@ def registrar_empresa(*, empresa_nombre: str, identificacion_fiscal: str | None,
     except Exception:
         db.session.rollback()
         raise
-

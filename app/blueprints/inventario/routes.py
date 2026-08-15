@@ -1,12 +1,16 @@
+from datetime import date
+
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
 from ...models import (
     Inventario,
+    Lote,
     Movimiento,
     Producto,
     db,
 )
+from ...services.perfiles_empresa import tiene_capacidad
 from ...permisos import requerir_permiso
 from ...services.contexto import (
     obtener_contexto,
@@ -157,6 +161,206 @@ def _contexto_actual():
         )
 
     return contexto
+
+
+
+def _estado_vencimiento(fecha_vencimiento):
+    if fecha_vencimiento is None:
+        return "sin_vencimiento", None
+
+    dias = (
+        fecha_vencimiento - date.today()
+    ).days
+
+    if dias < 0:
+        estado = "vencido"
+    elif dias == 0:
+        estado = "vence_hoy"
+    elif dias <= 30:
+        estado = "proximo_vencer"
+    else:
+        estado = "vigente"
+
+    return estado, dias
+
+
+def _serializar_lote(lote, producto):
+    estado, dias = _estado_vencimiento(
+        lote.fecha_vencimiento
+    )
+    valor = (
+        lote.cantidad
+        * lote.costo_unitario
+    )
+
+    return {
+        "id": lote.id,
+        "producto_id": producto.id,
+        "producto_codigo": producto.codigo,
+        "producto_nombre": producto.nombre,
+        "bodega_id": lote.bodega_id,
+        "numero": lote.numero,
+        "fecha_fabricacion": (
+            lote.fecha_fabricacion.isoformat()
+            if lote.fecha_fabricacion
+            else None
+        ),
+        "fecha_vencimiento": (
+            lote.fecha_vencimiento.isoformat()
+            if lote.fecha_vencimiento
+            else None
+        ),
+        "dias_para_vencer": dias,
+        "estado_vencimiento": estado,
+        "cantidad": format(
+            lote.cantidad,
+            ".3f",
+        ),
+        "costo_unitario": format(
+            lote.costo_unitario,
+            ".4f",
+        ),
+        "valor": format(valor, ".2f"),
+        "activo": lote.activo,
+    }
+
+
+@inventario_bp.get("/lotes")
+@login_required
+@requerir_permiso("stock.ver")
+@requerir_contexto
+def listar_lotes():
+    if not tiene_capacidad(
+        current_user.empresa,
+        "control_lotes",
+    ):
+        return jsonify(
+            {
+                "codigo":
+                    "capacidad_no_disponible",
+                "mensaje": (
+                    "El inventario "
+                    "farmacéutico no está "
+                    "disponible para esta empresa"
+                ),
+            }
+        ), 403
+
+    try:
+        contexto = _contexto_actual()
+
+        consulta = (
+            db.select(
+                Lote,
+                Producto,
+            )
+            .join(
+                Producto,
+                db.and_(
+                    Producto.id
+                    == Lote.producto_id,
+                    Producto.empresa_id
+                    == Lote.empresa_id,
+                ),
+            )
+            .where(
+                Lote.empresa_id
+                == current_user.empresa_id,
+                Lote.bodega_id
+                == contexto.bodega.id,
+                Producto.eliminado.is_(False),
+            )
+        )
+
+        producto_id = request.args.get(
+            "producto_id",
+            type=int,
+        )
+
+        if producto_id:
+            consulta = consulta.where(
+                Lote.producto_id == producto_id
+            )
+
+        incluir_agotados = (
+            request.args.get(
+                "incluir_agotados",
+                "",
+            ).strip().lower()
+            in {"1", "true", "si", "s?"}
+        )
+
+        if not incluir_agotados:
+            consulta = consulta.where(
+                Lote.activo.is_(True),
+                Lote.cantidad > 0,
+            )
+
+        filas = db.session.execute(
+            consulta.order_by(
+                Lote.fecha_vencimiento.is_(
+                    None
+                ),
+                Lote.fecha_vencimiento,
+                Producto.nombre,
+                Lote.numero,
+            )
+        ).all()
+
+        lotes = [
+            _serializar_lote(
+                lote,
+                producto,
+            )
+            for lote, producto in filas
+        ]
+
+        estado = (
+            request.args.get("estado")
+            or ""
+        ).strip().lower()
+
+        estados_validos = {
+            "",
+            "vencido",
+            "vence_hoy",
+            "proximo_vencer",
+            "vigente",
+            "sin_vencimiento",
+        }
+
+        if estado not in estados_validos:
+            return _error(
+                ValueError(
+                    "El estado de vencimiento "
+                    "no es v?lido"
+                ),
+                "filtro_invalido",
+            )
+
+        if estado:
+            lotes = [
+                lote
+                for lote in lotes
+                if (
+                    lote["estado_vencimiento"]
+                    == estado
+                )
+            ]
+
+        return jsonify(
+            {
+                "bodega_id": contexto.bodega.id,
+                "bodega_nombre":
+                    contexto.bodega.nombre,
+                "lotes": lotes,
+            }
+        )
+    except ValueError as exc:
+        return _error(
+            exc,
+            "contexto_invalido",
+        )
 
 
 @inventario_bp.get("/stock")
@@ -344,6 +548,12 @@ def registrar_movimiento():
                     "costo_unitario"
                 ),
                 motivo=motivo,
+                numero_lote=datos.get(
+                    "numero_lote"
+                ),
+                fecha_vencimiento=datos.get(
+                    "fecha_vencimiento"
+                ),
             )
         elif tipo == "salida":
             resultado = servicio.salida(
@@ -362,6 +572,12 @@ def registrar_movimiento():
                     "costo_unitario"
                 ),
                 motivo=motivo,
+                numero_lote=datos.get(
+                    "numero_lote"
+                ),
+                fecha_vencimiento=datos.get(
+                    "fecha_vencimiento"
+                ),
             )
         else:
             resultado = servicio.ajuste(

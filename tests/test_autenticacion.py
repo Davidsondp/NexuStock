@@ -1,6 +1,7 @@
 from app.models import (Auditoria, Bodega, ConfiguracionEmpresa, Empresa, Sucursal,
                         Suscripcion, Usuario, UsuarioSucursal, db)
 from app.extensions import correo
+from app.services.perfiles_empresa import capacidades_empresa
 
 
 REGISTRO = {
@@ -137,3 +138,154 @@ def test_cambio_password_invalida_otra_sesion(app, client):
     respuesta = otro_navegador.get("/autenticacion/ingresar")
     assert respuesta.status_code == 200
     assert b"Ingresar" in respuesta.data
+
+
+def test_registro_muestra_selector_de_rubro(
+    client,
+):
+    respuesta = client.get(
+        "/autenticacion/registro"
+    )
+
+    assert respuesta.status_code == 200
+    assert b'name="rubro"' in respuesta.data
+
+    opciones = {
+        "general",
+        "almacen",
+        "minimarket",
+        "botilleria",
+        "ferreteria",
+        "farmacia",
+    }
+
+    for rubro in opciones:
+        assert (
+            f'value="{rubro}"'.encode()
+            in respuesta.data
+        )
+
+
+def test_registro_farmacia_activa_capacidad(
+    app,
+    client,
+):
+    respuesta = client.post(
+        "/autenticacion/registro",
+        data={
+            **REGISTRO,
+            "rubro": "farmacia",
+        },
+    )
+
+    assert respuesta.status_code == 302
+
+    with app.app_context():
+        configuracion = db.session.scalar(
+            db.select(ConfiguracionEmpresa)
+        )
+
+        assert configuracion is not None
+        assert (
+            configuracion.opciones["rubro"]
+            == "farmacia"
+        )
+
+        capacidades = capacidades_empresa(
+            configuracion.empresa
+        )
+
+        assert (
+            capacidades[
+                "inventario_farmaceutico"
+            ]
+            is True
+        )
+
+
+def test_registro_botilleria_no_activa_farmacia(
+    app,
+    client,
+):
+    respuesta = client.post(
+        "/autenticacion/registro",
+        data={
+            **REGISTRO,
+            "empresa_nombre":
+                "Botiller?a Central",
+            "identificacion_fiscal":
+                "77.123.456-8",
+            "email":
+                "admin@botilleria.cl",
+            "rubro": "botilleria",
+        },
+    )
+
+    assert respuesta.status_code == 302
+
+    with app.app_context():
+        configuracion = db.session.scalar(
+            db.select(ConfiguracionEmpresa)
+        )
+
+        capacidades = capacidades_empresa(
+            configuracion.empresa
+        )
+
+        assert (
+            configuracion.opciones["rubro"]
+            == "botilleria"
+        )
+        assert (
+            capacidades[
+                "inventario_farmaceutico"
+            ]
+            is False
+        )
+
+
+def test_registro_rechaza_rubro_desconocido(
+    app,
+    client,
+):
+    respuesta = client.post(
+        "/autenticacion/registro",
+        data={
+            **REGISTRO,
+            "rubro": "rubro_inventado",
+        },
+    )
+
+    assert respuesta.status_code == 200
+
+    with app.app_context():
+        assert (
+            db.session.scalar(
+                db.select(
+                    db.func.count(Empresa.id)
+                )
+            )
+            == 0
+        )
+
+
+def test_registro_sin_rubro_conserva_general(
+    app,
+    client,
+):
+    respuesta = client.post(
+        "/autenticacion/registro",
+        data=REGISTRO,
+    )
+
+    assert respuesta.status_code == 302
+
+    with app.app_context():
+        configuracion = db.session.scalar(
+            db.select(ConfiguracionEmpresa)
+        )
+
+        assert (
+            configuracion.opciones["rubro"]
+            == "general"
+        )

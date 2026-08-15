@@ -49,6 +49,7 @@ def registro():
         try:
             usuario = registrar_empresa(
                 empresa_nombre=formulario.empresa_nombre.data,
+                rubro=formulario.rubro.data,
                 identificacion_fiscal=formulario.identificacion_fiscal.data,
                 nombre=formulario.nombre.data,
                 apellido=formulario.apellido.data,

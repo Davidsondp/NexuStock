@@ -2,15 +2,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from sqlalchemy.exc import IntegrityError
 
-from ..models import Bodega, Inventario, Movimiento, Producto, db, utcnow
+from ..models import (
+    Bodega,
+    Inventario,
+    Lote,
+    Movimiento,
+    MovimientoLote,
+    Producto,
+    db,
+    utcnow,
+)
 from ..permisos import evaluar_permiso
 from .auditoria import registrar_auditoria
 from .contexto import ContextoOperacion
+from .perfiles_empresa import tiene_capacidad
 
 TRES_DECIMALES = Decimal("0.001")
 CUATRO_DECIMALES = Decimal("0.0001")
@@ -56,6 +66,26 @@ def _cantidad_positiva(valor) -> Decimal:
     return cantidad
 
 
+def _fecha_lote(valor, nombre: str):
+    if valor is None or valor == "":
+        return None
+
+    if isinstance(valor, datetime):
+        return valor.date()
+
+    if isinstance(valor, date):
+        return valor
+
+    try:
+        return date.fromisoformat(
+            str(valor).strip()
+        )
+    except (TypeError, ValueError) as exc:
+        raise ErrorInventario(
+            f"{nombre} no es valido"
+        ) from exc
+
+
 class ServicioInventario:
     """Ejecuta saldo, movimiento y auditoría en una misma transacción."""
 
@@ -65,13 +95,32 @@ class ServicioInventario:
         if usuario.empresa_id != contexto.empresa_id:
             raise PermissionError("El contexto no pertenece al usuario")
 
-    def entrada(self, *, producto_id: int, cantidad, costo_unitario,
-                motivo: str, referencia_tipo=None, referencia_id=None,
-                confirmar: bool = True) -> ResultadoMovimiento:
-        return self._ejecutar("entrada", "stock.entrada", producto_id, _cantidad_positiva(cantidad),
-                              costo_unitario=costo_unitario, motivo=motivo,
-                              referencia_tipo=referencia_tipo, referencia_id=referencia_id,
-                              confirmar=confirmar)
+    def entrada(
+        self,
+        *,
+        producto_id: int,
+        cantidad,
+        costo_unitario,
+        motivo: str,
+        referencia_tipo=None,
+        referencia_id=None,
+        numero_lote=None,
+        fecha_vencimiento=None,
+        confirmar: bool = True,
+    ) -> ResultadoMovimiento:
+        return self._ejecutar(
+            "entrada",
+            "stock.entrada",
+            producto_id,
+            _cantidad_positiva(cantidad),
+            costo_unitario=costo_unitario,
+            motivo=motivo,
+            referencia_tipo=referencia_tipo,
+            referencia_id=referencia_id,
+            numero_lote=numero_lote,
+            fecha_vencimiento=fecha_vencimiento,
+            confirmar=confirmar,
+        )
 
     def salida(self, *, producto_id: int, cantidad, motivo: str, precio_unitario=None,
                referencia_tipo=None, referencia_id=None,
@@ -81,13 +130,32 @@ class ServicioInventario:
                               referencia_tipo=referencia_tipo, referencia_id=referencia_id,
                               confirmar=confirmar)
 
-    def devolucion(self, *, producto_id: int, cantidad, motivo: str, costo_unitario=None,
-                   referencia_tipo=None, referencia_id=None,
-                   confirmar: bool = True) -> ResultadoMovimiento:
-        return self._ejecutar("devolucion", "stock.devolucion", producto_id, _cantidad_positiva(cantidad),
-                              costo_unitario=costo_unitario, motivo=motivo,
-                              referencia_tipo=referencia_tipo, referencia_id=referencia_id,
-                              confirmar=confirmar)
+    def devolucion(
+        self,
+        *,
+        producto_id: int,
+        cantidad,
+        motivo: str,
+        costo_unitario=None,
+        referencia_tipo=None,
+        referencia_id=None,
+        numero_lote=None,
+        fecha_vencimiento=None,
+        confirmar: bool = True,
+    ) -> ResultadoMovimiento:
+        return self._ejecutar(
+            "devolucion",
+            "stock.devolucion",
+            producto_id,
+            _cantidad_positiva(cantidad),
+            costo_unitario=costo_unitario,
+            motivo=motivo,
+            referencia_tipo=referencia_tipo,
+            referencia_id=referencia_id,
+            numero_lote=numero_lote,
+            fecha_vencimiento=fecha_vencimiento,
+            confirmar=confirmar,
+        )
 
     def transferencia_salida(self, *, producto_id: int, cantidad, motivo: str,
                              referencia_id: int, confirmar: bool = True) -> ResultadoMovimiento:
@@ -106,17 +174,51 @@ class ServicioInventario:
 
     def ajuste(self, *, producto_id: int, stock_final, motivo: str,
                confirmar: bool = True) -> ResultadoMovimiento:
-        producto, inventario = self._obtener_entidades(producto_id)
-        objetivo = _decimal(stock_final, "Stock final", TRES_DECIMALES)
-        if objetivo < 0:
-            raise ErrorInventario("El stock final no puede ser negativo")
-        delta = objetivo - Decimal(inventario.cantidad)
-        return self._ejecutar("ajuste", "stock.ajuste", producto.id, delta, motivo=motivo,
-                              inventario_bloqueado=inventario, confirmar=confirmar)
+        try:
+            producto, inventario = self._obtener_entidades(producto_id)
+
+            if (
+                producto.controla_lotes
+                or producto.controla_vencimiento
+            ):
+                raise ErrorInventario(
+                    "Los productos controlados "
+                    "deben ajustarse por lote"
+                )
+
+            objetivo = _decimal(
+                stock_final,
+                "Stock final",
+                TRES_DECIMALES,
+            )
+
+            if objetivo < 0:
+                raise ErrorInventario(
+                    "El stock final no puede ser negativo"
+                )
+
+            delta = (
+                objetivo
+                - Decimal(inventario.cantidad)
+            )
+
+            return self._ejecutar(
+                "ajuste",
+                "stock.ajuste",
+                producto.id,
+                delta,
+                motivo=motivo,
+                inventario_bloqueado=inventario,
+                confirmar=confirmar,
+            )
+        except Exception:
+            db.session.rollback()
+            raise
 
     def _ejecutar(self, tipo: str, permiso: str, producto_id: int, cantidad, *, motivo: str,
                   costo_unitario=None, precio_unitario=None, referencia_tipo=None,
                   referencia_id=None, inventario_bloqueado=None,
+                  numero_lote=None, fecha_vencimiento=None,
                   confirmar: bool = True) -> ResultadoMovimiento:
         try:
             decision = evaluar_permiso(self.usuario, permiso, empresa_id=self.contexto.empresa_id)
@@ -134,11 +236,41 @@ class ServicioInventario:
             if nuevo < Decimal(inventario.cantidad_reservada):
                 raise StockInsuficiente("Stock disponible insuficiente")
 
+            asignaciones_lote = []
+
+            if (
+                cantidad < 0
+                and (
+                    producto.controla_lotes
+                    or producto.controla_vencimiento
+                )
+            ):
+                asignaciones_lote = (
+                    self._preparar_salida_lotes(
+                        producto,
+                        -cantidad,
+                    )
+                )
+
             costo_anterior = Decimal(inventario.costo_promedio)
             costo = (_decimal(costo_unitario, "Costo unitario", CUATRO_DECIMALES)
                      if costo_unitario is not None else costo_anterior)
             if costo < 0:
                 raise ErrorInventario("El costo unitario no puede ser negativo")
+
+            entrada_lote = None
+
+            if cantidad > 0:
+                entrada_lote = (
+                    self._preparar_entrada_lote(
+                        producto,
+                        cantidad,
+                        costo,
+                        numero_lote,
+                        fecha_vencimiento,
+                    )
+                )
+
             if cantidad > 0 and nuevo > 0:
                 costo_nuevo = ((anterior * costo_anterior) + (cantidad * costo)) / nuevo
                 inventario.costo_promedio = costo_nuevo.quantize(CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
@@ -158,6 +290,19 @@ class ServicioInventario:
             )
             db.session.add(movimiento)
             db.session.flush()
+
+            if entrada_lote:
+                self._registrar_entrada_lote(
+                    movimiento,
+                    entrada_lote,
+                )
+
+            if asignaciones_lote:
+                self._registrar_salida_lotes(
+                    movimiento,
+                    asignaciones_lote,
+                )
+
             registrar_auditoria(
                 accion=f"inventario.{tipo}", modulo="inventario",
                 usuario_id=self.usuario.id, empresa_id=self.contexto.empresa_id,
@@ -175,6 +320,338 @@ class ServicioInventario:
         except Exception:
             db.session.rollback()
             raise
+
+
+
+    def _preparar_entrada_lote(
+        self,
+        producto,
+        cantidad: Decimal,
+        costo: Decimal,
+        numero_lote,
+        fecha_vencimiento,
+    ):
+        numero = (
+            str(numero_lote).strip()
+            if numero_lote is not None
+            else ""
+        )
+
+        informa_vencimiento = (
+            fecha_vencimiento
+            not in (None, "")
+        )
+        solicita_trazabilidad = bool(
+            numero
+            or informa_vencimiento
+        )
+
+        if (
+            solicita_trazabilidad
+            and not tiene_capacidad(
+                self.usuario.empresa,
+                "control_lotes",
+            )
+        ):
+            raise ErrorInventario(
+                "El control de lotes no está "
+                "disponible para esta empresa"
+            )
+
+        if (
+            informa_vencimiento
+            and not tiene_capacidad(
+                self.usuario.empresa,
+                "control_vencimientos",
+            )
+        ):
+            raise ErrorInventario(
+                "El control de vencimientos "
+                "no está disponible para "
+                "esta empresa"
+            )
+
+        controla = (
+            producto.controla_lotes
+            or producto.controla_vencimiento
+        )
+
+        if solicita_trazabilidad and not controla:
+            raise ErrorInventario(
+                "Este producto no utiliza "
+                "control por lotes"
+            )
+
+        if controla and not numero:
+            raise ErrorInventario(
+                "El número de lote es obligatorio"
+            )
+
+        if not controla and not numero:
+            return None
+
+        vencimiento = _fecha_lote(
+            fecha_vencimiento,
+            "Fecha de vencimiento",
+        )
+
+        if (
+            producto.controla_vencimiento
+            and vencimiento is None
+        ):
+            raise ErrorInventario(
+                "La fecha de vencimiento "
+                "es obligatoria"
+            )
+
+        if (
+            vencimiento is not None
+            and vencimiento < date.today()
+        ):
+            raise ErrorInventario(
+                "No se puede ingresar "
+                "un lote vencido"
+            )
+
+        lote = db.session.scalar(
+            db.select(Lote)
+            .where(
+                Lote.empresa_id
+                == self.contexto.empresa_id,
+                Lote.producto_id
+                == producto.id,
+                Lote.bodega_id
+                == self.contexto.bodega.id,
+                Lote.numero == numero,
+            )
+            .with_for_update()
+        )
+
+        if lote:
+            if not lote.activo:
+                raise ErrorInventario(
+                    "El lote se encuentra inactivo"
+                )
+
+            if (
+                lote.fecha_vencimiento
+                and vencimiento
+                and lote.fecha_vencimiento
+                != vencimiento
+            ):
+                raise ErrorInventario(
+                    "El lote ya existe con otra "
+                    "fecha de vencimiento"
+                )
+
+            saldo_anterior = Decimal(
+                lote.cantidad
+            )
+            saldo_nuevo = (
+                saldo_anterior + cantidad
+            ).quantize(TRES_DECIMALES)
+
+            if saldo_nuevo <= 0:
+                raise ErrorInventario(
+                    "El saldo del lote "
+                    "debe ser positivo"
+                )
+
+            costo_anterior = Decimal(
+                lote.costo_unitario
+            )
+            costo_nuevo = (
+                (
+                    saldo_anterior
+                    * costo_anterior
+                )
+                + (cantidad * costo)
+            ) / saldo_nuevo
+
+            lote.cantidad = saldo_nuevo
+            lote.costo_unitario = (
+                costo_nuevo.quantize(
+                    CUATRO_DECIMALES,
+                    rounding=ROUND_HALF_UP,
+                )
+            )
+            lote.fecha_vencimiento = (
+                lote.fecha_vencimiento
+                or vencimiento
+            )
+        else:
+            saldo_anterior = Decimal("0.000")
+            saldo_nuevo = Decimal(
+                cantidad
+            ).quantize(TRES_DECIMALES)
+
+            lote = Lote(
+                empresa_id=
+                    self.contexto.empresa_id,
+                producto_id=producto.id,
+                bodega_id=
+                    self.contexto.bodega.id,
+                numero=numero,
+                fecha_vencimiento=vencimiento,
+                cantidad=saldo_nuevo,
+                costo_unitario=costo,
+                activo=True,
+            )
+            db.session.add(lote)
+            db.session.flush()
+
+        return (
+            lote,
+            Decimal(cantidad).quantize(
+                TRES_DECIMALES
+            ),
+            saldo_anterior,
+            saldo_nuevo,
+        )
+
+    def _registrar_entrada_lote(
+        self,
+        movimiento,
+        entrada_lote,
+    ) -> None:
+        (
+            lote,
+            cantidad,
+            saldo_anterior,
+            saldo_nuevo,
+        ) = entrada_lote
+
+        db.session.add(
+            MovimientoLote(
+                empresa_id=
+                    self.contexto.empresa_id,
+                movimiento_id=movimiento.id,
+                lote_id=lote.id,
+                producto_id=
+                    movimiento.producto_id,
+                bodega_id=
+                    movimiento.bodega_id,
+                usuario_id=self.usuario.id,
+                cantidad=cantidad,
+                saldo_anterior=saldo_anterior,
+                saldo_nuevo=saldo_nuevo,
+                fecha=movimiento.fecha,
+            )
+        )
+
+    def _preparar_salida_lotes(
+        self,
+        producto,
+        cantidad: Decimal,
+    ):
+        consulta = db.select(Lote).where(
+            Lote.empresa_id
+            == self.contexto.empresa_id,
+            Lote.producto_id == producto.id,
+            Lote.bodega_id
+            == self.contexto.bodega.id,
+            Lote.activo.is_(True),
+            Lote.cantidad > 0,
+        )
+
+        if producto.controla_vencimiento:
+            consulta = consulta.where(
+                Lote.fecha_vencimiento.is_not(None),
+                Lote.fecha_vencimiento
+                >= date.today(),
+            )
+
+        consulta = consulta.order_by(
+            db.case(
+                (
+                    Lote.fecha_vencimiento.is_(None),
+                    1,
+                ),
+                else_=0,
+            ),
+            Lote.fecha_vencimiento.asc(),
+            Lote.creado_en.asc(),
+            Lote.id.asc(),
+        ).with_for_update()
+
+        lotes = list(
+            db.session.scalars(consulta)
+        )
+
+        restante = Decimal(cantidad)
+        asignaciones = []
+
+        for lote in lotes:
+            if restante <= 0:
+                break
+
+            disponible = Decimal(
+                lote.cantidad
+            )
+            retiro = min(
+                disponible,
+                restante,
+            ).quantize(TRES_DECIMALES)
+
+            if retiro <= 0:
+                continue
+
+            asignaciones.append(
+                (lote, retiro)
+            )
+            restante -= retiro
+
+        if restante > 0:
+            raise StockInsuficiente(
+                "Stock disponible por lote "
+                "insuficiente"
+            )
+
+        return asignaciones
+
+    def _registrar_salida_lotes(
+        self,
+        movimiento,
+        asignaciones,
+    ) -> None:
+        for lote, retiro in asignaciones:
+            saldo_anterior = Decimal(
+                lote.cantidad
+            )
+            cantidad = -Decimal(
+                retiro
+            ).quantize(TRES_DECIMALES)
+            saldo_nuevo = (
+                saldo_anterior + cantidad
+            ).quantize(TRES_DECIMALES)
+
+            if saldo_nuevo < 0:
+                raise StockInsuficiente(
+                    "Stock disponible por lote "
+                    "insuficiente"
+                )
+
+            lote.cantidad = saldo_nuevo
+
+            db.session.add(
+                MovimientoLote(
+                    empresa_id=
+                        self.contexto.empresa_id,
+                    movimiento_id=
+                        movimiento.id,
+                    lote_id=lote.id,
+                    producto_id=
+                        movimiento.producto_id,
+                    bodega_id=
+                        movimiento.bodega_id,
+                    usuario_id=self.usuario.id,
+                    cantidad=cantidad,
+                    saldo_anterior=
+                        saldo_anterior,
+                    saldo_nuevo=saldo_nuevo,
+                    fecha=movimiento.fecha,
+                )
+            )
 
     def _obtener_entidades(self, producto_id: int, inventario_existente=None):
         producto = db.session.scalar(

@@ -5,6 +5,8 @@ const configuracion = Object.freeze({
         document.body.dataset.apiInventario,
     apiStock:
         document.body.dataset.apiStock,
+    apiLotes:
+        document.body.dataset.apiLotes,
     apiMovimientos:
         document.body.dataset.apiMovimientos,
     apiProductos:
@@ -23,6 +25,7 @@ const configuracion = Object.freeze({
 
 const estado = {
     stock: [],
+    lotes: [],
     movimientos: [],
     productos: [],
 };
@@ -753,10 +756,299 @@ function renderizarMovimientos() {
     );
 }
 
+function metadatosVencimiento(estadoLote) {
+    const estados = {
+        vencido: {
+            etiqueta: "Vencido",
+            clase: "lote-estado--vencido",
+        },
+        vence_hoy: {
+            etiqueta: "Vence hoy",
+            clase: "lote-estado--hoy",
+        },
+        proximo_vencer: {
+            etiqueta: "Próximo a vencer",
+            clase: "lote-estado--proximo",
+        },
+        vigente: {
+            etiqueta: "Vigente",
+            clase: "lote-estado--vigente",
+        },
+        sin_vencimiento: {
+            etiqueta: "Sin vencimiento",
+            clase: "lote-estado--sin-fecha",
+        },
+    };
+
+    return estados[estadoLote] || {
+        etiqueta: "Sin clasificar",
+        clase: "lote-estado--sin-fecha",
+    };
+}
+
+function formatearFechaLote(valor) {
+    if (!valor) {
+        return "—";
+    }
+
+    const partes = String(valor).split("-");
+
+    if (partes.length !== 3) {
+        return valor;
+    }
+
+    return `${partes[2]}-${partes[1]}-${partes[0]}`;
+}
+
+function obtenerLotesFiltrados() {
+    const estadoSeleccionado = elemento(
+        "filtrar-vencimiento"
+    )?.value || "";
+
+    if (!estadoSeleccionado) {
+        return estado.lotes;
+    }
+
+    return estado.lotes.filter(
+        (lote) =>
+            lote.estado_vencimiento
+            === estadoSeleccionado
+    );
+}
+
+function renderizarResumenLotes() {
+    const contenedor = elemento(
+        "resumen-lotes"
+    );
+
+    if (!contenedor) {
+        return;
+    }
+
+    limpiar(contenedor);
+
+    const resumen = [
+        {
+            etiqueta: "Lotes activos",
+            valor: estado.lotes.length,
+            clase: "resumen-lote--total",
+        },
+        {
+            etiqueta: "Vencidos",
+            valor: estado.lotes.filter(
+                (lote) =>
+                    lote.estado_vencimiento
+                    === "vencido"
+            ).length,
+            clase: "resumen-lote--vencido",
+        },
+        {
+            etiqueta: "Vencen hoy",
+            valor: estado.lotes.filter(
+                (lote) =>
+                    lote.estado_vencimiento
+                    === "vence_hoy"
+            ).length,
+            clase: "resumen-lote--hoy",
+        },
+        {
+            etiqueta: "Próximos a vencer",
+            valor: estado.lotes.filter(
+                (lote) =>
+                    lote.estado_vencimiento
+                    === "proximo_vencer"
+            ).length,
+            clase: "resumen-lote--proximo",
+        },
+    ];
+
+    resumen.forEach((item) => {
+        const tarjeta = crearElemento(
+            "article",
+            "",
+            `resumen-lote ${item.clase}`
+        );
+        const etiqueta = crearElemento(
+            "span",
+            item.etiqueta,
+            "resumen-lote__etiqueta"
+        );
+        const valor = crearElemento(
+            "strong",
+            new Intl.NumberFormat("es-CL")
+                .format(item.valor),
+            "resumen-lote__valor"
+        );
+
+        tarjeta.appendChild(etiqueta);
+        tarjeta.appendChild(valor);
+        contenedor.appendChild(tarjeta);
+    });
+}
+
+function renderizarLotes() {
+    const cuerpo = elemento("tabla-lotes");
+
+    if (!cuerpo) {
+        return;
+    }
+
+    limpiar(cuerpo);
+
+    const lotes = obtenerLotesFiltrados();
+
+    if (!lotes.length) {
+        const fila = crearElemento("tr");
+        const celda = crearElemento(
+            "td",
+            "No hay lotes que coincidan "
+            + "con el filtro seleccionado.",
+            "tabla__vacio"
+        );
+
+        celda.colSpan = 6;
+        fila.appendChild(celda);
+        cuerpo.appendChild(fila);
+        return;
+    }
+
+    lotes.forEach((lote) => {
+        const fila = crearElemento("tr");
+        const metadatos = metadatosVencimiento(
+            lote.estado_vencimiento
+        );
+
+        fila.className = (
+            `fila-lote ${metadatos.clase}`
+        );
+
+        fila.appendChild(
+            crearCeldaProducto(lote)
+        );
+
+        fila.appendChild(
+            crearElemento(
+                "td",
+                lote.numero,
+                "lote-numero"
+            )
+        );
+
+        const textoVencimiento = (
+            formatearFechaLote(
+                lote.fecha_vencimiento
+            )
+        );
+        const dias = lote.dias_para_vencer;
+
+        const celdaVencimiento = crearElemento(
+            "td"
+        );
+        const fecha = crearElemento(
+            "strong",
+            textoVencimiento
+        );
+        const detalle = crearElemento(
+            "small",
+            (
+                dias === null
+                    ? "Sin fecha registrada"
+                    : (
+                        dias < 0
+                            ? `${Math.abs(dias)} días vencido`
+                            : (
+                                dias === 0
+                                    ? "Vence hoy"
+                                    : `${dias} días restantes`
+                            )
+                    )
+            ),
+            "lote-vencimiento__detalle"
+        );
+
+        celdaVencimiento.appendChild(fecha);
+        celdaVencimiento.appendChild(detalle);
+        fila.appendChild(celdaVencimiento);
+
+        const celdaEstado = crearElemento("td");
+        const insignia = crearElemento(
+            "span",
+            metadatos.etiqueta,
+            `lote-estado ${metadatos.clase}`
+        );
+
+        celdaEstado.appendChild(insignia);
+        fila.appendChild(celdaEstado);
+
+        fila.appendChild(
+            crearElemento(
+                "td",
+                formatearCantidad(
+                    lote.cantidad
+                ),
+                "cantidad-destacada"
+            )
+        );
+
+        fila.appendChild(
+            crearElemento(
+                "td",
+                formatearMoneda(lote.valor)
+            )
+        );
+
+        cuerpo.appendChild(fila);
+    });
+}
+
 function actualizarCamposMovimiento() {
-    const tipo = elemento(
+    const selectorTipo = elemento(
         "movimiento-tipo"
-    )?.value;
+    );
+    const selectorProducto = elemento(
+        "movimiento-producto"
+    );
+
+    let tipo = selectorTipo?.value || "";
+
+    const productoId = Number(
+        selectorProducto?.value
+    );
+    const producto = estado.productos.find(
+        (item) => Number(item.id) === productoId
+    );
+
+    const controlaLotes = Boolean(
+        producto?.controla_lotes
+        || producto?.controla_vencimiento
+    );
+    const controlaVencimiento = Boolean(
+        producto?.controla_vencimiento
+    );
+
+    const opcionAjuste = [
+        ...(selectorTipo?.options || []),
+    ].find(
+        (opcion) => opcion.value === "ajuste"
+    );
+
+    if (opcionAjuste) {
+        opcionAjuste.disabled = controlaLotes;
+    }
+
+    if (
+        controlaLotes
+        && tipo === "ajuste"
+    ) {
+        selectorTipo.value = "";
+        tipo = "";
+
+        notificar(
+            "Los productos controlados deben "
+            + "ajustarse mediante movimientos "
+            + "específicos por lote."
+        );
+    }
 
     const esAjuste = tipo === "ajuste";
     const usaCosto = (
@@ -764,6 +1056,10 @@ function actualizarCamposMovimiento() {
         || tipo === "devolucion"
     );
     const usaPrecio = tipo === "salida";
+    const usaTrazabilidad = (
+        usaCosto
+        && controlaLotes
+    );
 
     elemento("grupo-cantidad").hidden = (
         esAjuste
@@ -782,6 +1078,21 @@ function actualizarCamposMovimiento() {
     ).hidden = !usaPrecio;
 
     elemento(
+        "grupo-numero-lote"
+    ).hidden = !usaTrazabilidad;
+
+    elemento(
+        "grupo-fecha-vencimiento"
+    ).hidden = !(
+        usaTrazabilidad
+        && controlaVencimiento
+    );
+
+    elemento(
+        "ayuda-trazabilidad"
+    ).hidden = !usaTrazabilidad;
+
+    elemento(
         "movimiento-cantidad"
     ).required = !esAjuste;
 
@@ -796,6 +1107,17 @@ function actualizarCamposMovimiento() {
     elemento(
         "movimiento-precio-unitario"
     ).required = false;
+
+    elemento(
+        "movimiento-numero-lote"
+    ).required = usaTrazabilidad;
+
+    elemento(
+        "movimiento-fecha-vencimiento"
+    ).required = (
+        usaTrazabilidad
+        && controlaVencimiento
+    );
 }
 
 function construirMovimiento() {
@@ -902,6 +1224,67 @@ function construirMovimiento() {
         }
     }
 
+    const producto = estado.productos.find(
+        (item) =>
+            Number(item.id) === productoId
+    );
+    const controlaLotes = Boolean(
+        producto?.controla_lotes
+        || producto?.controla_vencimiento
+    );
+    const controlaVencimiento = Boolean(
+        producto?.controla_vencimiento
+    );
+
+    if (
+        tipo === "ajuste"
+        && controlaLotes
+    ) {
+        throw new Error(
+            "No se permite un ajuste global "
+            + "en productos controlados por lote."
+        );
+    }
+
+    if (
+        (
+            tipo === "entrada"
+            || tipo === "devolucion"
+        )
+        && controlaLotes
+    ) {
+        const numeroLote = elemento(
+            "movimiento-numero-lote"
+        ).value.trim();
+        const fechaVencimiento = elemento(
+            "movimiento-fecha-vencimiento"
+        ).value;
+
+        if (!numeroLote) {
+            throw new Error(
+                "El número de lote es obligatorio."
+            );
+        }
+
+        if (
+            controlaVencimiento
+            && !fechaVencimiento
+        ) {
+            throw new Error(
+                "La fecha de vencimiento "
+                + "es obligatoria."
+            );
+        }
+
+        datos.numero_lote = numeroLote;
+
+        if (fechaVencimiento) {
+            datos.fecha_vencimiento = (
+                fechaVencimiento
+            );
+        }
+    }
+
     return datos;
 }
 
@@ -969,6 +1352,23 @@ async function cargarStock() {
     renderizarStock();
 }
 
+async function cargarLotes() {
+    if (!configuracion.apiLotes) {
+        estado.lotes = [];
+        renderizarResumenLotes();
+        renderizarLotes();
+        return;
+    }
+
+    const datos = await solicitarJson(
+        configuracion.apiLotes
+    );
+
+    estado.lotes = datos.lotes || [];
+    renderizarResumenLotes();
+    renderizarLotes();
+}
+
 async function cargarMovimientos() {
     const separador = (
         configuracion.apiMovimientos.includes("?")
@@ -1002,6 +1402,7 @@ async function cargarPanel() {
         await Promise.all([
             cargarProductos(),
             cargarStock(),
+            cargarLotes(),
             cargarMovimientos(),
         ]);
     } catch (error) {
@@ -1058,6 +1459,13 @@ function registrarEventos() {
     );
 
     elemento(
+        "movimiento-producto"
+    )?.addEventListener(
+        "change",
+        actualizarCamposMovimiento
+    );
+
+    elemento(
         "buscar-inventario"
     )?.addEventListener(
         "input",
@@ -1069,6 +1477,13 @@ function registrarEventos() {
     )?.addEventListener(
         "change",
         renderizarStock
+    );
+
+    elemento(
+        "filtrar-vencimiento"
+    )?.addEventListener(
+        "change",
+        renderizarLotes
     );
 
     elemento(

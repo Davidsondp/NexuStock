@@ -2,14 +2,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal, ROUND_CEILING
 
-from ..models import (AlertaInventario, Bodega, ConfiguracionEmpresa, Inventario,
-                      Movimiento, Producto, Proveedor, db, utcnow)
+from ..models import (
+    AlertaInventario,
+    Bodega,
+    ConfiguracionEmpresa,
+    Inventario,
+    Lote,
+    Movimiento,
+    Producto,
+    Proveedor,
+    db,
+    utcnow,
+)
 from ..permisos import evaluar_permiso
 from .auditoria import registrar_auditoria
 from .contexto import sucursales_autorizadas
+from .perfiles_empresa import tiene_capacidad
 
 
 class ErrorAlerta(ValueError):
@@ -53,57 +64,263 @@ class ServicioAlertas:
         self._exigir("alertas.gestionar")
         ahora = utcnow()
         bodegas = self._bodegas_autorizadas()
-        configuracion = db.session.scalar(db.select(ConfiguracionEmpresa).where(
-            ConfiguracionEmpresa.empresa_id == self.usuario.empresa_id))
-        dias_sin_movimiento = configuracion.dias_sin_movimiento if configuracion else 90
-        inventarios = list(db.session.scalars(
-            db.select(Inventario).join(Producto, db.and_(
-                Producto.id == Inventario.producto_id,
-                Producto.empresa_id == Inventario.empresa_id,
-            )).where(
-                Inventario.empresa_id == self.usuario.empresa_id,
-                Inventario.bodega_id.in_(bodegas),
-                Producto.activo.is_(True), Producto.eliminado.is_(False),
+
+        configuracion = db.session.scalar(
+            db.select(
+                ConfiguracionEmpresa
+            ).where(
+                ConfiguracionEmpresa.empresa_id
+                == self.usuario.empresa_id
             )
-        ))
-        activas = {(a.producto_id, a.bodega_id, a.tipo): a for a in db.session.scalars(
-            db.select(AlertaInventario).where(
-                AlertaInventario.empresa_id == self.usuario.empresa_id,
-                AlertaInventario.bodega_id.in_(bodegas),
-                AlertaInventario.estado == "activa",
-            ).with_for_update()
-        )}
-        detectadas = set(); creadas = actualizadas = resueltas = 0
+        )
+        dias_sin_movimiento = (
+            configuracion.dias_sin_movimiento
+            if configuracion
+            else 90
+        )
+
+        inventarios = list(
+            db.session.scalars(
+                db.select(Inventario)
+                .join(
+                    Producto,
+                    db.and_(
+                        Producto.id
+                        == Inventario.producto_id,
+                        Producto.empresa_id
+                        == Inventario.empresa_id,
+                    ),
+                )
+                .where(
+                    Inventario.empresa_id
+                    == self.usuario.empresa_id,
+                    Inventario.bodega_id.in_(
+                        bodegas
+                    ),
+                    Producto.activo.is_(True),
+                    Producto.eliminado.is_(False),
+                )
+            )
+        )
+
+        alertas_activas = list(
+            db.session.scalars(
+                db.select(AlertaInventario)
+                .where(
+                    AlertaInventario.empresa_id
+                    == self.usuario.empresa_id,
+                    AlertaInventario.bodega_id.in_(
+                        bodegas
+                    ),
+                    AlertaInventario.estado
+                    == "activa",
+                )
+                .with_for_update()
+            )
+        )
+
+        activas_generales = {
+            (
+                alerta.producto_id,
+                alerta.bodega_id,
+                alerta.tipo,
+            ): alerta
+            for alerta in alertas_activas
+            if alerta.lote_id is None
+        }
+        activas_lotes = {
+            (
+                alerta.lote_id,
+                alerta.tipo,
+            ): alerta
+            for alerta in alertas_activas
+            if alerta.lote_id is not None
+        }
+
+        detectadas_generales = set()
+        detectadas_lotes = set()
+        creadas = 0
+        actualizadas = 0
+        resueltas = 0
+
         try:
             for inventario in inventarios:
-                producto = db.session.get(Producto, inventario.producto_id)
-                reglas = self._evaluar(inventario, producto, ahora, dias_sin_movimiento,
-                                        configuracion)
-                for tipo, prioridad, titulo, mensaje, datos in reglas:
-                    clave = (producto.id, inventario.bodega_id, tipo); detectadas.add(clave)
-                    alerta = activas.get(clave)
+                producto = db.session.get(
+                    Producto,
+                    inventario.producto_id,
+                )
+                reglas = self._evaluar(
+                    inventario,
+                    producto,
+                    ahora,
+                    dias_sin_movimiento,
+                    configuracion,
+                )
+
+                for (
+                    tipo,
+                    prioridad,
+                    titulo,
+                    mensaje,
+                    datos,
+                ) in reglas:
+                    clave = (
+                        producto.id,
+                        inventario.bodega_id,
+                        tipo,
+                    )
+                    detectadas_generales.add(clave)
+                    alerta = activas_generales.get(
+                        clave
+                    )
+
                     if alerta:
-                        alerta.prioridad, alerta.titulo, alerta.mensaje, alerta.datos = prioridad, titulo, mensaje, datos
+                        alerta.prioridad = prioridad
+                        alerta.titulo = titulo
+                        alerta.mensaje = mensaje
+                        alerta.datos = datos
                         actualizadas += 1
                     else:
-                        db.session.add(AlertaInventario(
-                            empresa_id=self.usuario.empresa_id, producto_id=producto.id,
-                            bodega_id=inventario.bodega_id, tipo=tipo, prioridad=prioridad,
-                            titulo=titulo, mensaje=mensaje, datos=datos,
-                        )); creadas += 1
-            for clave, alerta in activas.items():
-                if clave not in detectadas:
-                    alerta.estado = "resuelta"; alerta.resuelta_en = ahora
-                    alerta.resuelta_por_id = self.usuario.id; resueltas += 1
+                        db.session.add(
+                            AlertaInventario(
+                                empresa_id=
+                                    self.usuario.empresa_id,
+                                producto_id=producto.id,
+                                bodega_id=
+                                    inventario.bodega_id,
+                                lote_id=None,
+                                tipo=tipo,
+                                prioridad=prioridad,
+                                titulo=titulo,
+                                mensaje=mensaje,
+                                datos=datos,
+                            )
+                        )
+                        creadas += 1
+
+            if tiene_capacidad(
+                self.usuario.empresa,
+                "control_vencimientos",
+            ):
+                lotes = db.session.execute(
+                    db.select(
+                        Lote,
+                        Producto,
+                    )
+                    .join(
+                        Producto,
+                        db.and_(
+                            Producto.id
+                            == Lote.producto_id,
+                            Producto.empresa_id
+                            == Lote.empresa_id,
+                        ),
+                    )
+                    .where(
+                        Lote.empresa_id
+                        == self.usuario.empresa_id,
+                        Lote.bodega_id.in_(bodegas),
+                        Lote.activo.is_(True),
+                        Lote.cantidad > 0,
+                        Lote.fecha_vencimiento.is_not(
+                            None
+                        ),
+                        Producto.activo.is_(True),
+                        Producto.eliminado.is_(False),
+                        Producto.controla_vencimiento
+                        .is_(True),
+                    )
+                ).all()
+
+                for lote, producto in lotes:
+                    regla = self._evaluar_lote(
+                        lote,
+                        producto,
+                    )
+
+                    if regla is None:
+                        continue
+
+                    (
+                        tipo,
+                        prioridad,
+                        titulo,
+                        mensaje,
+                        datos,
+                    ) = regla
+
+                    clave = (
+                        lote.id,
+                        tipo,
+                    )
+                    detectadas_lotes.add(clave)
+                    alerta = activas_lotes.get(clave)
+
+                    if alerta:
+                        alerta.prioridad = prioridad
+                        alerta.titulo = titulo
+                        alerta.mensaje = mensaje
+                        alerta.datos = datos
+                        actualizadas += 1
+                    else:
+                        db.session.add(
+                            AlertaInventario(
+                                empresa_id=
+                                    self.usuario.empresa_id,
+                                producto_id=producto.id,
+                                bodega_id=lote.bodega_id,
+                                lote_id=lote.id,
+                                tipo=tipo,
+                                prioridad=prioridad,
+                                titulo=titulo,
+                                mensaje=mensaje,
+                                datos=datos,
+                            )
+                        )
+                        creadas += 1
+
+            for clave, alerta in (
+                activas_generales.items()
+            ):
+                if clave not in detectadas_generales:
+                    alerta.estado = "resuelta"
+                    alerta.resuelta_en = ahora
+                    alerta.resuelta_por_id = (
+                        self.usuario.id
+                    )
+                    resueltas += 1
+
+            for clave, alerta in activas_lotes.items():
+                if clave not in detectadas_lotes:
+                    alerta.estado = "resuelta"
+                    alerta.resuelta_en = ahora
+                    alerta.resuelta_por_id = (
+                        self.usuario.id
+                    )
+                    resueltas += 1
+
             registrar_auditoria(
-                accion="alertas.generadas", modulo="alertas", usuario_id=self.usuario.id,
-                empresa_id=self.usuario.empresa_id, entidad_tipo="AlertaInventario",
-                datos_nuevos={"creadas": creadas, "actualizadas": actualizadas, "resueltas": resueltas},
+                accion="alertas.generadas",
+                modulo="alertas",
+                usuario_id=self.usuario.id,
+                empresa_id=self.usuario.empresa_id,
+                entidad_tipo="AlertaInventario",
+                datos_nuevos={
+                    "creadas": creadas,
+                    "actualizadas": actualizadas,
+                    "resueltas": resueltas,
+                },
             )
             db.session.commit()
-            return ResultadoGeneracion(creadas, actualizadas, resueltas)
+
+            return ResultadoGeneracion(
+                creadas,
+                actualizadas,
+                resueltas,
+            )
         except Exception:
-            db.session.rollback(); raise
+            db.session.rollback()
+            raise
 
     def cambiar_estado(self, alerta_id: int, estado: str) -> AlertaInventario:
         self._exigir("alertas.gestionar")
@@ -183,6 +400,88 @@ class ServicioAlertas:
                            {**base, "dias_umbral": dias_sin_movimiento,
                             "ultimo_movimiento": ultimo.isoformat() if ultimo else None}))
         return reglas
+
+    def _evaluar_lote(
+        self,
+        lote,
+        producto,
+    ):
+        vencimiento = lote.fecha_vencimiento
+
+        if vencimiento is None:
+            return None
+
+        dias = (
+            vencimiento - date.today()
+        ).days
+
+        datos = {
+            "lote_id": lote.id,
+            "numero_lote": lote.numero,
+            "producto_id": producto.id,
+            "producto_codigo": producto.codigo,
+            "fecha_vencimiento":
+                vencimiento.isoformat(),
+            "dias_para_vencer": dias,
+            "cantidad": str(lote.cantidad),
+        }
+
+        if dias < 0:
+            return (
+                "lote_vencido",
+                "critica",
+                (
+                    f"Lote vencido: "
+                    f"{producto.nombre}"
+                ),
+                (
+                    f"El lote {lote.numero} venci? "
+                    f"hace {abs(dias)} d?as y mantiene "
+                    f"{lote.cantidad} unidades."
+                ),
+                datos,
+            )
+
+        if dias == 0:
+            return (
+                "lote_vence_hoy",
+                "critica",
+                (
+                    f"Lote vence hoy: "
+                    f"{producto.nombre}"
+                ),
+                (
+                    f"El lote {lote.numero} vence hoy "
+                    f"y mantiene {lote.cantidad} "
+                    "unidades."
+                ),
+                datos,
+            )
+
+        if dias <= 30:
+            prioridad = (
+                "critica"
+                if dias <= 7
+                else "alta"
+            )
+
+            return (
+                "lote_proximo_vencer",
+                prioridad,
+                (
+                    f"Lote pr?ximo a vencer: "
+                    f"{producto.nombre}"
+                ),
+                (
+                    f"El lote {lote.numero} vence "
+                    f"en {dias} d?as y mantiene "
+                    f"{lote.cantidad} unidades."
+                ),
+                datos,
+            )
+
+        return None
+
 
     def _bodegas_autorizadas(self):
         sucursales = {s.id for s in sucursales_autorizadas(self.usuario)}

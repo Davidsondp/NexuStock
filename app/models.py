@@ -436,6 +436,7 @@ class Lote(TimestampMixin, db.Model):
         ForeignKeyConstraint(["bodega_id", "empresa_id"], ["bodega.id", "bodega.empresa_id"]),
         UniqueConstraint("empresa_id", "producto_id", "bodega_id", "numero",
                          name="uq_lote_numero_bodega"),
+        UniqueConstraint("id", "empresa_id", name="uq_lote_id_empresa"),
         CheckConstraint("cantidad >= 0", name="ck_lote_cantidad"),
     )
     id = db.Column(db.Integer, primary_key=True); empresa_id = db.Column(db.Integer, nullable=False, index=True)
@@ -668,6 +669,11 @@ class Movimiento(TimestampMixin, db.Model):
     """Libro mayor append-only. cantidad lleva signo y cumple nuevo=anterior+cantidad."""
     __tablename__ = "movimiento"
     __table_args__ = (
+        UniqueConstraint(
+            "id",
+            "empresa_id",
+            name="uq_movimiento_id_empresa",
+        ),
         ForeignKeyConstraint(["producto_id", "empresa_id"], ["producto.id", "producto.empresa_id"]),
         ForeignKeyConstraint(["bodega_id", "empresa_id"], ["bodega.id", "bodega.empresa_id"]),
         ForeignKeyConstraint(["usuario_id", "empresa_id"], ["usuario.id", "usuario.empresa_id"]),
@@ -689,24 +695,190 @@ class Movimiento(TimestampMixin, db.Model):
     motivo = db.Column(db.String(255), nullable=False); fecha = db.Column(db.DateTime, nullable=False, default=utcnow)
 
 
+
+class MovimientoLote(TimestampMixin, db.Model):
+    """Libro mayor append-only de trazabilidad por lote."""
+
+    __tablename__ = "movimiento_lote"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["movimiento_id", "empresa_id"],
+            ["movimiento.id", "movimiento.empresa_id"],
+        ),
+        ForeignKeyConstraint(
+            ["lote_id", "empresa_id"],
+            ["lote.id", "lote.empresa_id"],
+        ),
+        ForeignKeyConstraint(
+            ["producto_id", "empresa_id"],
+            ["producto.id", "producto.empresa_id"],
+        ),
+        ForeignKeyConstraint(
+            ["bodega_id", "empresa_id"],
+            ["bodega.id", "bodega.empresa_id"],
+        ),
+        ForeignKeyConstraint(
+            ["usuario_id", "empresa_id"],
+            ["usuario.id", "usuario.empresa_id"],
+        ),
+        UniqueConstraint(
+            "movimiento_id",
+            "lote_id",
+            name="uq_movimiento_lote_traza",
+        ),
+        CheckConstraint(
+            "cantidad <> 0",
+            name="ck_movimiento_lote_cantidad",
+        ),
+        CheckConstraint(
+            (
+                "saldo_anterior >= 0 "
+                "AND saldo_nuevo >= 0"
+            ),
+            name="ck_movimiento_lote_saldos",
+        ),
+        CheckConstraint(
+            (
+                "saldo_nuevo = "
+                "saldo_anterior + cantidad"
+            ),
+            name="ck_movimiento_lote_ecuacion",
+        ),
+        Index(
+            "ix_movimiento_lote_empresa_fecha",
+            "empresa_id",
+            "fecha",
+        ),
+        Index(
+            "ix_movimiento_lote_lote_fecha",
+            "lote_id",
+            "fecha",
+        ),
+    )
+
+    id = db.Column(
+        BIGINT_ID,
+        primary_key=True,
+    )
+    empresa_id = db.Column(
+        db.Integer,
+        nullable=False,
+        index=True,
+    )
+    movimiento_id = db.Column(
+        BIGINT_ID,
+        nullable=False,
+        index=True,
+    )
+    lote_id = db.Column(
+        db.Integer,
+        nullable=False,
+        index=True,
+    )
+    producto_id = db.Column(
+        db.Integer,
+        nullable=False,
+        index=True,
+    )
+    bodega_id = db.Column(
+        db.Integer,
+        nullable=False,
+        index=True,
+    )
+    usuario_id = db.Column(
+        db.Integer,
+        nullable=False,
+    )
+    cantidad = db.Column(
+        db.Numeric(14, 3),
+        nullable=False,
+    )
+    saldo_anterior = db.Column(
+        db.Numeric(14, 3),
+        nullable=False,
+    )
+    saldo_nuevo = db.Column(
+        db.Numeric(14, 3),
+        nullable=False,
+    )
+    fecha = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=utcnow,
+    )
+
+
 class AlertaInventario(TimestampMixin, db.Model):
     __tablename__ = "alerta_inventario"
     __table_args__ = (
         ForeignKeyConstraint(["producto_id", "empresa_id"], ["producto.id", "producto.empresa_id"]),
         ForeignKeyConstraint(["bodega_id", "empresa_id"], ["bodega.id", "bodega.empresa_id"]),
+        ForeignKeyConstraint(["lote_id", "empresa_id"], ["lote.id", "lote.empresa_id"]),
         ForeignKeyConstraint(["resuelta_por_id", "empresa_id"], ["usuario.id", "usuario.empresa_id"]),
-        CheckConstraint("tipo IN ('stock_bajo','sobrestock','riesgo_agotamiento','sin_movimiento','recomendacion_compra')",
-                        name="ck_alerta_tipo"),
+        CheckConstraint(
+            "tipo IN ("
+            "'stock_bajo',"
+            "'sobrestock',"
+            "'riesgo_agotamiento',"
+            "'sin_movimiento',"
+            "'recomendacion_compra',"
+            "'lote_proximo_vencer',"
+            "'lote_vence_hoy',"
+            "'lote_vencido'"
+            ")",
+            name="ck_alerta_tipo",
+        ),
         CheckConstraint("estado IN ('activa','resuelta','ignorada')", name="ck_alerta_estado"),
         CheckConstraint("prioridad IN ('baja','media','alta','critica')", name="ck_alerta_prioridad"),
-        # Solo una alerta activa por producto/bodega/tipo; conserva todo el historial resuelto.
-        Index("uq_alerta_activa", "empresa_id", "producto_id", "bodega_id", "tipo",
-              unique=True, postgresql_where=text("estado = 'activa'"),
-              sqlite_where=text("estado = 'activa'")),
-        Index("ix_alerta_empresa_estado", "empresa_id", "estado"),
+        # Las alertas generales y las alertas por lote
+        # conservan independientemente su historial.
+        Index(
+            "uq_alerta_activa",
+            "empresa_id",
+            "producto_id",
+            "bodega_id",
+            "tipo",
+            unique=True,
+            postgresql_where=text(
+                "estado = 'activa' "
+                "AND lote_id IS NULL"
+            ),
+            sqlite_where=text(
+                "estado = 'activa' "
+                "AND lote_id IS NULL"
+            ),
+        ),
+        Index(
+            "uq_alerta_lote_activa",
+            "empresa_id",
+            "lote_id",
+            "tipo",
+            unique=True,
+            postgresql_where=text(
+                "estado = 'activa' "
+                "AND lote_id IS NOT NULL"
+            ),
+            sqlite_where=text(
+                "estado = 'activa' "
+                "AND lote_id IS NOT NULL"
+            ),
+        ),
+        Index(
+            "ix_alerta_empresa_estado",
+            "empresa_id",
+            "estado",
+        ),
+        Index(
+            "ix_alerta_lote_id",
+            "lote_id",
+        ),
     )
     id = db.Column(BIGINT_ID, primary_key=True); empresa_id = db.Column(db.Integer, nullable=False, index=True)
     producto_id = db.Column(db.Integer, nullable=False); bodega_id = db.Column(db.Integer, nullable=False)
+    lote_id = db.Column(
+        db.Integer,
+        nullable=True,
+    )
     tipo = db.Column(db.String(40), nullable=False); estado = db.Column(db.String(20), nullable=False, default="activa")
     prioridad = db.Column(db.String(15), nullable=False, default="media")
     titulo = db.Column(db.String(150), nullable=False); mensaje = db.Column(db.Text, nullable=False)
@@ -820,7 +992,7 @@ def _inmutable(_mapper: Any, _connection: Any, target: Any) -> None:
     raise ValueError(f"{target.__class__.__name__} es append-only")
 
 
-for _modelo in (Movimiento, Auditoria):
+for _modelo in (Movimiento, MovimientoLote, Auditoria):
     event.listen(_modelo, "before_update", _inmutable)
     event.listen(_modelo, "before_delete", _inmutable)
 
@@ -829,5 +1001,5 @@ __all__ = ["db", "utcnow", "PlanSaaS", "Empresa", "Suscripcion", "Usuario", "Suc
            "UsuarioSucursal", "Bodega", "ConfiguracionEmpresa", "Proveedor", "Producto",
            "ProductoImagen", "Inventario", "Lote", "ProductoSerial", "OrdenCompra",
            "OrdenCompraItem", "RecepcionCompra", "RecepcionCompraItem", "Transferencia",
-           "TransferenciaItem", "Cliente", "Venta", "VentaItem", "Movimiento", "AlertaInventario", "Notificacion", "Pago",
+           "TransferenciaItem", "Cliente", "Venta", "VentaItem", "Movimiento", "MovimientoLote", "AlertaInventario", "Notificacion", "Pago",
            "SolicitudCambioPlan", "Auditoria", "ClaveApi", "LimiteSolicitud"]

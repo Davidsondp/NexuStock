@@ -6,13 +6,13 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from sqlalchemy.exc import IntegrityError
 
-from ..models import (Bodega, Lote, OrdenCompra, OrdenCompraItem, Producto,
+from ..models import (Bodega, OrdenCompra, OrdenCompraItem, Producto,
                       ProductoSerial, Proveedor, RecepcionCompra,
                       RecepcionCompraItem, db, utcnow)
 from ..permisos import evaluar_permiso
 from .auditoria import registrar_auditoria
 from .contexto import ContextoOperacion, sucursales_autorizadas
-from .inventario import ServicioInventario, _cantidad_positiva
+from .inventario import ErrorInventario, ServicioInventario, _cantidad_positiva
 
 DOS_DECIMALES = Decimal("0.01")
 CUATRO_DECIMALES = Decimal("0.0001")
@@ -359,8 +359,12 @@ class ServicioCompras:
                 producto = self._producto(linea.producto_id)
                 numero_lote = (datos.get("numero_lote") or "").strip() or None
                 vencimiento = _fecha(datos.get("fecha_vencimiento"), "Fecha de vencimiento")
-                self._validar_y_registrar_trazabilidad(
-                    producto, bodega, cantidad, costo, numero_lote, vencimiento,
+                self._validar_trazabilidad_y_registrar_seriales(
+                    producto,
+                    bodega,
+                    cantidad,
+                    numero_lote,
+                    vencimiento,
                     datos.get("seriales") or [],
                 )
                 recepcion.items.append(RecepcionCompraItem(
@@ -369,12 +373,29 @@ class ServicioCompras:
                     numero_lote=numero_lote, fecha_vencimiento=vencimiento,
                 ))
                 db.session.flush()
-                ServicioInventario(self.usuario, contexto).entrada(
-                    producto_id=producto.id, cantidad=cantidad, costo_unitario=costo,
-                    motivo=f"Recepción de compra {recepcion.numero}",
-                    referencia_tipo="recepcion_compra", referencia_id=recepcion.id,
-                    confirmar=False,
-                )
+                try:
+                    ServicioInventario(
+                        self.usuario,
+                        contexto,
+                    ).entrada(
+                        producto_id=producto.id,
+                        cantidad=cantidad,
+                        costo_unitario=costo,
+                        motivo=(
+                            "Recepcion de compra "
+                            f"{recepcion.numero}"
+                        ),
+                        referencia_tipo=
+                            "recepcion_compra",
+                        referencia_id=recepcion.id,
+                        numero_lote=numero_lote,
+                        fecha_vencimiento=vencimiento,
+                        confirmar=False,
+                    )
+                except ErrorInventario as exc:
+                    raise ErrorCompra(
+                        str(exc)
+                    ) from exc
                 linea.cantidad_recibida = Decimal(linea.cantidad_recibida) + cantidad
             recepcion.estado = "confirmada"
             orden.estado = ("recibida" if all(Decimal(i.cantidad_recibida) == Decimal(i.cantidad)
@@ -389,31 +410,19 @@ class ServicioCompras:
         except Exception:
             db.session.rollback(); raise
 
-    def _validar_y_registrar_trazabilidad(self, producto, bodega, cantidad, costo,
-                                          numero_lote, vencimiento, seriales):
+    def _validar_trazabilidad_y_registrar_seriales(
+        self,
+        producto,
+        bodega,
+        cantidad,
+        numero_lote,
+        vencimiento,
+        seriales,
+    ):
         if (producto.controla_lotes or producto.controla_vencimiento) and not numero_lote:
             raise ErrorCompra("El número de lote es obligatorio para este producto")
         if producto.controla_vencimiento and not vencimiento:
             raise ErrorCompra("La fecha de vencimiento es obligatoria para este producto")
-        if numero_lote:
-            lote = db.session.scalar(db.select(Lote).where(
-                Lote.empresa_id == self.usuario.empresa_id,
-                Lote.producto_id == producto.id, Lote.bodega_id == bodega.id,
-                Lote.numero == numero_lote).with_for_update())
-            if lote:
-                if lote.fecha_vencimiento and vencimiento and lote.fecha_vencimiento != vencimiento:
-                    raise ErrorCompra("El lote ya existe con otra fecha de vencimiento")
-                total = Decimal(lote.cantidad) + cantidad
-                lote.costo_unitario = (((Decimal(lote.cantidad) * Decimal(lote.costo_unitario)) +
-                                        (cantidad * costo)) / total).quantize(CUATRO_DECIMALES)
-                lote.cantidad = total
-                lote.fecha_vencimiento = lote.fecha_vencimiento or vencimiento
-            else:
-                db.session.add(Lote(
-                    empresa_id=self.usuario.empresa_id, producto_id=producto.id,
-                    bodega_id=bodega.id, numero=numero_lote,
-                    fecha_vencimiento=vencimiento, cantidad=cantidad, costo_unitario=costo,
-                ))
         seriales = [str(s).strip() for s in seriales if str(s).strip()]
         if producto.requiere_serial:
             if cantidad != cantidad.to_integral_value() or len(seriales) != int(cantidad):

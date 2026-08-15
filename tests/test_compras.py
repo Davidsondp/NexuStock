@@ -1,8 +1,8 @@
-﻿from decimal import Decimal
+from decimal import Decimal
 
 import pytest
 
-from app.models import (Bodega, Empresa, Inventario, Lote, Movimiento, OrdenCompra,
+from app.models import (Bodega, Empresa, Inventario, Lote, Movimiento, MovimientoLote, OrdenCompra,
                         Producto, ProductoSerial, Proveedor, RecepcionCompra,
                         Usuario, db)
 from app.services.compras import ErrorCompra, EstadoCompraInvalido, ServicioCompras
@@ -12,6 +12,22 @@ from tests.test_autenticacion import REGISTRO
 def _preparar(app, client, *, trazabilidad=False):
     client.post("/autenticacion/registro", data=REGISTRO)
     with app.app_context():
+        if trazabilidad:
+            from app.models import (
+                ConfiguracionEmpresa,
+            )
+
+            configuracion = db.session.scalar(
+                db.select(
+                    ConfiguracionEmpresa
+                )
+            )
+            configuracion.opciones = {
+                "rubro": "minimarket",
+                "capacidades": {},
+            }
+            db.session.commit()
+
         usuario = db.session.scalar(db.select(Usuario))
         bodega = db.session.scalar(db.select(Bodega).where(Bodega.empresa_id == usuario.empresa_id))
         proveedor = Proveedor(empresa_id=usuario.empresa_id, nombre="Proveedor Uno", activo=True)
@@ -117,6 +133,14 @@ def test_recepcion_registra_lote_vencimiento_y_seriales(app, client):
             "seriales": ["SER-1", "SER-2"]}])
         lote = db.session.scalar(db.select(Lote))
         assert lote.cantidad == 2 and str(lote.fecha_vencimiento) == "2028-12-31"
+        traza_lote = db.session.scalar(
+            db.select(MovimientoLote)
+        )
+        assert traza_lote is not None
+        assert traza_lote.lote_id == lote.id
+        assert traza_lote.cantidad == 2
+        assert traza_lote.saldo_anterior == 0
+        assert traza_lote.saldo_nuevo == 2
         assert set(db.session.scalars(db.select(ProductoSerial.numero_serial))) == {"SER-1", "SER-2"}
 
 

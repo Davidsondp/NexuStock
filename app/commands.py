@@ -91,3 +91,112 @@ def registrar_comandos(app):
             click.echo("Super Admin creado correctamente.")
         except Exception as exc:
             db.session.rollback(); raise click.ClickException(str(exc)) from exc
+
+    @app.cli.command("generar-alertas")
+    def generar_alertas():
+        """Genera alertas para todas las empresas activas."""
+        from .models import Empresa
+        from .services.alertas import (
+            ServicioAlertas,
+        )
+
+        empresa_ids = list(
+            db.session.scalars(
+                db.select(Empresa.id)
+                .where(
+                    Empresa.estado == "activa",
+                    Empresa.eliminado.is_(False),
+                )
+                .order_by(Empresa.id)
+            )
+        )
+
+        procesadas = 0
+        omitidas = 0
+        errores = 0
+        creadas = 0
+        actualizadas = 0
+        resueltas = 0
+
+        for empresa_id in empresa_ids:
+            usuario = db.session.scalar(
+                db.select(Usuario)
+                .where(
+                    Usuario.empresa_id
+                    == empresa_id,
+                    Usuario.rol.in_(
+                        {
+                            "admin_empresa",
+                            "supervisor",
+                        }
+                    ),
+                    Usuario.activo.is_(True),
+                    Usuario.eliminado.is_(False),
+                )
+                .order_by(
+                    (
+                        Usuario.rol
+                        == "admin_empresa"
+                    ).desc(),
+                    Usuario.id,
+                )
+            )
+
+            if usuario is None:
+                omitidas += 1
+                click.echo(
+                    (
+                        f"Empresa {empresa_id} omitida: "
+                        "no posee un administrador "
+                        "o supervisor activo."
+                    ),
+                    err=True,
+                )
+                continue
+
+            try:
+                resultado = ServicioAlertas(
+                    usuario
+                ).generar()
+
+                creadas += resultado.creadas
+                actualizadas += (
+                    resultado.actualizadas
+                )
+                resueltas += resultado.resueltas
+                procesadas += 1
+            except Exception as exc:
+                db.session.rollback()
+                errores += 1
+                click.echo(
+                    (
+                        f"Error en empresa "
+                        f"{empresa_id}: {exc}"
+                    ),
+                    err=True,
+                )
+            finally:
+                db.session.remove()
+
+        click.echo(
+            f"Empresas procesadas: {procesadas}"
+        )
+        click.echo(
+            f"Empresas omitidas: {omitidas}"
+        )
+        click.echo(f"Alertas creadas: {creadas}")
+        click.echo(
+            f"Alertas actualizadas: {actualizadas}"
+        )
+        click.echo(
+            f"Alertas resueltas: {resueltas}"
+        )
+        click.echo(f"Errores: {errores}")
+
+        if errores:
+            raise click.ClickException(
+                (
+                    "La generación terminó con "
+                    f"{errores} empresa(s) fallida(s)."
+                )
+            )

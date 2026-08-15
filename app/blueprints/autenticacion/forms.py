@@ -1,10 +1,23 @@
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, PasswordField, StringField, SubmitField
+from wtforms import BooleanField, PasswordField, StringField, SubmitField, SelectField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 
 
 class RegistroForm(FlaskForm):
     empresa_nombre = StringField("Empresa", validators=[DataRequired(), Length(max=150)])
+    rubro = SelectField(
+        "Rubro de la empresa",
+        choices=[
+            ("general", "Comercio general"),
+            ("almacen", "Almac?n"),
+            ("minimarket", "Minimarket"),
+            ("botilleria", "Botiller?a"),
+            ("ferreteria", "Ferreter?a"),
+            ("farmacia", "Farmacia"),
+        ],
+        default="general",
+        validators=[DataRequired()],
+    )
     identificacion_fiscal = StringField("RUT", validators=[Optional(), Length(max=30)])
     nombre = StringField("Nombre", validators=[DataRequired(), Length(max=100)])
     apellido = StringField("Apellido", validators=[Optional(), Length(max=100)])

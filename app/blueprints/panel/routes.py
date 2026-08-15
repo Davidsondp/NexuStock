@@ -5,6 +5,7 @@ from flask_login import current_user, login_required
 
 from ...permisos import evaluar_permiso, requerir_permiso
 from ...services.contexto import requerir_contexto
+from ...services.perfiles_empresa import capacidades_empresa
 
 
 panel_bp = Blueprint(
@@ -50,11 +51,16 @@ def productos():
         ).permitido,
     }
 
+    capacidades = capacidades_empresa(
+        current_user.empresa
+    )
+
     return render_template(
         "panel/productos.html",
         empresa=current_user.empresa,
         contexto=g.contexto_operacion,
         permisos=permisos,
+        capacidades=capacidades,
     )
 
 @panel_bp.get("/proveedores")
@@ -230,9 +236,14 @@ def inventario():
         ).permitido,
     }
 
+    capacidades = capacidades_empresa(
+        current_user.empresa
+    )
+
     return render_template(
         "panel/inventario.html",
         empresa=current_user.empresa,
         contexto=g.contexto_operacion,
         permisos=permisos,
+        capacidades=capacidades,
     )

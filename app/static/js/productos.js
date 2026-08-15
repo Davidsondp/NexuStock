@@ -299,9 +299,13 @@ function construirDatosProducto() {
         requiere_serial:
             elemento("producto-requiere-serial").checked,
         controla_lotes:
-            elemento("producto-controla-lotes").checked,
+            elemento(
+                "producto-controla-lotes"
+            )?.checked || false,
         controla_vencimiento:
-            elemento("producto-controla-vencimiento").checked,
+            elemento(
+                "producto-controla-vencimiento"
+            )?.checked || false,
     };
 }
 
@@ -685,11 +689,25 @@ function abrirFormularioEdicion(producto) {
     elemento("producto-requiere-serial").checked =
         Boolean(producto.requiere_serial);
 
-    elemento("producto-controla-lotes").checked =
-        Boolean(producto.controla_lotes);
+    const controlaLotes = elemento(
+        "producto-controla-lotes"
+    );
 
-    elemento("producto-controla-vencimiento").checked =
-        Boolean(producto.controla_vencimiento);
+    if (controlaLotes) {
+        controlaLotes.checked = Boolean(
+            producto.controla_lotes
+        );
+    }
+
+    const controlaVencimiento = elemento(
+        "producto-controla-vencimiento"
+    );
+
+    if (controlaVencimiento) {
+        controlaVencimiento.checked = Boolean(
+            producto.controla_vencimiento
+        );
+    }
 
     elemento("titulo-modal-producto").textContent =
         "Editar producto";

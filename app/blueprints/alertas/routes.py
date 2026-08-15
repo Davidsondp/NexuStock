@@ -8,11 +8,21 @@ alertas_bp = Blueprint("alertas", __name__, url_prefix="/api/alertas")
 
 
 def _serializar(alerta):
-    return {"id": alerta.id, "producto_id": alerta.producto_id,
-            "bodega_id": alerta.bodega_id, "tipo": alerta.tipo,
-            "estado": alerta.estado, "prioridad": alerta.prioridad,
-            "titulo": alerta.titulo, "mensaje": alerta.mensaje,
-            "datos": alerta.datos, "creado_en": alerta.creado_en.isoformat()}
+    return {
+        "id": alerta.id,
+        "producto_id": alerta.producto_id,
+        "bodega_id": alerta.bodega_id,
+        "lote_id": alerta.lote_id,
+        "tipo": alerta.tipo,
+        "estado": alerta.estado,
+        "prioridad": alerta.prioridad,
+        "titulo": alerta.titulo,
+        "mensaje": alerta.mensaje,
+        "datos": alerta.datos,
+        "creado_en": (
+            alerta.creado_en.isoformat()
+        ),
+    }
 
 
 @alertas_bp.get("")

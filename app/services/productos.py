@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from ..models import Inventario, Movimiento, Producto, Proveedor, db
 from ..permisos import evaluar_permiso
 from .auditoria import registrar_auditoria
+from .perfiles_empresa import tiene_capacidad
 
 
 class ErrorProducto(ValueError):
@@ -112,6 +113,10 @@ class ServicioProductos:
         db.session.commit(); return producto
 
     def _asignar(self, producto, datos):
+        self._validar_capacidades(
+            datos
+        )
+
         codigo = (datos.get("codigo", producto.codigo) or "").strip().upper()
         nombre = (datos.get("nombre", producto.nombre) or "").strip()
         if not codigo or not nombre:
@@ -148,8 +153,56 @@ class ServicioProductos:
                 setattr(producto, campo, (datos[campo] or "").strip() or ("unidad" if campo == "unidad_medida" else None))
         for campo, valor in numeros.items(): setattr(producto, campo, valor)
         producto.stock_maximo = stock_maximo
-        for campo in ("incluye_iva", "requiere_serial", "controla_lotes", "controla_vencimiento"):
-            if campo in datos: setattr(producto, campo, bool(datos[campo]))
+        for campo in (
+            "incluye_iva",
+            "requiere_serial",
+            "controla_lotes",
+            "controla_vencimiento",
+        ):
+            if campo in datos:
+                setattr(
+                    producto,
+                    campo,
+                    bool(datos[campo]),
+                )
+
+        if producto.controla_vencimiento:
+            producto.controla_lotes = True
+
+    def _validar_capacidades(self, datos):
+        solicita_lotes = bool(
+            datos.get("controla_lotes")
+        )
+        solicita_vencimiento = bool(
+            datos.get(
+                "controla_vencimiento"
+            )
+        )
+
+        if (
+            solicita_lotes
+            and not tiene_capacidad(
+                self.usuario.empresa,
+                "control_lotes",
+            )
+        ):
+            raise ErrorProducto(
+                "El control de lotes no est? "
+                "disponible para esta empresa"
+            )
+
+        if (
+            solicita_vencimiento
+            and not tiene_capacidad(
+                self.usuario.empresa,
+                "control_vencimientos",
+            )
+        ):
+            raise ErrorProducto(
+                "El control de vencimientos "
+                "no est? disponible para "
+                "esta empresa"
+            )
 
     def _validar_limite(self):
         limite = self.usuario.empresa.suscripcion_actual.plan.limite_productos

@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block title %}Crear empresa | NexuStock{% endblock %}
 {% block content %}<h1>Crear empresa</h1><form method="post">{{ form.hidden_tag() }}
-{% for field in [form.empresa_nombre, form.identificacion_fiscal, form.nombre, form.apellido, form.email, form.password, form.confirmar_password] %}
+{% for field in [form.empresa_nombre, form.rubro, form.identificacion_fiscal, form.nombre, form.apellido, form.email, form.password, form.confirmar_password] %}
 <p>{{ field.label }} {{ field() }}{% for mensaje_error in field.errors %}<span role="alert">{{ mensaje_error }}</span>{% endfor %}</p>{% endfor %}
 {{ form.submit() }}</form><p><a href="{{ url_for('autenticacion.ingresar') }}">Ya tengo cuenta</a></p>{% endblock %}

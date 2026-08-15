@@ -1,4 +1,4 @@
-from app.models import Usuario, UsuarioSucursal, db
+from app.models import ConfiguracionEmpresa, Usuario, UsuarioSucursal, db
 from tests.test_autenticacion import REGISTRO
 
 
@@ -7,6 +7,23 @@ def registrar_empresa(client):
         "/autenticacion/registro",
         data=REGISTRO,
     )
+
+
+
+
+
+def configurar_rubro(client, rubro):
+    registrar_empresa(client)
+
+    with client.application.app_context():
+        configuracion = db.session.scalar(
+            db.select(ConfiguracionEmpresa)
+        )
+        configuracion.opciones = {
+            "rubro": rubro,
+            "capacidades": {},
+        }
+        db.session.commit()
 
 
 def crear_superadmin(app):
@@ -138,3 +155,45 @@ def test_empleado_no_ve_acciones_de_escritura(app, client):
     assert b'data-permiso-crear="false"' in respuesta.data
     assert b'data-permiso-editar="false"' in respuesta.data
     assert b'data-permiso-eliminar="false"' in respuesta.data
+
+
+def test_panel_general_oculta_control_de_lotes(
+    client,
+):
+    configurar_rubro(
+        client,
+        "general",
+    )
+
+    respuesta = client.get("/panel/productos")
+
+    assert respuesta.status_code == 200
+    assert (
+        b'id="producto-controla-lotes"'
+        not in respuesta.data
+    )
+    assert (
+        b'id="producto-controla-vencimiento"'
+        not in respuesta.data
+    )
+
+
+def test_panel_minimarket_muestra_trazabilidad(
+    client,
+):
+    configurar_rubro(
+        client,
+        "minimarket",
+    )
+
+    respuesta = client.get("/panel/productos")
+
+    assert respuesta.status_code == 200
+    assert (
+        b'id="producto-controla-lotes"'
+        in respuesta.data
+    )
+    assert (
+        b'id="producto-controla-vencimiento"'
+        in respuesta.data
+    )

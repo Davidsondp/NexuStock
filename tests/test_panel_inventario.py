@@ -1,4 +1,9 @@
-from app.models import Usuario, UsuarioSucursal, db
+from app.models import (
+    ConfiguracionEmpresa,
+    Usuario,
+    UsuarioSucursal,
+    db,
+)
 from tests.test_autenticacion import REGISTRO
 
 
@@ -7,6 +12,27 @@ def registrar_empresa(client):
         "/autenticacion/registro",
         data=REGISTRO,
     )
+
+
+
+
+
+def configurar_perfil_empresa(
+    client,
+    rubro,
+    capacidades=None,
+):
+    registrar_empresa(client)
+
+    with client.application.app_context():
+        configuracion = db.session.scalar(
+            db.select(ConfiguracionEmpresa)
+        )
+        configuracion.opciones = {
+            "rubro": rubro,
+            "capacidades": capacidades or {},
+        }
+        db.session.commit()
 
 
 def crear_superadmin(app):
@@ -90,7 +116,10 @@ def test_panel_empresarial_enlaza_inventario(client):
 def test_pagina_inventario_referencia_apis_y_recursos(
     client,
 ):
-    registrar_empresa(client)
+    configurar_perfil_empresa(
+        client,
+        "farmacia",
+    )
 
     respuesta = client.get("/panel/inventario")
 
@@ -101,6 +130,10 @@ def test_pagina_inventario_referencia_apis_y_recursos(
     )
     assert (
         b"/api/inventario/stock"
+        in respuesta.data
+    )
+    assert (
+        b"/api/inventario/lotes"
         in respuesta.data
     )
     assert (
@@ -118,6 +151,9 @@ def test_pagina_inventario_referencia_apis_y_recursos(
     assert b'id="buscar-inventario"' in respuesta.data
     assert b'id="tabla-stock"' in respuesta.data
     assert b'id="tabla-movimientos"' in respuesta.data
+    assert b'id="resumen-lotes"' in respuesta.data
+    assert b'id="filtrar-vencimiento"' in respuesta.data
+    assert b'id="tabla-lotes"' in respuesta.data
     assert b'id="nuevo-movimiento"' in respuesta.data
     assert b'id="modal-movimiento"' in respuesta.data
     assert b'id="formulario-movimiento"' in respuesta.data
@@ -128,6 +164,11 @@ def test_pagina_inventario_referencia_apis_y_recursos(
     assert b'id="movimiento-costo-unitario"' in respuesta.data
     assert b'id="movimiento-precio-unitario"' in respuesta.data
     assert b'id="movimiento-motivo"' in respuesta.data
+    assert b'id="grupo-numero-lote"' in respuesta.data
+    assert b'id="movimiento-numero-lote"' in respuesta.data
+    assert b'id="grupo-fecha-vencimiento"' in respuesta.data
+    assert b'id="movimiento-fecha-vencimiento"' in respuesta.data
+    assert b'id="ayuda-trazabilidad"' in respuesta.data
     assert (
         b' name="csrf_token"'
         in respuesta.data
@@ -213,3 +254,130 @@ def test_empleado_conserva_operaciones_autorizadas(
         b'data-permiso-devolucion="true"'
         in respuesta.data
     )
+
+
+def test_panel_muestra_un_solo_enlace_inventario(
+    client,
+):
+    registrar_empresa(client)
+
+    respuesta = client.get("/panel")
+
+    assert respuesta.status_code == 200
+    assert (
+        respuesta.data.count(
+            b'href="/panel/inventario"'
+        )
+        == 1
+    )
+
+
+def test_empresa_general_oculta_inventario_farmaceutico(
+    client,
+):
+    configurar_perfil_empresa(
+        client,
+        "general",
+    )
+
+    respuesta = client.get("/panel/inventario")
+
+    assert respuesta.status_code == 200
+    assert (
+        b"/api/inventario/lotes"
+        not in respuesta.data
+    )
+    assert b'id="tabla-lotes"' not in respuesta.data
+
+
+def test_farmacia_muestra_inventario_farmaceutico(
+    client,
+):
+    configurar_perfil_empresa(
+        client,
+        "farmacia",
+    )
+
+    respuesta = client.get("/panel/inventario")
+
+    assert respuesta.status_code == 200
+    assert (
+        b"/api/inventario/lotes"
+        in respuesta.data
+    )
+    assert b'id="tabla-lotes"' in respuesta.data
+
+
+def test_botilleria_muestra_control_de_lotes(
+    client,
+):
+    configurar_perfil_empresa(
+        client,
+        "botilleria",
+    )
+
+    respuesta = client.get("/panel/inventario")
+
+    assert respuesta.status_code == 200
+    assert (
+        b"/api/inventario/lotes"
+        in respuesta.data
+    )
+    assert b'id="tabla-lotes"' in respuesta.data
+
+
+def test_capacidad_explicita_habilita_inventario_farmaceutico(
+    client,
+):
+    configurar_perfil_empresa(
+        client,
+        "general",
+        {
+            "inventario_farmaceutico": True,
+        },
+    )
+
+    respuesta = client.get("/panel/inventario")
+
+    assert respuesta.status_code == 200
+    assert (
+        b"/api/inventario/lotes"
+        in respuesta.data
+    )
+    assert b'id="tabla-lotes"' in respuesta.data
+
+
+def test_minimarket_muestra_control_de_lotes(
+    client,
+):
+    configurar_perfil_empresa(
+        client,
+        "minimarket",
+    )
+
+    respuesta = client.get("/panel/inventario")
+
+    assert respuesta.status_code == 200
+    assert (
+        b"/api/inventario/lotes"
+        in respuesta.data
+    )
+    assert b'id="tabla-lotes"' in respuesta.data
+
+
+def test_ferreteria_oculta_control_de_lotes(
+    client,
+):
+    configurar_perfil_empresa(
+        client,
+        "ferreteria",
+    )
+
+    respuesta = client.get("/panel/inventario")
+
+    assert respuesta.status_code == 200
+    assert (
+        b"/api/inventario/lotes"
+        not in respuesta.data
+    )
+    assert b'id="tabla-lotes"' not in respuesta.data
