@@ -29,6 +29,7 @@ def crear_aplicacion(nombre_configuracion: str | None = None) -> Flask:
     from .blueprints.autenticacion.routes import autenticacion_bp
     from .blueprints.contexto.routes import contexto_bp
     from .blueprints.productos.routes import productos_bp
+    from .blueprints.inventario.routes import inventario_bp
     from .blueprints.proveedores.routes import proveedores_bp
     from .blueprints.ubicaciones.routes import ubicaciones_bp
     from .blueprints.compras.routes import compras_bp
@@ -46,6 +47,7 @@ def crear_aplicacion(nombre_configuracion: str | None = None) -> Flask:
     app.register_blueprint(autenticacion_bp)
     app.register_blueprint(contexto_bp)
     app.register_blueprint(productos_bp)
+    app.register_blueprint(inventario_bp)
     app.register_blueprint(proveedores_bp)
     app.register_blueprint(ubicaciones_bp)
     app.register_blueprint(compras_bp)

@@ -78,6 +78,22 @@
                 <span>Productos</span>
             </a>
 
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for(
+                        'panel.inventario'
+                    ) }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >
+                        ?
+                    </span>
+                    <span>Inventario</span>
+                </a>
+
             <a
                 class="navegacion__enlace"
                 href="{{ url_for('panel.proveedores') }}"

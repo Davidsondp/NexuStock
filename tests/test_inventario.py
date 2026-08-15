@@ -132,3 +132,317 @@ def test_movimiento_es_inmutable(app, client):
         with pytest.raises(ValueError):
             db.session.commit()
         db.session.rollback()
+
+
+def test_api_movimientos_exige_autenticacion(client):
+    respuesta = client.post(
+        "/api/inventario/movimientos",
+        json={
+            "tipo": "entrada",
+            "producto_id": 1,
+            "cantidad": 1,
+            "costo_unitario": 100,
+            "motivo": "Prueba",
+        },
+    )
+
+    assert respuesta.status_code == 302
+    assert (
+        "/autenticacion/ingresar"
+        in respuesta.location
+    )
+
+
+def test_api_registra_entrada_salida_y_ajuste(
+    app,
+    client,
+):
+    ids = _preparar(app, client)
+
+    entrada = client.post(
+        "/api/inventario/movimientos",
+        json={
+            "tipo": "entrada",
+            "producto_id": ids[1],
+            "cantidad": 10,
+            "costo_unitario": 125,
+            "motivo": "Ingreso manual",
+        },
+    )
+
+    assert entrada.status_code == 201
+
+    movimiento_entrada = entrada.get_json()
+
+    assert movimiento_entrada["tipo"] == "entrada"
+    assert movimiento_entrada["stock_anterior"] == "0.000"
+    assert movimiento_entrada["stock_nuevo"] == "10.000"
+    assert (
+        movimiento_entrada["costo_promedio"]
+        == "125.0000"
+    )
+
+    salida = client.post(
+        "/api/inventario/movimientos",
+        json={
+            "tipo": "salida",
+            "producto_id": ids[1],
+            "cantidad": 3,
+            "precio_unitario": 250,
+            "motivo": "Merma controlada",
+        },
+    )
+
+    assert salida.status_code == 201
+    assert salida.get_json()["stock_nuevo"] == "7.000"
+
+    ajuste = client.post(
+        "/api/inventario/movimientos",
+        json={
+            "tipo": "ajuste",
+            "producto_id": ids[1],
+            "stock_final": 6,
+            "motivo": "Conteo f?sico",
+        },
+    )
+
+    assert ajuste.status_code == 201
+    assert ajuste.get_json()["stock_nuevo"] == "6.000"
+
+    reporte = client.get(
+        f"/api/reportes/stock?bodega_id={ids[3]}"
+    )
+
+    assert reporte.status_code == 200
+
+    fila = next(
+        item
+        for item in reporte.get_json()["stock"]
+        if item["producto_id"] == ids[1]
+    )
+
+    assert fila["cantidad"] == "6.000"
+
+
+def test_api_registra_devolucion(
+    app,
+    client,
+):
+    ids = _preparar(app, client)
+
+    client.post(
+        "/api/inventario/movimientos",
+        json={
+            "tipo": "entrada",
+            "producto_id": ids[1],
+            "cantidad": 5,
+            "costo_unitario": 100,
+            "motivo": "Ingreso inicial",
+        },
+    )
+
+    devolucion = client.post(
+        "/api/inventario/movimientos",
+        json={
+            "tipo": "devolucion",
+            "producto_id": ids[1],
+            "cantidad": 2,
+            "costo_unitario": 100,
+            "motivo": "Devolución del cliente",
+        },
+    )
+
+    assert devolucion.status_code == 201
+    assert (
+        devolucion.get_json()["tipo"]
+        == "devolucion"
+    )
+    assert (
+        devolucion.get_json()["stock_nuevo"]
+        == "7.000"
+    )
+
+
+def test_api_rechaza_tipo_y_stock_invalido(
+    app,
+    client,
+):
+    ids = _preparar(app, client)
+
+    tipo_invalido = client.post(
+        "/api/inventario/movimientos",
+        json={
+            "tipo": "inventado",
+            "producto_id": ids[1],
+            "cantidad": 1,
+            "motivo": "No permitido",
+        },
+    )
+
+    assert tipo_invalido.status_code == 400
+    assert (
+        tipo_invalido.get_json()["codigo"]
+        == "movimiento_invalido"
+    )
+
+    stock_insuficiente = client.post(
+        "/api/inventario/movimientos",
+        json={
+            "tipo": "salida",
+            "producto_id": ids[1],
+            "cantidad": 5,
+            "motivo": "Salida imposible",
+        },
+    )
+
+    assert stock_insuficiente.status_code == 400
+    assert (
+        stock_insuficiente.get_json()["codigo"]
+        == "stock_insuficiente"
+    )
+
+
+def test_api_lista_stock_operativo(
+    app,
+    client,
+):
+    ids = _preparar(app, client)
+
+    entrada = client.post(
+        "/api/inventario/movimientos",
+        json={
+            "tipo": "entrada",
+            "producto_id": ids[1],
+            "cantidad": 8,
+            "costo_unitario": 150,
+            "motivo": "Carga para panel",
+        },
+    )
+
+    assert entrada.status_code == 201
+
+    respuesta = client.get(
+        "/api/inventario/stock"
+    )
+
+    assert respuesta.status_code == 200
+
+    datos = respuesta.get_json()
+
+    assert "stock" in datos
+    assert datos["bodega_id"] == ids[3]
+
+    fila = next(
+        item
+        for item in datos["stock"]
+        if item["producto_id"] == ids[1]
+    )
+
+    campos = {
+        "inventario_id",
+        "producto_id",
+        "producto_codigo",
+        "producto_nombre",
+        "bodega_id",
+        "bodega_nombre",
+        "cantidad",
+        "reservada",
+        "disponible",
+        "costo_promedio",
+        "valor",
+    }
+
+    assert campos.issubset(fila)
+    assert fila["cantidad"] == "8.000"
+    assert fila["reservada"] == "0.000"
+    assert fila["disponible"] == "8.000"
+    assert fila["costo_promedio"] == "150.0000"
+    assert fila["valor"] == "1200.00"
+
+
+def test_api_lista_movimientos_operativos(
+    app,
+    client,
+):
+    ids = _preparar(app, client)
+
+    entrada = client.post(
+        "/api/inventario/movimientos",
+        json={
+            "tipo": "entrada",
+            "producto_id": ids[1],
+            "cantidad": 4,
+            "costo_unitario": 200,
+            "motivo": "Movimiento visible",
+        },
+    )
+
+    assert entrada.status_code == 201
+
+    respuesta = client.get(
+        "/api/inventario/movimientos"
+    )
+
+    assert respuesta.status_code == 200
+
+    datos = respuesta.get_json()
+
+    assert "movimientos" in datos
+    assert datos["bodega_id"] == ids[3]
+
+    movimiento = datos["movimientos"][0]
+
+    campos = {
+        "id",
+        "producto_id",
+        "producto_codigo",
+        "producto_nombre",
+        "bodega_id",
+        "tipo",
+        "cantidad",
+        "stock_anterior",
+        "stock_nuevo",
+        "costo_unitario",
+        "precio_unitario",
+        "motivo",
+        "fecha",
+    }
+
+    assert campos.issubset(movimiento)
+    assert movimiento["producto_id"] == ids[1]
+    assert movimiento["tipo"] == "entrada"
+    assert movimiento["cantidad"] == "4.000"
+    assert movimiento["stock_anterior"] == "0.000"
+    assert movimiento["stock_nuevo"] == "4.000"
+    assert movimiento["motivo"] == "Movimiento visible"
+
+
+def test_api_movimientos_limita_resultados(
+    app,
+    client,
+):
+    ids = _preparar(app, client)
+
+    for numero in range(3):
+        respuesta = client.post(
+            "/api/inventario/movimientos",
+            json={
+                "tipo": "entrada",
+                "producto_id": ids[1],
+                "cantidad": 1,
+                "costo_unitario": 100,
+                "motivo": f"Entrada {numero}",
+            },
+        )
+
+        assert respuesta.status_code == 201
+
+    respuesta = client.get(
+        "/api/inventario/movimientos?limite=2"
+    )
+
+    assert respuesta.status_code == 200
+    assert (
+        len(respuesta.get_json()["movimientos"])
+        == 2
+    )

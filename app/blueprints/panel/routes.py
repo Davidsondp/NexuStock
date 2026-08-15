@@ -199,3 +199,40 @@ def clientes():
         contexto=g.contexto_operacion,
         permisos=permisos,
     )
+
+@panel_bp.get("/inventario")
+@login_required
+@requerir_permiso("stock.ver")
+@requerir_contexto
+def inventario():
+    empresa_id = current_user.empresa_id
+
+    permisos = {
+        "entrada": evaluar_permiso(
+            current_user,
+            "stock.entrada",
+            empresa_id=empresa_id,
+        ).permitido,
+        "salida": evaluar_permiso(
+            current_user,
+            "stock.salida",
+            empresa_id=empresa_id,
+        ).permitido,
+        "ajuste": evaluar_permiso(
+            current_user,
+            "stock.ajuste",
+            empresa_id=empresa_id,
+        ).permitido,
+        "devolucion": evaluar_permiso(
+            current_user,
+            "stock.devolucion",
+            empresa_id=empresa_id,
+        ).permitido,
+    }
+
+    return render_template(
+        "panel/inventario.html",
+        empresa=current_user.empresa,
+        contexto=g.contexto_operacion,
+        permisos=permisos,
+    )

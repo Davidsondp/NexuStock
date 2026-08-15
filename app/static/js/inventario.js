@@ -1,0 +1,1122 @@
+"use strict";
+
+const configuracion = Object.freeze({
+    apiInventario:
+        document.body.dataset.apiInventario,
+    apiStock:
+        document.body.dataset.apiStock,
+    apiMovimientos:
+        document.body.dataset.apiMovimientos,
+    apiProductos:
+        document.body.dataset.apiProductos,
+    bodegaId:
+        Number(document.body.dataset.bodegaId),
+    puedeEntrada:
+        document.body.dataset.permisoEntrada === "true",
+    puedeSalida:
+        document.body.dataset.permisoSalida === "true",
+    puedeAjuste:
+        document.body.dataset.permisoAjuste === "true",
+    puedeDevolucion:
+        document.body.dataset.permisoDevolucion === "true",
+});
+
+const estado = {
+    stock: [],
+    movimientos: [],
+    productos: [],
+};
+
+let temporizadorNotificacion = null;
+
+function elemento(id) {
+    return document.getElementById(id);
+}
+
+function crearElemento(
+    etiqueta,
+    texto = "",
+    clase = ""
+) {
+    const nodo = document.createElement(etiqueta);
+
+    if (texto !== "") {
+        nodo.textContent = String(texto);
+    }
+
+    if (clase) {
+        nodo.className = clase;
+    }
+
+    return nodo;
+}
+
+function limpiar(nodo) {
+    while (nodo?.firstChild) {
+        nodo.removeChild(nodo.firstChild);
+    }
+}
+
+function numero(valor) {
+    const resultado = Number(valor);
+
+    return Number.isFinite(resultado)
+        ? resultado
+        : 0;
+}
+
+function formatearCantidad(valor) {
+    return new Intl.NumberFormat(
+        "es-CL",
+        {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 3,
+        }
+    ).format(numero(valor));
+}
+
+function formatearMoneda(valor) {
+    return new Intl.NumberFormat(
+        "es-CL",
+        {
+            style: "currency",
+            currency: "CLP",
+            maximumFractionDigits: 0,
+        }
+    ).format(numero(valor));
+}
+
+function formatearFecha(valor) {
+    if (!valor) {
+        return "—";
+    }
+
+    const fecha = new Date(valor);
+
+    if (Number.isNaN(fecha.getTime())) {
+        return "—";
+    }
+
+    return new Intl.DateTimeFormat(
+        "es-CL",
+        {
+            dateStyle: "short",
+            timeStyle: "short",
+        }
+    ).format(fecha);
+}
+
+function obtenerTokenCsrf() {
+    return elemento("csrf-token")?.value || "";
+}
+
+async function solicitarJson(
+    url,
+    opciones = {}
+) {
+    const respuesta = await fetch(
+        url,
+        {
+            credentials: "same-origin",
+            ...opciones,
+        }
+    );
+
+    const tipoContenido = (
+        respuesta.headers.get("content-type")
+        || ""
+    );
+
+    let datos = null;
+
+    if (
+        tipoContenido.includes(
+            "application/json"
+        )
+    ) {
+        datos = await respuesta.json();
+    }
+
+    if (!respuesta.ok) {
+        throw new Error(
+            datos?.mensaje
+            || "No fue posible completar la operación."
+        );
+    }
+
+    return datos;
+}
+
+function notificar(
+    mensaje,
+    tipo = "error"
+) {
+    const nodo = elemento("notificacion");
+
+    if (!nodo) {
+        return;
+    }
+
+    if (temporizadorNotificacion) {
+        window.clearTimeout(
+            temporizadorNotificacion
+        );
+    }
+
+    nodo.textContent = mensaje;
+    nodo.className = (
+        tipo === "exito"
+            ? "notificacion--exito"
+            : "notificacion--error"
+    );
+    nodo.hidden = false;
+
+    temporizadorNotificacion = window.setTimeout(
+        () => {
+            nodo.hidden = true;
+        },
+        4500
+    );
+}
+
+function permisosDisponibles() {
+    return [
+        {
+            valor: "entrada",
+            etiqueta: "Entrada",
+            permitido:
+                configuracion.puedeEntrada,
+        },
+        {
+            valor: "salida",
+            etiqueta: "Salida",
+            permitido:
+                configuracion.puedeSalida,
+        },
+        {
+            valor: "ajuste",
+            etiqueta: "Ajuste de inventario",
+            permitido:
+                configuracion.puedeAjuste,
+        },
+        {
+            valor: "devolucion",
+            etiqueta: "Devolución de cliente",
+            permitido:
+                configuracion.puedeDevolucion,
+        },
+    ].filter(
+        (operacion) => operacion.permitido
+    );
+}
+
+function renderizarTiposMovimiento() {
+    const selector = elemento(
+        "movimiento-tipo"
+    );
+
+    if (!selector) {
+        return;
+    }
+
+    limpiar(selector);
+
+    permisosDisponibles().forEach(
+        (operacion) => {
+            const opcion = crearElemento(
+                "option",
+                operacion.etiqueta
+            );
+
+            opcion.value = operacion.valor;
+            selector.appendChild(opcion);
+        }
+    );
+}
+
+function renderizarProductos() {
+    const selector = elemento(
+        "movimiento-producto"
+    );
+
+    if (!selector) {
+        return;
+    }
+
+    const seleccionado = selector.value;
+
+    limpiar(selector);
+
+    const inicial = crearElemento(
+        "option",
+        "Selecciona un producto"
+    );
+
+    inicial.value = "";
+    selector.appendChild(inicial);
+
+    estado.productos
+        .filter(
+            (producto) =>
+                producto.activo !== false
+        )
+        .sort(
+            (primero, segundo) =>
+                String(primero.nombre).localeCompare(
+                    String(segundo.nombre),
+                    "es"
+                )
+        )
+        .forEach((producto) => {
+            const codigo = producto.codigo
+                ? ` · ${producto.codigo}`
+                : "";
+
+            const opcion = crearElemento(
+                "option",
+                `${producto.nombre}${codigo}`
+            );
+
+            opcion.value = String(producto.id);
+            selector.appendChild(opcion);
+        });
+
+    const existeSeleccionado = [
+        ...selector.options,
+    ].some(
+        (opcion) =>
+            opcion.value === seleccionado
+    );
+
+    selector.value = existeSeleccionado
+        ? seleccionado
+        : "";
+}
+
+function obtenerStockFiltrado() {
+    const busqueda = (
+        elemento("buscar-inventario")
+            ?.value
+        || ""
+    )
+        .trim()
+        .toLocaleLowerCase("es");
+
+    const filtro = (
+        elemento("filtrar-existencia")
+            ?.value
+        || "todos"
+    );
+
+    return estado.stock.filter((fila) => {
+        const coincideBusqueda = (
+            !busqueda
+            || String(
+                fila.producto_nombre || ""
+            )
+                .toLocaleLowerCase("es")
+                .includes(busqueda)
+            || String(
+                fila.producto_codigo || ""
+            )
+                .toLocaleLowerCase("es")
+                .includes(busqueda)
+        );
+
+        const cantidad = numero(
+            fila.cantidad
+        );
+        const reservada = numero(
+            fila.reservada
+        );
+        const disponible = numero(
+            fila.disponible
+        );
+
+        let coincideFiltro = true;
+
+        if (filtro === "disponible") {
+            coincideFiltro = disponible > 0;
+        } else if (filtro === "agotado") {
+            coincideFiltro = cantidad <= 0;
+        } else if (filtro === "reservado") {
+            coincideFiltro = reservada > 0;
+        }
+
+        return (
+            coincideBusqueda
+            && coincideFiltro
+        );
+    });
+}
+
+function crearCeldaProducto(fila) {
+    const celda = crearElemento("td");
+    const contenedor = crearElemento(
+        "div",
+        "",
+        "producto-celda"
+    );
+
+    contenedor.appendChild(
+        crearElemento(
+            "strong",
+            fila.producto_nombre || "Producto"
+        )
+    );
+
+    contenedor.appendChild(
+        crearElemento(
+            "span",
+            fila.producto_codigo || "Sin código"
+        )
+    );
+
+    celda.appendChild(contenedor);
+
+    return celda;
+}
+
+function abrirFormulario(
+    productoId = null,
+    tipoInicial = null
+) {
+    const operaciones = permisosDisponibles();
+
+    if (!operaciones.length) {
+        notificar(
+            "No tienes permisos para registrar movimientos."
+        );
+        return;
+    }
+
+    const formulario = elemento(
+        "formulario-movimiento"
+    );
+
+    formulario?.reset();
+    renderizarTiposMovimiento();
+    renderizarProductos();
+
+    const selectorTipo = elemento(
+        "movimiento-tipo"
+    );
+
+    if (
+        tipoInicial
+        && operaciones.some(
+            (operacion) =>
+                operacion.valor === tipoInicial
+        )
+    ) {
+        selectorTipo.value = tipoInicial;
+    }
+
+    if (productoId) {
+        elemento(
+            "movimiento-producto"
+        ).value = String(productoId);
+    }
+
+    actualizarCamposMovimiento();
+
+    const modal = elemento(
+        "modal-movimiento"
+    );
+
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+
+    window.setTimeout(
+        () => {
+            elemento(
+                "movimiento-producto"
+            )?.focus();
+        },
+        0
+    );
+}
+
+function cerrarFormulario() {
+    const modal = elemento(
+        "modal-movimiento"
+    );
+
+    if (modal) {
+        modal.hidden = true;
+    }
+
+    document.body.style.overflow = "";
+}
+
+function crearAccionesStock(fila) {
+    const celda = crearElemento("td");
+    const operaciones = permisosDisponibles();
+
+    if (!operaciones.length) {
+        celda.textContent = "Sin acciones";
+        return celda;
+    }
+
+    const boton = crearElemento(
+        "button",
+        "Movimiento",
+        "boton boton--pequeno boton--secundario"
+    );
+
+    boton.type = "button";
+    boton.addEventListener(
+        "click",
+        () => abrirFormulario(
+            fila.producto_id
+        )
+    );
+
+    celda.appendChild(boton);
+
+    return celda;
+}
+
+function renderizarStock() {
+    const cuerpo = elemento("tabla-stock");
+
+    if (!cuerpo) {
+        return;
+    }
+
+    limpiar(cuerpo);
+
+    const filas = obtenerStockFiltrado();
+
+    elemento("cantidad-stock").textContent = (
+        `${filas.length} `
+        + (
+            filas.length === 1
+                ? "producto"
+                : "productos"
+        )
+    );
+
+    if (!filas.length) {
+        const fila = crearElemento("tr");
+        const celda = crearElemento(
+            "td",
+            "No hay existencias que coincidan con los filtros.",
+            "tabla__vacio"
+        );
+
+        celda.colSpan = 7;
+        fila.appendChild(celda);
+        cuerpo.appendChild(fila);
+        return;
+    }
+
+    filas.forEach((item) => {
+        const fila = crearElemento("tr");
+
+        fila.appendChild(
+            crearCeldaProducto(item)
+        );
+
+        fila.appendChild(
+            crearElemento(
+                "td",
+                formatearCantidad(item.cantidad),
+                "cantidad-destacada"
+            )
+        );
+
+        fila.appendChild(
+            crearElemento(
+                "td",
+                formatearCantidad(item.reservada)
+            )
+        );
+
+        const disponible = numero(
+            item.disponible
+        );
+
+        fila.appendChild(
+            crearElemento(
+                "td",
+                formatearCantidad(disponible),
+                disponible > 0
+                    ? "cantidad-disponible"
+                    : "cantidad-agotada"
+            )
+        );
+
+        fila.appendChild(
+            crearElemento(
+                "td",
+                formatearMoneda(
+                    item.costo_promedio
+                )
+            )
+        );
+
+        fila.appendChild(
+            crearElemento(
+                "td",
+                formatearMoneda(item.valor)
+            )
+        );
+
+        fila.appendChild(
+            crearAccionesStock(item)
+        );
+
+        cuerpo.appendChild(fila);
+    });
+}
+
+function renderizarResumen() {
+    const productos = estado.stock.filter(
+        (fila) => numero(fila.cantidad) > 0
+    ).length;
+
+    const unidades = estado.stock.reduce(
+        (total, fila) =>
+            total + numero(fila.cantidad),
+        0
+    );
+
+    const reservadas = estado.stock.reduce(
+        (total, fila) =>
+            total + numero(fila.reservada),
+        0
+    );
+
+    const valor = estado.stock.reduce(
+        (total, fila) =>
+            total + numero(fila.valor),
+        0
+    );
+
+    elemento("resumen-productos").textContent = (
+        new Intl.NumberFormat("es-CL")
+            .format(productos)
+    );
+
+    elemento("resumen-unidades").textContent = (
+        formatearCantidad(unidades)
+    );
+
+    elemento("resumen-reservadas").textContent = (
+        formatearCantidad(reservadas)
+    );
+
+    elemento("resumen-valor").textContent = (
+        formatearMoneda(valor)
+    );
+}
+
+function claseTipoMovimiento(tipo) {
+    const permitidos = new Set([
+        "entrada",
+        "salida",
+        "ajuste",
+        "devolucion",
+    ]);
+
+    return permitidos.has(tipo)
+        ? `movimiento-tipo--${tipo}`
+        : "";
+}
+
+function renderizarMovimientos() {
+    const cuerpo = elemento(
+        "tabla-movimientos"
+    );
+
+    if (!cuerpo) {
+        return;
+    }
+
+    limpiar(cuerpo);
+
+    elemento(
+        "cantidad-movimientos"
+    ).textContent = (
+        `${estado.movimientos.length} `
+        + (
+            estado.movimientos.length === 1
+                ? "movimiento registrado"
+                : "movimientos registrados"
+        )
+    );
+
+    if (!estado.movimientos.length) {
+        const fila = crearElemento("tr");
+        const celda = crearElemento(
+            "td",
+            "Todavía no existen movimientos en esta bodega.",
+            "tabla__vacio"
+        );
+
+        celda.colSpan = 7;
+        fila.appendChild(celda);
+        cuerpo.appendChild(fila);
+        return;
+    }
+
+    estado.movimientos.forEach(
+        (movimiento) => {
+            const fila = crearElemento("tr");
+
+            fila.appendChild(
+                crearElemento(
+                    "td",
+                    formatearFecha(
+                        movimiento.fecha
+                    )
+                )
+            );
+
+            fila.appendChild(
+                crearCeldaProducto(
+                    movimiento
+                )
+            );
+
+            const celdaTipo = crearElemento("td");
+            const tipo = crearElemento(
+                "span",
+                movimiento.tipo,
+                (
+                    "movimiento-tipo "
+                    + claseTipoMovimiento(
+                        movimiento.tipo
+                    )
+                ).trim()
+            );
+
+            celdaTipo.appendChild(tipo);
+            fila.appendChild(celdaTipo);
+
+            const cantidad = numero(
+                movimiento.cantidad
+            );
+
+            fila.appendChild(
+                crearElemento(
+                    "td",
+                    (
+                        cantidad > 0
+                            ? "+"
+                            : ""
+                    )
+                    + formatearCantidad(
+                        cantidad
+                    ),
+                    cantidad >= 0
+                        ? (
+                            "movimiento-cantidad"
+                            + "--positiva"
+                        )
+                        : (
+                            "movimiento-cantidad"
+                            + "--negativa"
+                        )
+                )
+            );
+
+            fila.appendChild(
+                crearElemento(
+                    "td",
+                    formatearCantidad(
+                        movimiento.stock_anterior
+                    )
+                )
+            );
+
+            fila.appendChild(
+                crearElemento(
+                    "td",
+                    formatearCantidad(
+                        movimiento.stock_nuevo
+                    ),
+                    "cantidad-destacada"
+                )
+            );
+
+            fila.appendChild(
+                crearElemento(
+                    "td",
+                    movimiento.motivo || "—"
+                )
+            );
+
+            cuerpo.appendChild(fila);
+        }
+    );
+}
+
+function actualizarCamposMovimiento() {
+    const tipo = elemento(
+        "movimiento-tipo"
+    )?.value;
+
+    const esAjuste = tipo === "ajuste";
+    const usaCosto = (
+        tipo === "entrada"
+        || tipo === "devolucion"
+    );
+    const usaPrecio = tipo === "salida";
+
+    elemento("grupo-cantidad").hidden = (
+        esAjuste
+    );
+
+    elemento(
+        "grupo-stock-final"
+    ).hidden = !esAjuste;
+
+    elemento(
+        "grupo-costo-unitario"
+    ).hidden = !usaCosto;
+
+    elemento(
+        "grupo-precio-unitario"
+    ).hidden = !usaPrecio;
+
+    elemento(
+        "movimiento-cantidad"
+    ).required = !esAjuste;
+
+    elemento(
+        "movimiento-stock-final"
+    ).required = esAjuste;
+
+    elemento(
+        "movimiento-costo-unitario"
+    ).required = usaCosto;
+
+    elemento(
+        "movimiento-precio-unitario"
+    ).required = false;
+}
+
+function construirMovimiento() {
+    const tipo = elemento(
+        "movimiento-tipo"
+    ).value;
+
+    const productoId = Number(
+        elemento("movimiento-producto").value
+    );
+
+    const motivo = elemento(
+        "movimiento-motivo"
+    ).value.trim();
+
+    if (!tipo) {
+        throw new Error(
+            "Selecciona el tipo de movimiento."
+        );
+    }
+
+    if (!productoId) {
+        throw new Error(
+            "Selecciona un producto."
+        );
+    }
+
+    if (!motivo) {
+        throw new Error(
+            "El motivo es obligatorio."
+        );
+    }
+
+    const datos = {
+        tipo,
+        producto_id: productoId,
+        motivo,
+    };
+
+    if (tipo === "ajuste") {
+        const stockFinal = numero(
+            elemento(
+                "movimiento-stock-final"
+            ).value
+        );
+
+        if (stockFinal < 0) {
+            throw new Error(
+                "El stock final no puede ser negativo."
+            );
+        }
+
+        datos.stock_final = stockFinal;
+    } else {
+        const cantidad = numero(
+            elemento(
+                "movimiento-cantidad"
+            ).value
+        );
+
+        if (cantidad <= 0) {
+            throw new Error(
+                "La cantidad debe ser mayor que cero."
+            );
+        }
+
+        datos.cantidad = cantidad;
+    }
+
+    if (
+        tipo === "entrada"
+        || tipo === "devolucion"
+    ) {
+        const costo = numero(
+            elemento(
+                "movimiento-costo-unitario"
+            ).value
+        );
+
+        if (costo < 0) {
+            throw new Error(
+                "El costo no puede ser negativo."
+            );
+        }
+
+        datos.costo_unitario = costo;
+    }
+
+    if (tipo === "salida") {
+        const valorPrecio = elemento(
+            "movimiento-precio-unitario"
+        ).value;
+
+        if (valorPrecio !== "") {
+            const precio = numero(valorPrecio);
+
+            if (precio < 0) {
+                throw new Error(
+                    "El precio no puede ser negativo."
+                );
+            }
+
+            datos.precio_unitario = precio;
+        }
+    }
+
+    return datos;
+}
+
+async function guardarMovimiento(evento) {
+    evento.preventDefault();
+
+    const boton = elemento(
+        "guardar-movimiento"
+    );
+
+    try {
+        const datos = construirMovimiento();
+
+        boton.disabled = true;
+        boton.textContent = "Registrando…";
+
+        await solicitarJson(
+            configuracion.apiInventario,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/json",
+                    "X-CSRFToken":
+                        obtenerTokenCsrf(),
+                },
+                body: JSON.stringify(datos),
+            }
+        );
+
+        cerrarFormulario();
+
+        await cargarPanel();
+
+        notificar(
+            "Movimiento registrado correctamente.",
+            "exito"
+        );
+    } catch (error) {
+        notificar(error.message);
+    } finally {
+        boton.disabled = false;
+        boton.textContent = (
+            "Registrar movimiento"
+        );
+    }
+}
+
+async function cargarProductos() {
+    const datos = await solicitarJson(
+        configuracion.apiProductos
+    );
+
+    estado.productos = datos.productos || [];
+    renderizarProductos();
+}
+
+async function cargarStock() {
+    const datos = await solicitarJson(
+        configuracion.apiStock
+    );
+
+    estado.stock = datos.stock || [];
+    renderizarResumen();
+    renderizarStock();
+}
+
+async function cargarMovimientos() {
+    const separador = (
+        configuracion.apiMovimientos.includes("?")
+            ? "&"
+            : "?"
+    );
+
+    const datos = await solicitarJson(
+        `${configuracion.apiMovimientos}`
+        + `${separador}limite=100`
+    );
+
+    estado.movimientos = (
+        datos.movimientos || []
+    );
+
+    renderizarMovimientos();
+}
+
+async function cargarPanel() {
+    const boton = elemento(
+        "actualizar-inventario"
+    );
+
+    try {
+        if (boton) {
+            boton.disabled = true;
+            boton.textContent = "Actualizando…";
+        }
+
+        await Promise.all([
+            cargarProductos(),
+            cargarStock(),
+            cargarMovimientos(),
+        ]);
+    } catch (error) {
+        notificar(error.message);
+    } finally {
+        if (boton) {
+            boton.disabled = false;
+            boton.textContent = "Actualizar";
+        }
+    }
+}
+
+function registrarEventos() {
+    elemento(
+        "nuevo-movimiento"
+    )?.addEventListener(
+        "click",
+        () => abrirFormulario()
+    );
+
+    elemento(
+        "actualizar-inventario"
+    )?.addEventListener(
+        "click",
+        cargarPanel
+    );
+
+    elemento(
+        "cerrar-modal-movimiento"
+    )?.addEventListener(
+        "click",
+        cerrarFormulario
+    );
+
+    elemento(
+        "cancelar-movimiento"
+    )?.addEventListener(
+        "click",
+        cerrarFormulario
+    );
+
+    elemento(
+        "formulario-movimiento"
+    )?.addEventListener(
+        "submit",
+        guardarMovimiento
+    );
+
+    elemento(
+        "movimiento-tipo"
+    )?.addEventListener(
+        "change",
+        actualizarCamposMovimiento
+    );
+
+    elemento(
+        "buscar-inventario"
+    )?.addEventListener(
+        "input",
+        renderizarStock
+    );
+
+    elemento(
+        "filtrar-existencia"
+    )?.addEventListener(
+        "change",
+        renderizarStock
+    );
+
+    elemento(
+        "modal-movimiento"
+    )?.addEventListener(
+        "click",
+        (evento) => {
+            if (
+                evento.target
+                === elemento("modal-movimiento")
+            ) {
+                cerrarFormulario();
+            }
+        }
+    );
+
+    window.addEventListener(
+        "keydown",
+        (evento) => {
+            if (
+                evento.key === "Escape"
+                && !elemento(
+                    "modal-movimiento"
+                )?.hidden
+            ) {
+                cerrarFormulario();
+            }
+        }
+    );
+}
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+        registrarEventos();
+        renderizarTiposMovimiento();
+
+        const botonNuevo = elemento(
+            "nuevo-movimiento"
+        );
+
+        if (
+            botonNuevo
+            && !permisosDisponibles().length
+        ) {
+            botonNuevo.hidden = true;
+        }
+
+        await cargarPanel();
+    }
+);
