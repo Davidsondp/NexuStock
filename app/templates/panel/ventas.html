@@ -22,6 +22,7 @@
 <body
     data-api-ventas="{{ url_for('ventas.listar') }}"
     data-api-productos="{{ url_for('productos.listar') }}"
+    data-api-clientes="{{ url_for('clientes.listar') }}"
     data-api-stock="{{ url_for('reportes.stock') }}"
     data-bodega-id="{{ contexto.bodega.id }}"
     data-permiso-crear="{{ permisos.crear | tojson }}"
@@ -107,6 +108,20 @@
                 </span>
                 <span>Ventas</span>
             </a>
+
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for('panel.clientes') }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >
+                        ?
+                    </span>
+                    <span>Clientes</span>
+                </a>
 
             <p class="navegacion__titulo">Control</p>
 

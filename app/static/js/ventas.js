@@ -3,6 +3,7 @@
 const configuracion = Object.freeze({
     apiVentas: document.body.dataset.apiVentas,
     apiProductos: document.body.dataset.apiProductos,
+    apiClientes: document.body.dataset.apiClientes,
     apiStock: document.body.dataset.apiStock,
     bodegaId: Number(document.body.dataset.bodegaId),
     puedeCrear:
@@ -18,6 +19,7 @@ const configuracion = Object.freeze({
 const estado = {
     ventas: [],
     productos: [],
+    clientes: [],
     stockPorProducto: new Map(),
 };
 
@@ -876,6 +878,78 @@ function cerrarMenu() {
     );
 }
 
+
+function renderizarOpcionesClientes() {
+    const selector = elemento("venta-cliente");
+
+    if (!selector) {
+        return;
+    }
+
+    const valorSeleccionado = selector.value;
+
+    limpiar(selector);
+
+    const consumidorFinal = crearElemento(
+        "option",
+        "Consumidor final"
+    );
+
+    consumidorFinal.value = "";
+    selector.appendChild(consumidorFinal);
+
+    estado.clientes.forEach((cliente) => {
+        const detalle = cliente.identificacion_fiscal
+            ? ` ? ${cliente.identificacion_fiscal}`
+            : "";
+
+        const opcion = crearElemento(
+            "option",
+            `${cliente.nombre}${detalle}`
+        );
+
+        opcion.value = String(cliente.id);
+        selector.appendChild(opcion);
+    });
+
+    const existeSeleccionado = [
+        ...selector.options,
+    ].some(
+        (opcion) =>
+            opcion.value === valorSeleccionado
+    );
+
+    selector.value = existeSeleccionado
+        ? valorSeleccionado
+        : "";
+}
+
+async function cargarClientes() {
+    if (!configuracion.apiClientes) {
+        estado.clientes = [];
+        renderizarOpcionesClientes();
+        return;
+    }
+
+    try {
+        const datos = await solicitarJson(
+            configuracion.apiClientes
+        );
+
+        estado.clientes = (
+            datos.clientes || []
+        ).filter(
+            (cliente) => cliente.activo
+        );
+
+        renderizarOpcionesClientes();
+    } catch (error) {
+        estado.clientes = [];
+        renderizarOpcionesClientes();
+        notificar(error.message);
+    }
+}
+
 function registrarEventos() {
     elemento("crear-venta")?.addEventListener(
         "click",
@@ -907,7 +981,10 @@ function registrarEventos() {
     elemento("actualizar-ventas")?.addEventListener(
         "click",
         async () => {
-            await cargarProductosYStock();
+            await Promise.all([
+                cargarClientes(),
+                cargarProductosYStock(),
+            ]);
             await cargarVentas();
         }
     );
@@ -951,7 +1028,12 @@ document.addEventListener(
     "DOMContentLoaded",
     async () => {
         registrarEventos();
-        await cargarProductosYStock();
+
+        await Promise.all([
+            cargarClientes(),
+            cargarProductosYStock(),
+        ]);
+
         await cargarVentas();
     }
 );

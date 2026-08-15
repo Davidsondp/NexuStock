@@ -8,10 +8,10 @@
     >
     <meta
         name="description"
-        content="Gestión de proveedores de NexuStock"
+        content="Gestión de clientes de NexuStock"
     >
 
-    <title>Proveedores | NexuStock</title>
+    <title>Clientes | NexuStock</title>
 
     <link
         rel="stylesheet"
@@ -19,12 +19,12 @@
     >
     <link
         rel="stylesheet"
-        href="{{ url_for('static', filename='css/proveedores.css') }}"
+        href="{{ url_for('static', filename='css/clientes.css') }}"
     >
 </head>
 
 <body
-    data-api-proveedores="{{ url_for('proveedores.listar') }}"
+    data-api-clientes="{{ url_for('clientes.listar') }}"
     data-permiso-crear="{{ permisos.crear | tojson }}"
     data-permiso-editar="{{ permisos.editar | tojson }}"
     data-permiso-eliminar="{{ permisos.eliminar | tojson }}"
@@ -85,16 +85,35 @@
 
                 <a
                     class="navegacion__enlace"
-                    href="{{ url_for('panel.proveedores') }}"
+                    href="{{ url_for(
+                        'panel.proveedores'
+                    ) }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >
+                        ?
+                    </span>
+                    <span>Proveedores</span>
+                </a>
+<a
+                    class="
+                        navegacion__enlace
+                        navegacion__enlace--activo
+                    "
+                    href="{{ url_for(
+                        'panel.clientes'
+                    ) }}"
                     aria-current="page"
                 >
                     <span
                         class="navegacion__icono"
                         aria-hidden="true"
                     >
-                        ◇
+                        ?
                     </span>
-                    <span>Proveedores</span>
+                    <span>Clientes</span>
                 </a>
 
                 <a
@@ -108,20 +127,6 @@
                         $
                     </span>
                     <span>Ventas</span>
-                </a>
-
-
-                <a
-                    class="navegacion__enlace"
-                    href="{{ url_for('panel.clientes') }}"
-                >
-                    <span
-                        class="navegacion__icono"
-                        aria-hidden="true"
-                    >
-                        ?
-                    </span>
-                    <span>Clientes</span>
                 </a>
 
                 <a
@@ -227,7 +232,7 @@
 
                     <div>
                         <h1 class="cabecera__titulo">
-                            Proveedores
+                            Clientes
                         </h1>
 
                         <p class="cabecera__contexto">
@@ -266,7 +271,7 @@
                 </div>
             </header>
 
-            <main class="proveedores-contenido">
+            <main class="clientes-contenido">
                 {% for categoria, mensaje in
                     get_flashed_messages(with_categories=true) %}
                     <div class="mensaje mensaje--{{ categoria }}">
@@ -275,23 +280,23 @@
                 {% endfor %}
 
                 <section>
-                    <div class="proveedores-encabezado">
+                    <div class="clientes-encabezado">
                         <div>
-                            <p class="proveedores-encabezado__etiqueta">
-                                Abastecimiento empresarial
+                            <p class="clientes-encabezado__etiqueta">
+                                Relaciones comerciales
                             </p>
 
-                            <h2>Gestión de proveedores</h2>
+                            <h2>Gestión de clientes</h2>
 
                             <p>
-                                Administra los datos comerciales,
-                                contactos y condiciones de compra.
+                                Administra compradores, pacientes,
+                                contactos y datos de facturaci?n.
                             </p>
                         </div>
 
-                        <div class="proveedores-acciones">
+                        <div class="clientes-acciones">
                             <button
-                                id="actualizar-proveedores"
+                                id="actualizar-clientes"
                                 class="boton boton--secundario"
                                 type="button"
                             >
@@ -300,23 +305,23 @@
 
                             {% if permisos.crear %}
                                 <button
-                                    id="crear-proveedor"
+                                    id="crear-cliente"
                                     class="boton boton--primario"
                                     type="button"
                                 >
-                                    Nuevo proveedor
+                                    Nuevo cliente
                                 </button>
                             {% endif %}
                         </div>
                     </div>
 
-                    <div class="proveedores-filtros">
+                    <div class="clientes-filtros">
                         <input
-                            id="buscar-proveedores"
+                            id="buscar-clientes"
                             class="campo"
                             type="search"
-                            placeholder="Buscar por nombre, RUT, correo o ciudad"
-                            aria-label="Buscar proveedores"
+                            placeholder="Buscar por nombre, RUT, correo o tel?fono"
+                            aria-label="Buscar clientes"
                             autocomplete="off"
                         >
 
@@ -328,30 +333,30 @@
                             Buscar
                         </button>
 
-                        <label class="proveedores-filtros__alternador">
+                        <label class="clientes-filtros__alternador">
                             <input
                                 id="mostrar-inactivos"
                                 type="checkbox"
                             >
                             <span>
-                                Mostrar proveedores inactivos
+                                Mostrar clientes inactivos
                             </span>
                         </label>
                     </div>
 
-                    <article class="tarjeta proveedores-tabla">
-                        <div class="proveedores-tabla__cabecera">
+                    <article class="tarjeta clientes-tabla">
+                        <div class="clientes-tabla__cabecera">
                             <div>
                                 <h3
-                                    id="titulo-listado-proveedores"
-                                    class="proveedores-tabla__titulo"
+                                    id="titulo-listado-clientes"
+                                    class="clientes-tabla__titulo"
                                 >
-                                    Proveedores activos
+                                    Clientes activos
                                 </h3>
 
                                 <p
-                                    id="cantidad-proveedores"
-                                    class="proveedores-tabla__detalle"
+                                    id="cantidad-clientes"
+                                    class="clientes-tabla__detalle"
                                 >
                                     Cargando directorio…
                                 </p>
@@ -364,26 +369,25 @@
 
                         <div class="tabla-contenedor">
                             <table class="tabla">
-                                <thead>
-                                    <tr>
-                                        <th>Proveedor</th>
-                                        <th>RUT</th>
-                                        <th>Contacto</th>
-                                        <th>Ciudad</th>
-                                        <th>Entrega</th>
-                                        <th>Compra mínima</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
 
-                                <tbody id="tabla-proveedores">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>RUT</th>
+                                    <th>Contacto</th>
+                                    <th>Direcci?n</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+
+                                <tbody id="tabla-clientes">
                                     <tr>
                                         <td
-                                            colspan="8"
+                                            colspan="6"
                                             class="estado-carga"
                                         >
-                                            Cargando proveedores…
+                                            Cargando clientes…
                                         </td>
                                     </tr>
                                 </tbody>
@@ -396,15 +400,15 @@
     </div>
 
     <section
-        id="modal-proveedor"
+        id="modal-cliente"
         class="modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="titulo-modal-proveedor"
+        aria-labelledby="titulo-modal-cliente"
         hidden
     >
         <button
-            id="cerrar-modal-proveedor"
+            id="cerrar-modal-cliente"
             class="modal__fondo"
             type="button"
             aria-label="Cerrar formulario"
@@ -414,16 +418,16 @@
             <div class="modal__cabecera">
                 <div>
                     <p class="modal__etiqueta">
-                        Directorio comercial
+                        Directorio de clientes
                     </p>
 
-                    <h2 id="titulo-modal-proveedor">
-                        Nuevo proveedor
+                    <h2 id="titulo-modal-cliente">
+                        Nuevo cliente
                     </h2>
                 </div>
 
                 <button
-                    id="cerrar-modal-proveedor-boton"
+                    id="cerrar-modal-cliente-boton"
                     class="modal__cerrar"
                     type="button"
                     aria-label="Cerrar"
@@ -432,9 +436,9 @@
                 </button>
             </div>
 
-            <form id="formulario-proveedor" novalidate>
+            <form id="formulario-cliente" novalidate>
                 <input
-                    id="proveedor-id"
+                    id="cliente-id"
                     type="hidden"
                 >
 
@@ -443,7 +447,7 @@
                         <span>Nombre *</span>
 
                         <input
-                            id="proveedor-nombre"
+                            id="cliente-nombre"
                             class="campo"
                             type="text"
                             maxlength="150"
@@ -456,7 +460,7 @@
                         <span>RUT o identificación fiscal</span>
 
                         <input
-                            id="proveedor-identificacion"
+                            id="cliente-identificacion"
                             class="campo"
                             type="text"
                             maxlength="30"
@@ -467,7 +471,7 @@
                         <span>Correo electrónico</span>
 
                         <input
-                            id="proveedor-email"
+                            id="cliente-email"
                             class="campo"
                             type="email"
                             maxlength="254"
@@ -479,7 +483,7 @@
                         <span>Teléfono</span>
 
                         <input
-                            id="proveedor-telefono"
+                            id="cliente-telefono"
                             class="campo"
                             type="tel"
                             maxlength="30"
@@ -487,36 +491,13 @@
                         >
                     </label>
 
-                    <label class="grupo-campo">
-                        <span>Ciudad</span>
 
-                        <input
-                            id="proveedor-ciudad"
-                            class="campo"
-                            type="text"
-                            maxlength="100"
-                            autocomplete="address-level2"
-                        >
-                    </label>
-
-                    <label class="grupo-campo">
-                        <span>País</span>
-
-                        <input
-                            id="proveedor-pais"
-                            class="campo"
-                            type="text"
-                            maxlength="2"
-                            value="CL"
-                            autocomplete="country"
-                        >
-                    </label>
 
                     <label class="grupo-campo grupo-campo--ancho">
                         <span>Dirección</span>
 
                         <input
-                            id="proveedor-direccion"
+                            id="cliente-direccion"
                             class="campo"
                             type="text"
                             maxlength="255"
@@ -524,69 +505,16 @@
                         >
                     </label>
 
-                    <label class="grupo-campo grupo-campo--ancho">
-                        <span>Sitio web</span>
 
-                        <input
-                            id="proveedor-sitio-web"
-                            class="campo"
-                            type="url"
-                            maxlength="255"
-                            placeholder="https://"
-                        >
-                    </label>
 
-                    <label class="grupo-campo">
-                        <span>Días de entrega</span>
 
-                        <input
-                            id="proveedor-dias-entrega"
-                            class="campo"
-                            type="number"
-                            min="0"
-                            step="1"
-                            value="7"
-                        >
-                    </label>
 
-                    <label class="grupo-campo">
-                        <span>Compra mínima</span>
 
-                        <input
-                            id="proveedor-compra-minima"
-                            class="campo"
-                            type="number"
-                            min="0"
-                            step="1"
-                            value="0"
-                        >
-                    </label>
 
-                    <label class="grupo-campo grupo-campo--ancho">
-                        <span>Condiciones de pago</span>
-
-                        <input
-                            id="proveedor-condiciones-pago"
-                            class="campo"
-                            type="text"
-                            maxlength="120"
-                            placeholder="Ejemplo: 30 días"
-                        >
-                    </label>
-
-                    <label class="grupo-campo grupo-campo--ancho">
-                        <span>Observaciones</span>
-
-                        <textarea
-                            id="proveedor-observaciones"
-                            class="campo"
-                            rows="4"
-                        ></textarea>
-                    </label>
                 </div>
 
                 <p
-                    id="error-proveedor"
+                    id="error-cliente"
                     class="formulario-error"
                     role="alert"
                     hidden
@@ -594,7 +522,7 @@
 
                 <div class="modal__acciones">
                     <button
-                        id="cancelar-proveedor"
+                        id="cancelar-cliente"
                         class="boton boton--secundario"
                         type="button"
                     >
@@ -602,11 +530,11 @@
                     </button>
 
                     <button
-                        id="guardar-proveedor"
+                        id="guardar-cliente"
                         class="boton boton--primario"
                         type="submit"
                     >
-                        Guardar proveedor
+                        Guardar cliente
                     </button>
                 </div>
             </form>
@@ -622,7 +550,7 @@
     ></div>
 
     <script
-        src="{{ url_for('static', filename='js/proveedores.js') }}"
+        src="{{ url_for('static', filename='js/clientes.js') }}"
         defer
     ></script>
 </body>

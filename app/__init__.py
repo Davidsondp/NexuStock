@@ -33,6 +33,7 @@ def crear_aplicacion(nombre_configuracion: str | None = None) -> Flask:
     from .blueprints.ubicaciones.routes import ubicaciones_bp
     from .blueprints.compras.routes import compras_bp
     from .blueprints.ventas.routes import ventas_bp
+    from .blueprints.clientes.routes import clientes_bp
     from .blueprints.alertas.routes import alertas_bp
     from .blueprints.reportes.routes import reportes_bp
     from .blueprints.usuarios.routes import usuarios_bp
@@ -49,6 +50,7 @@ def crear_aplicacion(nombre_configuracion: str | None = None) -> Flask:
     app.register_blueprint(ubicaciones_bp)
     app.register_blueprint(compras_bp)
     app.register_blueprint(ventas_bp)
+    app.register_blueprint(clientes_bp)
     app.register_blueprint(alertas_bp)
     app.register_blueprint(reportes_bp)
     app.register_blueprint(usuarios_bp)

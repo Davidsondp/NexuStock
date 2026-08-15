@@ -167,3 +167,35 @@ def ventas():
         contexto=g.contexto_operacion,
         permisos=permisos,
     )
+
+@panel_bp.get("/clientes")
+@login_required
+@requerir_permiso("clientes.ver")
+@requerir_contexto
+def clientes():
+    empresa_id = current_user.empresa_id
+
+    permisos = {
+        "crear": evaluar_permiso(
+            current_user,
+            "clientes.crear",
+            empresa_id=empresa_id,
+        ).permitido,
+        "editar": evaluar_permiso(
+            current_user,
+            "clientes.editar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "eliminar": evaluar_permiso(
+            current_user,
+            "clientes.eliminar",
+            empresa_id=empresa_id,
+        ).permitido,
+    }
+
+    return render_template(
+        "panel/clientes.html",
+        empresa=current_user.empresa,
+        contexto=g.contexto_operacion,
+        permisos=permisos,
+    )
