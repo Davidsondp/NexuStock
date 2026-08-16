@@ -592,15 +592,70 @@ class OrdenCompraItem(TimestampMixin, db.Model):
     __table_args__ = (
         ForeignKeyConstraint(["orden_id", "empresa_id"], ["orden_compra.id", "orden_compra.empresa_id"]),
         ForeignKeyConstraint(["producto_id", "empresa_id"], ["producto.id", "producto.empresa_id"]),
+        ForeignKeyConstraint(
+            ["presentacion_id", "empresa_id"],
+            [
+                "presentacion_producto.id",
+                "presentacion_producto.empresa_id",
+            ],
+        ),
         UniqueConstraint("orden_id", "producto_id", name="uq_orden_producto"),
         UniqueConstraint("id", "empresa_id", name="uq_orden_item_id_empresa"),
         CheckConstraint("cantidad > 0 AND cantidad_recibida >= 0 AND cantidad_recibida <= cantidad",
                         name="ck_orden_item_cantidades"),
         CheckConstraint("precio_unitario >= 0 AND descuento >= 0 AND impuesto >= 0 AND total >= 0",
                         name="ck_orden_item_totales"),
+        CheckConstraint(
+            (
+                "cantidad_presentacion > 0 "
+                "AND factor_conversion > 0"
+            ),
+            name=(
+                "ck_orden_item_presentacion_"
+                "cantidades"
+            ),
+        ),
+        CheckConstraint(
+            "precio_presentacion >= 0",
+            name=(
+                "ck_orden_item_presentacion_"
+                "precio"
+            ),
+        ),
     )
     id = db.Column(db.Integer, primary_key=True); empresa_id = db.Column(db.Integer, nullable=False)
     orden_id = db.Column(db.Integer, nullable=False); producto_id = db.Column(db.Integer, nullable=False)
+    presentacion_id = db.Column(
+        db.Integer,
+        nullable=True,
+    )
+    presentacion_codigo = db.Column(
+        db.String(50),
+        nullable=True,
+    )
+    presentacion_nombre = db.Column(
+        db.String(100),
+        nullable=True,
+    )
+    presentacion_abreviatura = db.Column(
+        db.String(20),
+        nullable=True,
+    )
+    cantidad_presentacion = db.Column(
+        db.Numeric(14, 3),
+        nullable=False,
+        default=0,
+    )
+    factor_conversion = db.Column(
+        db.Numeric(14, 3),
+        nullable=False,
+        default=1,
+    )
+    precio_presentacion = db.Column(
+        db.Numeric(14, 4),
+        nullable=False,
+        default=0,
+    )
     cantidad = db.Column(db.Numeric(14, 3), nullable=False)
     cantidad_recibida = db.Column(db.Numeric(14, 3), nullable=False, default=0)
     precio_unitario = db.Column(db.Numeric(14, 4), nullable=False)
@@ -644,11 +699,43 @@ class RecepcionCompraItem(TimestampMixin, db.Model):
         UniqueConstraint("recepcion_id", "orden_item_id", name="uq_recepcion_orden_item"),
         CheckConstraint("cantidad > 0", name="ck_recepcion_item_cantidad"),
         CheckConstraint("costo_unitario >= 0", name="ck_recepcion_item_costo"),
+        CheckConstraint(
+            (
+                "cantidad_presentacion > 0 "
+                "AND factor_conversion > 0"
+            ),
+            name=(
+                "ck_recepcion_item_presentacion_"
+                "cantidades"
+            ),
+        ),
+        CheckConstraint(
+            "costo_presentacion >= 0",
+            name=(
+                "ck_recepcion_item_presentacion_"
+                "costo"
+            ),
+        ),
     )
     id = db.Column(db.Integer, primary_key=True); empresa_id = db.Column(db.Integer, nullable=False)
     recepcion_id = db.Column(db.Integer, nullable=False); orden_item_id = db.Column(db.Integer, nullable=False)
     cantidad = db.Column(db.Numeric(14, 3), nullable=False)
+    cantidad_presentacion = db.Column(
+        db.Numeric(14, 3),
+        nullable=False,
+        default=0,
+    )
+    factor_conversion = db.Column(
+        db.Numeric(14, 3),
+        nullable=False,
+        default=1,
+    )
     costo_unitario = db.Column(db.Numeric(14, 4), nullable=False)
+    costo_presentacion = db.Column(
+        db.Numeric(14, 4),
+        nullable=False,
+        default=0,
+    )
     numero_lote = db.Column(db.String(100)); fecha_vencimiento = db.Column(db.Date)
     recepcion = db.relationship("RecepcionCompra", back_populates="items",
                                 overlaps="recepciones,orden_item")

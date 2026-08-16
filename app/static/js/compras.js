@@ -21,6 +21,7 @@ const estado = {
     ordenes: [],
     proveedores: [],
     productos: [],
+    presentaciones: new Map(),
     ordenRecepcion: null,
     ordenEdicion: null,
 };
@@ -218,6 +219,133 @@ function crearGrupoLinea(etiquetaTexto, control) {
     return grupo;
 }
 
+
+async function obtenerPresentaciones(productoId) {
+    const clave = Number(productoId);
+
+    if (!clave) {
+        return null;
+    }
+
+    if (estado.presentaciones.has(clave)) {
+        return estado.presentaciones.get(clave);
+    }
+
+    const datos = await solicitarJson(
+        `${configuracion.apiProductos}/${clave}/presentaciones`
+    );
+
+    estado.presentaciones.set(clave, datos);
+
+    return datos;
+}
+
+function actualizarEquivalenciaLinea(linea) {
+    const selector = linea.querySelector(
+        ".linea-presentacion"
+    );
+    const cantidad = Number(
+        linea.querySelector(
+            ".linea-cantidad"
+        )?.value || 0
+    );
+    const opcion = selector?.selectedOptions[0];
+    const factor = Number(
+        opcion?.dataset.factor || 1
+    );
+    const abreviatura =
+        opcion?.dataset.abreviatura || "unidad";
+    const equivalencia = linea.querySelector(
+        ".linea-equivalencia"
+    );
+
+    linea.dataset.factorConversion = String(factor);
+
+    if (!equivalencia) {
+        return;
+    }
+
+    const cantidadBase = cantidad * factor;
+
+    equivalencia.textContent =
+        `${cantidad || 0} ${abreviatura} = ` +
+        `${cantidadBase.toFixed(3)} unidades base`;
+}
+
+async function cargarPresentacionesLinea(
+    linea,
+    productoId,
+    presentacionSeleccionada = null
+) {
+    const selector = linea.querySelector(
+        ".linea-presentacion"
+    );
+
+    if (!selector) {
+        return;
+    }
+
+    limpiar(selector);
+    selector.disabled = true;
+
+    if (!productoId) {
+        selector.appendChild(
+            crearOpcion("", "Selecciona un producto")
+        );
+        actualizarEquivalenciaLinea(linea);
+        return;
+    }
+
+    try {
+        const datos = await obtenerPresentaciones(
+            productoId
+        );
+        const base = datos.unidad_base;
+
+        const opcionBase = crearOpcion(
+            "",
+            `${base.nombre} (${base.abreviatura})`
+        );
+        opcionBase.dataset.factor =
+            String(base.factor_base || "1");
+        opcionBase.dataset.abreviatura =
+            base.abreviatura || "unidad";
+        selector.appendChild(opcionBase);
+
+        (datos.presentaciones || []).forEach(
+            (presentacion) => {
+                const opcion = crearOpcion(
+                    presentacion.id,
+                    (
+                        `${presentacion.nombre} ` +
+                        `(${presentacion.abreviatura})`
+                    )
+                );
+                opcion.dataset.factor = String(
+                    presentacion.factor_base
+                );
+                opcion.dataset.abreviatura =
+                    presentacion.abreviatura;
+                selector.appendChild(opcion);
+            }
+        );
+
+        selector.value = presentacionSeleccionada
+            ? String(presentacionSeleccionada)
+            : "";
+        selector.disabled = false;
+        actualizarEquivalenciaLinea(linea);
+    } catch (error) {
+        selector.appendChild(
+            crearOpcion(
+                "",
+                "No fue posible cargar presentaciones"
+            )
+        );
+        notificar(error.message);
+    }
+}
+
 function agregarLineaCompra(datos = {}) {
     const contenedor = elemento("lineas-compra");
 
@@ -232,14 +360,28 @@ function agregarLineaCompra(datos = {}) {
     );
 
     const selector = crearSelectorProductos();
-    selector.value = String(datos.producto_id || "");
+    selector.value = String(
+        datos.producto_id || ""
+    );
+
+    const presentacion =
+        document.createElement("select");
+    presentacion.className =
+        "campo linea-presentacion";
+    presentacion.appendChild(
+        crearOpcion("", "Unidad base")
+    );
 
     const cantidad = document.createElement("input");
     cantidad.className = "campo linea-cantidad";
     cantidad.type = "number";
     cantidad.min = "0.001";
     cantidad.step = "0.001";
-    cantidad.value = String(datos.cantidad || "1");
+    cantidad.value = String(
+        datos.cantidad_presentacion ??
+        datos.cantidad ??
+        "1"
+    );
     cantidad.required = true;
 
     const precio = document.createElement("input");
@@ -247,31 +389,103 @@ function agregarLineaCompra(datos = {}) {
     precio.type = "number";
     precio.min = "0";
     precio.step = "0.0001";
-    precio.value = String(datos.precio_unitario || "0");
+    precio.value = String(
+        datos.precio_presentacion ??
+        datos.precio_unitario ??
+        "0"
+    );
     precio.required = true;
+
+    const equivalencia = crearElemento(
+        "p",
+        "",
+        "linea-equivalencia"
+    );
 
     const descuento = document.createElement("input");
     descuento.type = "hidden";
     descuento.className = "linea-descuento";
-    descuento.value = String(datos.descuento || "0");
+    descuento.value = String(
+        datos.descuento || "0"
+    );
 
     const impuesto = document.createElement("input");
     impuesto.type = "hidden";
     impuesto.className = "linea-impuesto";
-    impuesto.value = String(datos.impuesto || "0");
+    impuesto.value = String(
+        datos.impuesto || "0"
+    );
 
-    selector.addEventListener("change", () => {
-        const producto = estado.productos.find(
-            (actual) =>
-                String(actual.id) === selector.value
-        );
-
-        if (producto && Number(precio.value) === 0) {
-            precio.value = String(
-                producto.costo_referencia || "0"
+    selector.addEventListener(
+        "change",
+        async () => {
+            const producto = estado.productos.find(
+                (actual) =>
+                    String(actual.id) ===
+                    selector.value
             );
+
+            await cargarPresentacionesLinea(
+                linea,
+                selector.value
+            );
+
+            if (producto) {
+                precio.value = String(
+                    producto.costo_referencia || "0"
+                );
+            }
+
+            actualizarEquivalenciaLinea(linea);
         }
-    });
+    );
+
+    presentacion.addEventListener(
+        "change",
+        () => {
+            const producto = estado.productos.find(
+                (actual) =>
+                    String(actual.id) ===
+                    selector.value
+            );
+            const factorAnterior = Number(
+                linea.dataset.factorConversion || 1
+            );
+            const factor = Number(
+                presentacion.selectedOptions[0]
+                    ?.dataset.factor || 1
+            );
+            const costoActual = Number(
+                precio.value || 0
+            );
+
+            if (
+                Number.isFinite(costoActual) &&
+                factorAnterior > 0
+            ) {
+                precio.value = String(
+                    (
+                        costoActual
+                        / factorAnterior
+                        * factor
+                    ).toFixed(4)
+                );
+            } else if (producto) {
+                precio.value = String(
+                    Number(
+                        producto.costo_referencia || 0
+                    ) * factor
+                );
+            }
+
+            actualizarEquivalenciaLinea(linea);
+        }
+    );
+
+    cantidad.addEventListener(
+        "input",
+        () => actualizarEquivalenciaLinea(linea)
+    );
 
     const quitar = crearElemento(
         "button",
@@ -292,17 +506,36 @@ function agregarLineaCompra(datos = {}) {
         crearGrupoLinea("Producto", selector)
     );
     linea.appendChild(
+        crearGrupoLinea(
+            "Presentaci?n",
+            presentacion
+        )
+    );
+    linea.appendChild(
         crearGrupoLinea("Cantidad", cantidad)
     );
     linea.appendChild(
-        crearGrupoLinea("Costo unitario", precio)
+        crearGrupoLinea(
+            "Costo por presentaci?n",
+            precio
+        )
     );
     linea.appendChild(quitar);
-
+    linea.appendChild(equivalencia);
     linea.appendChild(descuento);
     linea.appendChild(impuesto);
 
     contenedor.appendChild(linea);
+
+    if (datos.producto_id) {
+        void cargarPresentacionesLinea(
+            linea,
+            datos.producto_id,
+            datos.presentacion_id
+        );
+    } else {
+        actualizarEquivalenciaLinea(linea);
+    }
 }
 
 function restablecerFormulario() {
@@ -378,8 +611,12 @@ function abrirFormularioEdicion(orden) {
     orden.items.forEach((item) => {
         agregarLineaCompra({
             producto_id: item.producto_id,
-            cantidad: item.cantidad,
-            precio_unitario: item.precio_unitario,
+            presentacion_id:
+                item.presentacion_id,
+            cantidad_presentacion:
+                item.cantidad_presentacion,
+            precio_presentacion:
+                item.precio_presentacion,
             descuento: item.descuento,
             impuesto: item.impuesto,
         });
@@ -421,6 +658,11 @@ function construirDatosCompra() {
     const items = lineas.map((linea) => {
         const productoId = Number(
             linea.querySelector(".linea-producto").value
+        );
+        const presentacionId = Number(
+            linea.querySelector(
+                ".linea-presentacion"
+            )?.value || 0
         );
         const cantidad = Number(
             linea.querySelector(".linea-cantidad").value
@@ -464,6 +706,8 @@ function construirDatosCompra() {
 
         return {
             producto_id: productoId,
+            presentacion_id:
+                presentacionId || null,
             cantidad,
             precio_unitario: precioUnitario,
             descuento,
@@ -980,16 +1224,17 @@ function crearCampoRecepcion(
     return grupo;
 }
 
+
 function renderizarLineasRecepcion(orden) {
     const contenedor = elemento("lineas-recepcion");
     limpiar(contenedor);
 
     orden.items.forEach((item) => {
-        const pendiente =
+        const pendienteBase =
             Number(item.cantidad) -
             Number(item.cantidad_recibida);
 
-        if (pendiente <= 0) {
+        if (pendienteBase <= 0) {
             return;
         }
 
@@ -998,6 +1243,25 @@ function renderizarLineasRecepcion(orden) {
                 Number(actual.id) ===
                 Number(item.producto_id)
         );
+        const factor = Number(
+            item.factor_conversion || 1
+        );
+        const usaPresentacion = Boolean(
+            item.presentacion_id
+        );
+        const pendienteMostrado = usaPresentacion
+            ? pendienteBase / factor
+            : pendienteBase;
+        const unidad = usaPresentacion
+            ? (
+                item.presentacion_abreviatura ||
+                item.presentacion_nombre ||
+                "presentaci?n"
+            )
+            : (
+                producto?.unidad_medida ||
+                "unidad base"
+            );
 
         const linea = crearElemento(
             "div",
@@ -1006,6 +1270,10 @@ function renderizarLineasRecepcion(orden) {
         );
 
         linea.dataset.ordenItemId = String(item.id);
+        linea.dataset.usaPresentacion =
+            String(usaPresentacion);
+        linea.dataset.factorConversion =
+            String(factor);
 
         const resumen = crearElemento(
             "div",
@@ -1024,8 +1292,11 @@ function renderizarLineasRecepcion(orden) {
         resumen.appendChild(
             crearElemento(
                 "span",
-                `${item.producto_codigo || "Sin código"} · ` +
-                `Pendiente: ${pendiente}`
+                (
+                    `${item.producto_codigo || "Sin c?digo"} ? ` +
+                    `Pendiente: ${pendienteMostrado.toFixed(3)} ` +
+                    `${unidad} ? ${pendienteBase.toFixed(3)} base`
+                )
             )
         );
 
@@ -1033,13 +1304,15 @@ function renderizarLineasRecepcion(orden) {
 
         linea.appendChild(
             crearCampoRecepcion(
-                "Cantidad recibida",
+                usaPresentacion
+                    ? "Cantidad de presentaciones"
+                    : "Cantidad recibida",
                 "recepcion-cantidad",
                 "number",
-                pendiente,
+                pendienteMostrado,
                 {
                     min: "0",
-                    max: String(pendiente),
+                    max: String(pendienteMostrado),
                     step: "0.001",
                 }
             )
@@ -1047,10 +1320,14 @@ function renderizarLineasRecepcion(orden) {
 
         linea.appendChild(
             crearCampoRecepcion(
-                "Costo unitario",
+                usaPresentacion
+                    ? "Costo por presentaci?n"
+                    : "Costo unitario",
                 "recepcion-costo",
                 "number",
-                item.precio_unitario,
+                usaPresentacion
+                    ? item.precio_presentacion
+                    : item.precio_unitario,
                 {
                     min: "0",
                     step: "0.0001",
@@ -1064,7 +1341,7 @@ function renderizarLineasRecepcion(orden) {
         ) {
             linea.appendChild(
                 crearCampoRecepcion(
-                    "Número de lote",
+                    "N?mero de lote",
                     "recepcion-lote",
                     "text",
                     "",
@@ -1089,7 +1366,7 @@ function renderizarLineasRecepcion(orden) {
         if (producto?.requiere_serial) {
             linea.appendChild(
                 crearCampoRecepcion(
-                    "Seriales, uno por línea",
+                    "Seriales, uno por l?nea",
                     "recepcion-seriales",
                     "textarea",
                     "",
@@ -1132,6 +1409,7 @@ function cerrarRecepcion() {
     mostrarErrorRecepcion("");
 }
 
+
 function construirDatosRecepcion() {
     const numero = elemento("recepcion-numero")
         .value
@@ -1139,14 +1417,13 @@ function construirDatosRecepcion() {
 
     if (!numero) {
         throw new Error(
-            "El número de recepción es obligatorio."
+            "El n?mero de recepci?n es obligatorio."
         );
     }
 
     const lineas = Array.from(
         elemento("lineas-recepcion").children
     );
-
     const items = [];
 
     lineas.forEach((linea) => {
@@ -1166,30 +1443,33 @@ function construirDatosRecepcion() {
             ).value
         );
 
-        if (!Number.isFinite(cantidad) || cantidad < 0) {
+        if (
+            !Number.isFinite(cantidad) ||
+            cantidad < 0
+        ) {
             throw new Error(
-                "Las cantidades recibidas no son válidas."
+                "Las cantidades recibidas no son v?lidas."
             );
         }
 
-        if (!Number.isFinite(costo) || costo < 0) {
+        if (
+            !Number.isFinite(costo) ||
+            costo < 0
+        ) {
             throw new Error(
-                "Los costos recibidos no son válidos."
+                "Los costos recibidos no son v?lidos."
             );
         }
 
         const lote = linea.querySelector(
             ".recepcion-lote"
         );
-
         const vencimiento = linea.querySelector(
             ".recepcion-vencimiento"
         );
-
         const serialesCampo = linea.querySelector(
             ".recepcion-seriales"
         );
-
         const seriales = serialesCampo
             ? serialesCampo.value
                 .split(/\r?\n|,/)
@@ -1197,18 +1477,28 @@ function construirDatosRecepcion() {
                 .filter(Boolean)
             : [];
 
-        items.push({
+        const item = {
             orden_item_id: Number(
                 linea.dataset.ordenItemId
             ),
-            cantidad,
-            costo_unitario: costo,
             numero_lote:
                 lote?.value.trim() || null,
             fecha_vencimiento:
                 vencimiento?.value || null,
             seriales,
-        });
+        };
+
+        if (
+            linea.dataset.usaPresentacion === "true"
+        ) {
+            item.cantidad_presentacion = cantidad;
+            item.costo_presentacion = costo;
+        } else {
+            item.cantidad = cantidad;
+            item.costo_unitario = costo;
+        }
+
+        items.push(item);
     });
 
     if (!items.length) {

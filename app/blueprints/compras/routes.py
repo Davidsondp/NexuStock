@@ -53,6 +53,23 @@ def _orden(orden):
                 "cantidad_recibida": str(
                     item.cantidad_recibida
                 ),
+                "presentacion_id":
+                    item.presentacion_id,
+                "presentacion_codigo":
+                    item.presentacion_codigo,
+                "presentacion_nombre":
+                    item.presentacion_nombre,
+                "presentacion_abreviatura":
+                    item.presentacion_abreviatura,
+                "cantidad_presentacion": str(
+                    item.cantidad_presentacion
+                ),
+                "factor_conversion": str(
+                    item.factor_conversion
+                ),
+                "precio_presentacion": str(
+                    item.precio_presentacion
+                ),
                 "precio_unitario": str(
                     item.precio_unitario
                 ),
@@ -62,6 +79,51 @@ def _orden(orden):
             }
             for item in orden.items
         ],
+    }
+
+
+def _recepcion(recepcion):
+    return {
+        "id": recepcion.id,
+        "numero": recepcion.numero,
+        "estado": recepcion.estado,
+        "orden_id": recepcion.orden_id,
+        "bodega_id": recepcion.bodega_id,
+        "fecha": _fecha_iso(recepcion.fecha),
+        "documento_referencia":
+            recepcion.documento_referencia,
+        "observaciones":
+            recepcion.observaciones,
+        "items": [
+            {
+                "id": item.id,
+                "orden_item_id":
+                    item.orden_item_id,
+                "cantidad": str(
+                    item.cantidad
+                ),
+                "cantidad_presentacion": str(
+                    item.cantidad_presentacion
+                ),
+                "factor_conversion": str(
+                    item.factor_conversion
+                ),
+                "costo_unitario": str(
+                    item.costo_unitario
+                ),
+                "costo_presentacion": str(
+                    item.costo_presentacion
+                ),
+                "numero_lote":
+                    item.numero_lote,
+                "fecha_vencimiento":
+                    _fecha_iso(
+                        item.fecha_vencimiento
+                    ),
+            }
+            for item in recepcion.items
+        ],
+        "orden": _orden(recepcion.orden),
     }
 
 
@@ -171,7 +233,8 @@ def recibir(orden_id):
         permitidos = {k: datos[k] for k in ("numero", "items", "documento_referencia",
                                              "observaciones") if k in datos}
         recepcion = ServicioCompras(current_user).recibir(orden_id, **permitidos)
-        return jsonify({"id": recepcion.id, "numero": recepcion.numero,
-                        "estado": recepcion.estado, "orden": _orden(recepcion.orden)}), 201
+        return jsonify(
+            _recepcion(recepcion)
+        ), 201
     except (ErrorCompra, TypeError, KeyError, ValueError) as exc:
         return _error(exc)

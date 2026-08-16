@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from app.models import Usuario, UsuarioSucursal, db
 from tests.test_autenticacion import REGISTRO
 
@@ -155,3 +157,44 @@ def test_empleado_ve_compras_sin_acciones_operativas(
     assert b'data-permiso-enviar="false"' in respuesta.data
     assert b'data-permiso-recibir="false"' in respuesta.data
     assert b'data-permiso-cancelar="false"' in respuesta.data
+
+
+def test_panel_compras_explica_presentaciones(
+    client,
+):
+    registrar_empresa(client)
+
+    respuesta = client.get(
+        "/panel/compras"
+    )
+
+    assert respuesta.status_code == 200
+    assert (
+        "Compra por unidad base o presentaci?n"
+        .encode("utf-8")
+        in respuesta.data
+    )
+    assert (
+        "El inventario se actualizar? "
+        "autom?ticamente en la unidad base"
+        .encode("utf-8")
+        in respuesta.data
+    )
+
+
+def test_javascript_compras_integra_presentaciones():
+    contenido = Path(
+        "app/static/js/compras.js"
+    ).read_text(encoding="utf-8-sig")
+
+    contratos = (
+        "linea-presentacion",
+        "/presentaciones",
+        "cantidad_presentacion",
+        "factor_conversion",
+        "precio_presentacion",
+        "costo_presentacion",
+    )
+
+    for contrato in contratos:
+        assert contrato in contenido

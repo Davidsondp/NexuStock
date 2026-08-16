@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from sqlalchemy.exc import IntegrityError
 
-from ..models import (Bodega, OrdenCompra, OrdenCompraItem, Producto,
+from ..models import (Bodega, OrdenCompra, OrdenCompraItem, PresentacionProducto, Producto,
                       ProductoSerial, Proveedor, RecepcionCompra,
                       RecepcionCompraItem, db, utcnow)
 from ..permisos import evaluar_permiso
@@ -104,19 +104,19 @@ class ServicioCompras:
                 if producto.id in productos_vistos:
                     raise ErrorCompra("No se puede repetir un producto en la orden")
                 productos_vistos.add(producto.id)
-                cantidad = _cantidad_positiva(datos.get("cantidad"))
-                precio = _decimal_no_negativo(datos.get("precio_unitario"), "Precio unitario", CUATRO_DECIMALES)
-                descuento = _decimal_no_negativo(datos.get("descuento", 0), "Descuento", DOS_DECIMALES)
-                impuesto = _decimal_no_negativo(datos.get("impuesto", 0), "Impuesto", DOS_DECIMALES)
-                bruto = (cantidad * precio).quantize(DOS_DECIMALES, rounding=ROUND_HALF_UP)
-                if descuento > bruto:
-                    raise ErrorCompra("El descuento no puede superar el subtotal del item")
-                total = bruto - descuento + impuesto
-                orden.items.append(OrdenCompraItem(
-                    empresa_id=self.usuario.empresa_id, producto_id=producto.id,
-                    cantidad=cantidad, cantidad_recibida=0, precio_unitario=precio,
-                    descuento=descuento, impuesto=impuesto, total=total,
-                ))
+                valores = self._preparar_item(
+                    producto,
+                    datos,
+                )
+                orden.items.append(
+                    OrdenCompraItem(
+                        empresa_id=
+                            self.usuario.empresa_id,
+                        producto_id=producto.id,
+                        cantidad_recibida=0,
+                        **valores,
+                    )
+                )
             self._recalcular(orden)
             db.session.flush(); self._auditar(orden, "borrador_creado")
             db.session.commit(); return orden
@@ -230,53 +230,18 @@ class ServicioCompras:
 
                     productos_vistos.add(producto.id)
 
-                    cantidad = _cantidad_positiva(
-                        item_datos.get("cantidad")
+                    valores = self._preparar_item(
+                        producto,
+                        item_datos,
                     )
-
-                    precio = _decimal_no_negativo(
-                        item_datos.get("precio_unitario"),
-                        "Precio unitario",
-                        CUATRO_DECIMALES,
-                    )
-
-                    descuento = _decimal_no_negativo(
-                        item_datos.get("descuento", 0),
-                        "Descuento",
-                        DOS_DECIMALES,
-                    )
-
-                    impuesto = _decimal_no_negativo(
-                        item_datos.get("impuesto", 0),
-                        "Impuesto",
-                        DOS_DECIMALES,
-                    )
-
-                    bruto = (
-                        cantidad * precio
-                    ).quantize(
-                        DOS_DECIMALES,
-                        rounding=ROUND_HALF_UP,
-                    )
-
-                    if descuento > bruto:
-                        raise ErrorCompra(
-                            "El descuento no puede superar "
-                            "el subtotal del item"
-                        )
-
-                    total = bruto - descuento + impuesto
 
                     orden.items.append(
                         OrdenCompraItem(
-                            empresa_id=self.usuario.empresa_id,
+                            empresa_id=
+                                self.usuario.empresa_id,
                             producto_id=producto.id,
-                            cantidad=cantidad,
                             cantidad_recibida=0,
-                            precio_unitario=precio,
-                            descuento=descuento,
-                            impuesto=impuesto,
-                            total=total,
+                            **valores,
                         )
                     )
 
@@ -350,13 +315,31 @@ class ServicioCompras:
                     raise ErrorCompra("Item de orden inválido o repetido")
                 vistos.add(item_id)
                 linea = lineas[item_id]
-                cantidad = _cantidad_positiva(datos.get("cantidad"))
-                pendiente = Decimal(linea.cantidad) - Decimal(linea.cantidad_recibida)
+                conversion = (
+                    self._preparar_recepcion_item(
+                        linea,
+                        datos,
+                    )
+                )
+                cantidad = conversion["cantidad"]
+                costo = conversion["costo_unitario"]
+
+                pendiente = (
+                    Decimal(linea.cantidad)
+                    - Decimal(
+                        linea.cantidad_recibida
+                    )
+                )
+
                 if cantidad > pendiente:
-                    raise ErrorCompra("La cantidad recibida supera la cantidad pendiente")
-                costo = _decimal_no_negativo(datos.get("costo_unitario", linea.precio_unitario),
-                                             "Costo unitario", CUATRO_DECIMALES)
-                producto = self._producto(linea.producto_id)
+                    raise ErrorCompra(
+                        "La cantidad recibida supera "
+                        "la cantidad pendiente"
+                    )
+
+                producto = self._producto(
+                    linea.producto_id
+                )
                 numero_lote = (datos.get("numero_lote") or "").strip() or None
                 vencimiento = _fecha(datos.get("fecha_vencimiento"), "Fecha de vencimiento")
                 self._validar_trazabilidad_y_registrar_seriales(
@@ -367,11 +350,32 @@ class ServicioCompras:
                     vencimiento,
                     datos.get("seriales") or [],
                 )
-                recepcion.items.append(RecepcionCompraItem(
-                    empresa_id=self.usuario.empresa_id, orden_item_id=linea.id,
-                    cantidad=cantidad, costo_unitario=costo,
-                    numero_lote=numero_lote, fecha_vencimiento=vencimiento,
-                ))
+                recepcion.items.append(
+                    RecepcionCompraItem(
+                        empresa_id=
+                            self.usuario.empresa_id,
+                        orden_item_id=linea.id,
+                        cantidad=cantidad,
+                        cantidad_presentacion=(
+                            conversion[
+                                "cantidad_presentacion"
+                            ]
+                        ),
+                        factor_conversion=(
+                            conversion[
+                                "factor_conversion"
+                            ]
+                        ),
+                        costo_unitario=costo,
+                        costo_presentacion=(
+                            conversion[
+                                "costo_presentacion"
+                            ]
+                        ),
+                        numero_lote=numero_lote,
+                        fecha_vencimiento=vencimiento,
+                    )
+                )
                 db.session.flush()
                 try:
                     ServicioInventario(
@@ -410,6 +414,102 @@ class ServicioCompras:
         except Exception:
             db.session.rollback(); raise
 
+
+    def _preparar_recepcion_item(
+        self,
+        linea,
+        datos,
+    ):
+        factor = Decimal(
+            linea.factor_conversion
+        ).quantize(
+            Decimal("0.001"),
+            rounding=ROUND_HALF_UP,
+        )
+
+        if factor <= 0:
+            raise ErrorCompra(
+                "El factor hist?rico de la "
+                "presentaci?n no es v?lido"
+            )
+
+        usa_presentacion = (
+            "cantidad_presentacion" in datos
+        )
+
+        if usa_presentacion:
+            cantidad_presentacion = (
+                _cantidad_positiva(
+                    datos.get(
+                        "cantidad_presentacion"
+                    )
+                )
+            )
+            cantidad = (
+                cantidad_presentacion
+                * factor
+            ).quantize(
+                Decimal("0.001"),
+                rounding=ROUND_HALF_UP,
+            )
+
+            costo_presentacion = (
+                _decimal_no_negativo(
+                    datos.get(
+                        "costo_presentacion",
+                        linea.precio_presentacion,
+                    ),
+                    "Costo de presentaci?n",
+                    CUATRO_DECIMALES,
+                )
+            )
+            costo_unitario = (
+                costo_presentacion
+                / factor
+            ).quantize(
+                CUATRO_DECIMALES,
+                rounding=ROUND_HALF_UP,
+            )
+        else:
+            cantidad = _cantidad_positiva(
+                datos.get("cantidad")
+            )
+            cantidad_presentacion = (
+                cantidad
+                / factor
+            ).quantize(
+                Decimal("0.001"),
+                rounding=ROUND_HALF_UP,
+            )
+
+            costo_unitario = (
+                _decimal_no_negativo(
+                    datos.get(
+                        "costo_unitario",
+                        linea.precio_unitario,
+                    ),
+                    "Costo unitario",
+                    CUATRO_DECIMALES,
+                )
+            )
+            costo_presentacion = (
+                costo_unitario
+                * factor
+            ).quantize(
+                CUATRO_DECIMALES,
+                rounding=ROUND_HALF_UP,
+            )
+
+        return {
+            "cantidad": cantidad,
+            "cantidad_presentacion":
+                cantidad_presentacion,
+            "factor_conversion": factor,
+            "costo_unitario": costo_unitario,
+            "costo_presentacion":
+                costo_presentacion,
+        }
+
     def _validar_trazabilidad_y_registrar_seriales(
         self,
         producto,
@@ -437,6 +537,151 @@ class ServicioCompras:
                 bodega_id=bodega.id, numero_serial=numero_serial,
                 estado="disponible", fecha_ingreso=utcnow(),
             ))
+
+
+    def _preparar_item(
+        self,
+        producto,
+        datos,
+    ):
+        cantidad_presentacion = (
+            _cantidad_positiva(
+                datos.get("cantidad")
+            )
+        )
+        precio_presentacion = (
+            _decimal_no_negativo(
+                datos.get("precio_unitario"),
+                "Precio unitario",
+                CUATRO_DECIMALES,
+            )
+        )
+
+        presentacion_id = datos.get(
+            "presentacion_id"
+        )
+        presentacion = None
+
+        if presentacion_id not in (
+            None,
+            "",
+        ):
+            try:
+                presentacion_id = int(
+                    presentacion_id
+                )
+            except (
+                TypeError,
+                ValueError,
+            ) as exc:
+                raise ErrorCompra(
+                    "La presentaci?n no es v?lida"
+                ) from exc
+
+            presentacion = db.session.scalar(
+                db.select(
+                    PresentacionProducto
+                ).where(
+                    PresentacionProducto.id
+                    == presentacion_id,
+                    PresentacionProducto.empresa_id
+                    == self.usuario.empresa_id,
+                    PresentacionProducto.producto_id
+                    == producto.id,
+                    PresentacionProducto.activa
+                    .is_(True),
+                )
+            )
+
+            if presentacion is None:
+                raise ErrorCompra(
+                    "La presentaci?n no pertenece "
+                    "al producto o est? inactiva"
+                )
+
+        factor = Decimal(
+            presentacion.factor_base
+            if presentacion
+            else 1
+        ).quantize(
+            Decimal("0.001"),
+            rounding=ROUND_HALF_UP,
+        )
+
+        cantidad_base = (
+            cantidad_presentacion
+            * factor
+        ).quantize(
+            Decimal("0.001"),
+            rounding=ROUND_HALF_UP,
+        )
+
+        precio_base = (
+            precio_presentacion
+            / factor
+        ).quantize(
+            CUATRO_DECIMALES,
+            rounding=ROUND_HALF_UP,
+        )
+
+        descuento = _decimal_no_negativo(
+            datos.get("descuento", 0),
+            "Descuento",
+            DOS_DECIMALES,
+        )
+        impuesto = _decimal_no_negativo(
+            datos.get("impuesto", 0),
+            "Impuesto",
+            DOS_DECIMALES,
+        )
+
+        bruto = (
+            cantidad_presentacion
+            * precio_presentacion
+        ).quantize(
+            DOS_DECIMALES,
+            rounding=ROUND_HALF_UP,
+        )
+
+        if descuento > bruto:
+            raise ErrorCompra(
+                "El descuento no puede superar "
+                "el subtotal del item"
+            )
+
+        return {
+            "presentacion_id": (
+                presentacion.id
+                if presentacion
+                else None
+            ),
+            "presentacion_codigo": (
+                presentacion.codigo
+                if presentacion
+                else None
+            ),
+            "presentacion_nombre": (
+                presentacion.nombre
+                if presentacion
+                else None
+            ),
+            "presentacion_abreviatura": (
+                presentacion.abreviatura
+                if presentacion
+                else None
+            ),
+            "cantidad_presentacion":
+                cantidad_presentacion,
+            "factor_conversion": factor,
+            "precio_presentacion":
+                precio_presentacion,
+            "cantidad": cantidad_base,
+            "precio_unitario": precio_base,
+            "descuento": descuento,
+            "impuesto": impuesto,
+            "total":
+                bruto - descuento + impuesto,
+        }
 
     def _producto(self, producto_id):
         producto = db.session.scalar(db.select(Producto).where(
@@ -466,11 +711,34 @@ class ServicioCompras:
 
     @staticmethod
     def _recalcular(orden):
-        orden.subtotal = sum(((Decimal(i.cantidad) * Decimal(i.precio_unitario)).quantize(DOS_DECIMALES)
-                              for i in orden.items), Decimal("0"))
-        orden.descuento = sum((Decimal(i.descuento) for i in orden.items), Decimal("0"))
-        orden.impuesto = sum((Decimal(i.impuesto) for i in orden.items), Decimal("0"))
-        orden.total = orden.subtotal - orden.descuento + orden.impuesto
+        orden.descuento = sum(
+            (
+                Decimal(item.descuento)
+                for item in orden.items
+            ),
+            Decimal("0"),
+        )
+        orden.impuesto = sum(
+            (
+                Decimal(item.impuesto)
+                for item in orden.items
+            ),
+            Decimal("0"),
+        )
+        orden.subtotal = sum(
+            (
+                Decimal(item.total)
+                + Decimal(item.descuento)
+                - Decimal(item.impuesto)
+                for item in orden.items
+            ),
+            Decimal("0"),
+        )
+        orden.total = (
+            orden.subtotal
+            - orden.descuento
+            + orden.impuesto
+        )
 
     def _exigir(self, permiso):
         decision = evaluar_permiso(self.usuario, permiso, empresa_id=self.usuario.empresa_id)
