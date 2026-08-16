@@ -1,6 +1,12 @@
 import os
 
-from flask import Flask, jsonify, session
+from flask import (
+    Flask,
+    jsonify,
+    redirect,
+    session,
+    url_for,
+)
 from flask_login import current_user
 
 from config import CONFIGURACIONES
@@ -62,6 +68,33 @@ def crear_aplicacion(nombre_configuracion: str | None = None) -> Flask:
     app.register_blueprint(superadministracion_bp)
     app.register_blueprint(panel_superadministracion_bp)
     app.register_blueprint(panel_bp)
+
+
+    @app.get("/")
+    def inicio_publico():
+        if not current_user.is_authenticated:
+            return redirect(
+                url_for(
+                    "autenticacion.ingresar"
+                )
+            )
+
+        if (
+            current_user.rol == "super_admin"
+            and current_user.empresa_id is None
+        ):
+            return redirect(
+                url_for(
+                    (
+                        "panel_superadministracion"
+                        ".inicio"
+                    )
+                )
+            )
+
+        return redirect(
+            url_for("panel.inicio")
+        )
 
     from .commands import registrar_comandos
     registrar_comandos(app)

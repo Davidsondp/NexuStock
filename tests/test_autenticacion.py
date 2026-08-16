@@ -289,3 +289,69 @@ def test_registro_sin_rubro_conserva_general(
             configuracion.opciones["rubro"]
             == "general"
         )
+
+
+def test_raiz_redirige_visitante_a_ingreso(
+    client,
+):
+    respuesta = client.get("/")
+
+    assert respuesta.status_code == 302
+    assert (
+        "/autenticacion/ingresar"
+        in respuesta.location
+    )
+
+
+def test_raiz_redirige_empresa_al_panel(
+    client,
+):
+    client.post(
+        "/autenticacion/registro",
+        data=REGISTRO,
+    )
+
+    respuesta = client.get("/")
+
+    assert respuesta.status_code == 302
+    assert respuesta.location.endswith("/panel")
+
+
+def test_raiz_redirige_superadmin_a_panel_global(
+    app,
+    client,
+):
+    with app.app_context():
+        usuario = Usuario(
+            empresa_id=None,
+            nombre="Super",
+            apellido="Administrador",
+            email="raiz.superadmin@nexustock.cl",
+            rol="super_admin",
+            activo=True,
+        )
+        usuario.set_password(
+            "ClaveSuperAdmin123"
+        )
+
+        db.session.add(usuario)
+        db.session.commit()
+
+    ingreso = client.post(
+        "/autenticacion/ingresar",
+        data={
+            "email":
+                "raiz.superadmin@nexustock.cl",
+            "password":
+                "ClaveSuperAdmin123",
+        },
+    )
+
+    assert ingreso.status_code == 302
+
+    respuesta = client.get("/")
+
+    assert respuesta.status_code == 302
+    assert respuesta.location.endswith(
+        "/superadministracion"
+    )
