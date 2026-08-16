@@ -6,6 +6,7 @@ from flask_login import current_user, login_required
 from ...permisos import evaluar_permiso, requerir_permiso
 from ...services.contexto import requerir_contexto
 from ...services.perfiles_empresa import capacidades_empresa
+from ...services.unidades_medida import unidades_sugeridas
 
 
 panel_bp = Blueprint(
@@ -55,12 +56,17 @@ def productos():
         current_user.empresa
     )
 
+    unidades = unidades_sugeridas(
+        capacidades["rubro"]
+    )
+
     return render_template(
         "panel/productos.html",
         empresa=current_user.empresa,
         contexto=g.contexto_operacion,
         permisos=permisos,
         capacidades=capacidades,
+        unidades_sugeridas=unidades,
     )
 
 @panel_bp.get("/proveedores")

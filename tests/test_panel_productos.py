@@ -94,6 +94,7 @@ def test_pagina_productos_referencia_api_empresarial(app, client):
     assert respuesta.status_code == 200
     assert b"/api/productos" in respuesta.data
     assert b"/api/proveedores" in respuesta.data
+    assert b"js/productos_presentaciones.js" in respuesta.data
     assert b'id="producto-proveedor"' in respuesta.data
     assert b"Sin proveedor asignado" in respuesta.data
 
@@ -195,5 +196,164 @@ def test_panel_minimarket_muestra_trazabilidad(
     )
     assert (
         b'id="producto-controla-vencimiento"'
+        in respuesta.data
+    )
+
+
+def test_farmacia_recibe_unidades_sugeridas(
+    client,
+):
+    configurar_rubro(
+        client,
+        "farmacia",
+    )
+
+    respuesta = client.get(
+        "/panel/productos"
+    )
+
+    assert respuesta.status_code == 200
+    assert (
+        b'id="unidades-medida-sugeridas"'
+        in respuesta.data
+    )
+    assert (
+        b'value="comprimido"'
+        in respuesta.data
+    )
+    assert (
+        b'value="capsula"'
+        in respuesta.data
+    )
+    assert (
+        b'value="mililitro"'
+        in respuesta.data
+    )
+
+
+def test_botilleria_sugiere_unidades_de_bebidas(
+    client,
+):
+    configurar_rubro(
+        client,
+        "botilleria",
+    )
+
+    respuesta = client.get(
+        "/panel/productos"
+    )
+
+    assert respuesta.status_code == 200
+    assert b'value="litro"' in respuesta.data
+    assert (
+        b'value="mililitro"'
+        in respuesta.data
+    )
+    assert b'value="metro"' not in respuesta.data
+
+
+def test_ferreteria_sugiere_unidades_tecnicas(
+    client,
+):
+    configurar_rubro(
+        client,
+        "ferreteria",
+    )
+
+    respuesta = client.get(
+        "/panel/productos"
+    )
+
+    assert respuesta.status_code == 200
+    assert b'value="pieza"' in respuesta.data
+    assert b'value="metro"' in respuesta.data
+    assert (
+        b'value="centimetro"'
+        in respuesta.data
+    )
+    assert (
+        b'value="comprimido"'
+        not in respuesta.data
+    )
+
+
+def test_unidad_medida_permanece_editable(
+    client,
+):
+    configurar_rubro(
+        client,
+        "general",
+    )
+
+    respuesta = client.get(
+        "/panel/productos"
+    )
+
+    assert respuesta.status_code == 200
+    assert (
+        b'id="producto-unidad-medida"'
+        in respuesta.data
+    )
+    assert (
+        b'list="unidades-medida-sugeridas"'
+        in respuesta.data
+    )
+    assert (
+        b'name="unidad_medida"'
+        in respuesta.data
+    )
+
+
+def test_panel_productos_incluye_gestion_presentaciones(
+    client,
+):
+    registrar_empresa(client)
+
+    respuesta = client.get(
+        "/panel/productos"
+    )
+
+    assert respuesta.status_code == 200
+
+    identificadores = (
+        b'id="seccion-presentaciones-producto"',
+        b'id="lista-presentaciones-producto"',
+        b'id="formulario-presentacion-producto"',
+        b'id="presentacion-id"',
+        b'id="presentacion-codigo"',
+        b'id="presentacion-nombre"',
+        b'id="presentacion-abreviatura"',
+        b'id="presentacion-factor"',
+        b'id="guardar-presentacion-producto"',
+        b'id="cancelar-presentacion-producto"',
+    )
+
+    for identificador in identificadores:
+        assert identificador in respuesta.data
+
+
+def test_panel_presentaciones_explica_conversion_base(
+    client,
+):
+    registrar_empresa(client)
+
+    respuesta = client.get(
+        "/panel/productos"
+    )
+
+    assert respuesta.status_code == 200
+    assert (
+        "Presentaciones de compra y venta"
+        .encode("utf-8")
+        in respuesta.data
+    )
+    assert (
+        "se convierte a la unidad base"
+        .encode("utf-8")
+        in respuesta.data
+    )
+    assert (
+        "Guarda primero el producto"
+        .encode("utf-8")
         in respuesta.data
     )

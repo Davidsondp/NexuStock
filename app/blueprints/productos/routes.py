@@ -4,7 +4,31 @@ from flask_login import current_user, login_required
 from ...permisos import requerir_permiso
 from ...services.productos import ErrorProducto, ServicioProductos
 
+from ...services.unidades_medida import (
+    ErrorUnidadMedida,
+    ServicioUnidadesMedida,
+)
+
 productos_bp = Blueprint("productos", __name__, url_prefix="/api/productos")
+
+
+
+def _serializar_presentacion(
+    presentacion,
+):
+    return {
+        "id": presentacion["id"],
+        "codigo": presentacion["codigo"],
+        "nombre": presentacion["nombre"],
+        "abreviatura":
+            presentacion["abreviatura"],
+        "factor_base": format(
+            presentacion["factor_base"],
+            ".3f",
+        ),
+        "es_base": presentacion["es_base"],
+        "activa": presentacion["activa"],
+    }
 
 
 def _serializar(producto):
@@ -91,6 +115,166 @@ def editar(producto_id):
     except ErrorProducto as exc:
         return jsonify({"codigo": "producto_invalido", "mensaje": str(exc)}), 400
 
+
+@productos_bp.get(
+    "/<int:producto_id>/presentaciones"
+)
+@login_required
+@requerir_permiso("productos.ver")
+def listar_presentaciones(producto_id):
+    servicio = ServicioUnidadesMedida(
+        current_user
+    )
+    presentaciones = servicio.listar(
+        producto_id
+    )
+
+    return jsonify(
+        {
+            "producto_id": producto_id,
+            "unidad_base":
+                _serializar_presentacion(
+                    presentaciones[0]
+                ),
+            "presentaciones": [
+                _serializar_presentacion(
+                    presentacion
+                )
+                for presentacion
+                in presentaciones[1:]
+            ],
+        }
+    )
+
+
+@productos_bp.post(
+    "/<int:producto_id>/presentaciones"
+)
+@login_required
+@requerir_permiso("productos.editar")
+def crear_presentacion(producto_id):
+    datos = request.get_json(
+        silent=True
+    ) or {}
+
+    try:
+        servicio = ServicioUnidadesMedida(
+            current_user
+        )
+        presentacion = servicio.crear(
+            producto_id=producto_id,
+            codigo=datos.get("codigo"),
+            nombre=datos.get("nombre"),
+            abreviatura=datos.get(
+                "abreviatura"
+            ),
+            factor_base=datos.get(
+                "factor_base"
+            ),
+        )
+
+        return jsonify(
+            _serializar_presentacion(
+                servicio.serializar(
+                    presentacion
+                )
+            )
+        ), 201
+    except ErrorUnidadMedida as exc:
+        return jsonify(
+            {
+                "codigo":
+                    "presentacion_invalida",
+                "mensaje": str(exc),
+            }
+        ), 400
+
+
+
+@productos_bp.patch(
+    "/<int:producto_id>/presentaciones/"
+    "<int:presentacion_id>"
+)
+@login_required
+@requerir_permiso("productos.editar")
+def editar_presentacion(
+    producto_id,
+    presentacion_id,
+):
+    datos = request.get_json(
+        silent=True
+    ) or {}
+
+    try:
+        servicio = ServicioUnidadesMedida(
+            current_user
+        )
+        presentacion = servicio.editar(
+            producto_id=producto_id,
+            presentacion_id=presentacion_id,
+            codigo=datos.get("codigo"),
+            nombre=datos.get("nombre"),
+            abreviatura=datos.get(
+                "abreviatura"
+            ),
+            factor_base=datos.get(
+                "factor_base"
+            ),
+        )
+
+        return jsonify(
+            _serializar_presentacion(
+                servicio.serializar(
+                    presentacion
+                )
+            )
+        )
+    except ErrorUnidadMedida as exc:
+        return jsonify(
+            {
+                "codigo":
+                    "presentacion_invalida",
+                "mensaje": str(exc),
+            }
+        ), 400
+
+
+@productos_bp.post(
+    "/<int:producto_id>/presentaciones/"
+    "<int:presentacion_id>/desactivar"
+)
+@login_required
+@requerir_permiso("productos.editar")
+def desactivar_presentacion(
+    producto_id,
+    presentacion_id,
+):
+    try:
+        servicio = ServicioUnidadesMedida(
+            current_user
+        )
+        presentacion = servicio.desactivar(
+            producto_id=producto_id,
+            presentacion_id=presentacion_id,
+        )
+
+        return jsonify(
+            _serializar_presentacion(
+                servicio.serializar(
+                    presentacion
+                )
+            )
+        )
+    except ErrorUnidadMedida as exc:
+        return jsonify(
+            {
+                "codigo":
+                    "presentacion_invalida",
+                "mensaje": str(exc),
+            }
+        ), 400
+
+
 @productos_bp.post("/<int:producto_id>/desactivar")
 @login_required
 @requerir_permiso("productos.eliminar")
@@ -121,4 +305,3 @@ def eliminar(producto_id):
         return "", 204
     except ErrorProducto as exc:
         return jsonify({"codigo": "producto_con_historial", "mensaje": str(exc)}), 409
-

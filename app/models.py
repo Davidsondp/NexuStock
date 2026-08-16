@@ -383,6 +383,12 @@ class Producto(TimestampMixin, SoftDeleteMixin, db.Model):
     proveedor_principal = db.relationship("Proveedor", back_populates="productos", overlaps="empresa,productos")
     imagenes = db.relationship("ProductoImagen", back_populates="producto", cascade="all, delete-orphan")
     inventarios = db.relationship("Inventario", back_populates="producto", overlaps="bodega,inventarios")
+    presentaciones = db.relationship(
+        "PresentacionProducto",
+        back_populates="producto",
+        cascade="all, delete-orphan",
+        order_by="PresentacionProducto.nombre",
+    )
 
     @property
     def stock_total(self) -> Decimal:
@@ -392,6 +398,93 @@ class Producto(TimestampMixin, SoftDeleteMixin, db.Model):
     def margen_porcentaje(self) -> Decimal:
         return Decimal("0") if not self.precio_venta else \
             ((self.precio_venta - self.costo_referencia) / self.precio_venta) * 100
+
+
+class PresentacionProducto(
+    TimestampMixin,
+    db.Model,
+):
+    """Presentaci?n comercial convertida a la unidad base."""
+
+    __tablename__ = "presentacion_producto"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["producto_id", "empresa_id"],
+            [
+                "producto.id",
+                "producto.empresa_id",
+            ],
+        ),
+        UniqueConstraint(
+            "empresa_id",
+            "producto_id",
+            "codigo",
+            name=(
+                "uq_presentacion_producto_"
+                "empresa_codigo"
+            ),
+        ),
+        UniqueConstraint(
+            "id",
+            "empresa_id",
+            name=(
+                "uq_presentacion_producto_"
+                "id_empresa"
+            ),
+        ),
+        CheckConstraint(
+            "factor_base > 0",
+            name=(
+                "ck_presentacion_producto_"
+                "factor_positivo"
+            ),
+        ),
+        Index(
+            "ix_presentacion_producto_empresa",
+            "empresa_id",
+            "producto_id",
+            "activa",
+        ),
+    )
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+    )
+    empresa_id = db.Column(
+        db.Integer,
+        nullable=False,
+    )
+    producto_id = db.Column(
+        db.Integer,
+        nullable=False,
+    )
+    codigo = db.Column(
+        db.String(50),
+        nullable=False,
+    )
+    nombre = db.Column(
+        db.String(100),
+        nullable=False,
+    )
+    abreviatura = db.Column(
+        db.String(20),
+        nullable=False,
+    )
+    factor_base = db.Column(
+        db.Numeric(14, 3),
+        nullable=False,
+    )
+    activa = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True,
+    )
+
+    producto = db.relationship(
+        "Producto",
+        back_populates="presentaciones",
+    )
 
 
 class ProductoImagen(TimestampMixin, db.Model):

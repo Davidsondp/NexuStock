@@ -477,7 +477,27 @@
                         type="text"
                         maxlength="30"
                         value="unidad"
+                        list="unidades-medida-sugeridas"
+                        autocomplete="off"
                     >
+                    <datalist
+                        id="unidades-medida-sugeridas"
+                    >
+                        {% for unidad in unidades_sugeridas %}
+                        <option
+                            value="{{ unidad.codigo }}"
+                            label="{{
+                                unidad.nombre
+                            }} ({{
+                                unidad.abreviatura
+                            }})"
+                        ></option>
+                        {% endfor %}
+                    </datalist>
+                    <small>
+                        Selecciona una sugerencia o escribe
+                        una unidad personalizada.
+                    </small>
                 </div>
 
                 <div class="grupo-campo">
@@ -644,6 +664,164 @@
                     {% endif %}
                 </div>
 
+
+                <section
+                    id="seccion-presentaciones-producto"
+                    class="presentaciones-producto"
+                    aria-labelledby="titulo-presentaciones-producto"
+                    hidden
+                >
+                    <div class="presentaciones-producto__encabezado">
+                        <div>
+                            <h3 id="titulo-presentaciones-producto">
+                                Presentaciones de compra y venta
+                            </h3>
+                            <p>
+                                Cada presentaci?n se convierte a la unidad base para mantener un stock
+                                ?nico y confiable.
+                            </p>
+                        </div>
+
+                        {% if permisos.editar %}
+                        <button
+                            id="nueva-presentacion-producto"
+                            class="boton boton--secundario"
+                            type="button"
+                        >
+                            Agregar presentaci?n
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <div
+                        id="estado-presentaciones-producto"
+                        class="presentaciones-producto__estado"
+                    >
+                        Guarda primero el producto para administrar
+                        sus presentaciones.
+                    </div>
+
+                    <div
+                        id="lista-presentaciones-producto"
+                        class="presentaciones-producto__lista"
+                        aria-live="polite"
+                    ></div>
+
+                    {% if permisos.editar %}
+                    <div
+                        id="formulario-presentacion-producto"
+                        class="presentacion-editor"
+                        hidden
+                    >
+                        <input
+                            id="presentacion-id"
+                            type="hidden"
+                        >
+
+                        <div class="presentacion-editor__encabezado">
+                            <h4 id="titulo-editor-presentacion">
+                                Nueva presentaci?n
+                            </h4>
+                            <p>
+                                Ejemplo: un display contiene
+                                6 unidades base.
+                            </p>
+                        </div>
+
+                        <div class="presentacion-editor__campos">
+                            <div class="grupo-campo">
+                                <label for="presentacion-codigo">
+                                    C?digo
+                                </label>
+                                <input
+                                    id="presentacion-codigo"
+                                    class="campo"
+                                    type="text"
+                                    maxlength="50"
+                                    placeholder="Ej.: DISPLAY-6"
+                                    autocomplete="off"
+                                >
+                            </div>
+
+                            <div class="grupo-campo">
+                                <label for="presentacion-nombre">
+                                    Nombre
+                                </label>
+                                <input
+                                    id="presentacion-nombre"
+                                    class="campo"
+                                    type="text"
+                                    maxlength="100"
+                                    placeholder="Ej.: Display de 6"
+                                    autocomplete="off"
+                                >
+                            </div>
+
+                            <div class="grupo-campo">
+                                <label for="presentacion-abreviatura">
+                                    Abreviatura
+                                </label>
+                                <input
+                                    id="presentacion-abreviatura"
+                                    class="campo"
+                                    type="text"
+                                    maxlength="20"
+                                    placeholder="Ej.: disp"
+                                    autocomplete="off"
+                                >
+                            </div>
+
+                            <div class="grupo-campo">
+                                <label for="presentacion-factor">
+                                    Cantidad en unidad base
+                                </label>
+                                <input
+                                    id="presentacion-factor"
+                                    class="campo"
+                                    type="number"
+                                    min="0.001"
+                                    step="0.001"
+                                    placeholder="Ej.: 6"
+                                >
+                            </div>
+                        </div>
+
+                        <p
+                            id="presentacion-equivalencia"
+                            class="presentacion-editor__equivalencia"
+                        >
+                            Indica cu?ntas unidades base contiene
+                            esta presentaci?n.
+                        </p>
+
+                        <div
+                            id="error-presentacion-producto"
+                            class="formulario-producto__error"
+                            role="alert"
+                            hidden
+                        ></div>
+
+                        <div class="presentacion-editor__acciones">
+                            <button
+                                id="cancelar-presentacion-producto"
+                                class="boton boton--secundario"
+                                type="button"
+                            >
+                                Cancelar
+                            </button>
+
+                            <button
+                                id="guardar-presentacion-producto"
+                                class="boton boton--primario"
+                                type="button"
+                            >
+                                Guardar presentaci?n
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </section>
+
                 <div class="formulario-producto__acciones">
                     <button
                         id="cancelar-producto"
@@ -677,5 +855,15 @@
         src="{{ url_for('static', filename='js/productos.js') }}"
         defer
     ></script>
+    <script
+        src="{{
+            url_for(
+                'static',
+                filename='js/productos_presentaciones.js'
+            )
+        }}"
+        defer
+    ></script>
+
 </body>
 </html>

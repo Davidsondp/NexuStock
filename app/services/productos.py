@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.exc import IntegrityError
 
-from ..models import Inventario, Movimiento, Producto, Proveedor, db
+from ..models import Inventario, Movimiento, PresentacionProducto, Producto, Proveedor, db
 from ..permisos import evaluar_permiso
 from .auditoria import registrar_auditoria
 from .perfiles_empresa import tiene_capacidad
@@ -53,7 +53,9 @@ class ServicioProductos:
         try:
             producto = Producto(empresa_id=self.usuario.empresa_id)
             self._asignar(producto, datos)
-            db.session.add(producto); db.session.flush()
+            db.session.add(producto)
+            db.session.flush()
+            self._sincronizar_caja(producto)
             self._auditar(producto, "creado")
             db.session.commit(); return producto
         except IntegrityError as exc:
@@ -69,6 +71,7 @@ class ServicioProductos:
             anteriores = {"codigo": producto.codigo, "nombre": producto.nombre,
                           "precio_venta": str(producto.precio_venta)}
             self._asignar(producto, datos)
+            self._sincronizar_caja(producto)
             self._auditar(producto, "editado", anteriores)
             db.session.commit(); return producto
         except IntegrityError as exc:
@@ -168,6 +171,52 @@ class ServicioProductos:
 
         if producto.controla_vencimiento:
             producto.controla_lotes = True
+
+
+    def _sincronizar_caja(
+        self,
+        producto: Producto,
+    ) -> None:
+        factor = Decimal(
+            producto.unidades_por_caja
+            or 1
+        )
+
+        caja = db.session.scalar(
+            db.select(
+                PresentacionProducto
+            ).where(
+                PresentacionProducto.empresa_id
+                == self.usuario.empresa_id,
+                PresentacionProducto.producto_id
+                == producto.id,
+                PresentacionProducto.codigo
+                == "CAJA",
+            )
+        )
+
+        if factor <= 1:
+            if caja is not None:
+                caja.activa = False
+            return
+
+        if caja is None:
+            caja = PresentacionProducto(
+                empresa_id=self.usuario.empresa_id,
+                producto_id=producto.id,
+                codigo="CAJA",
+                nombre="Caja",
+                abreviatura="cj",
+                factor_base=factor,
+                activa=True,
+            )
+            db.session.add(caja)
+            return
+
+        caja.nombre = "Caja"
+        caja.abreviatura = "cj"
+        caja.factor_base = factor
+        caja.activa = True
 
     def _validar_capacidades(self, datos):
         solicita_lotes = bool(
