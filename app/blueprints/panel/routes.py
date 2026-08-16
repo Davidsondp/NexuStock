@@ -253,3 +253,26 @@ def inventario():
         permisos=permisos,
         capacidades=capacidades,
     )
+
+
+@panel_bp.get("/alertas")
+@login_required
+@requerir_permiso("alertas.ver")
+@requerir_contexto
+def alertas():
+    empresa_id = current_user.empresa_id
+
+    permisos = {
+        "gestionar": evaluar_permiso(
+            current_user,
+            "alertas.gestionar",
+            empresa_id=empresa_id,
+        ).permitido,
+    }
+
+    return render_template(
+        "panel/alertas.html",
+        empresa=current_user.empresa,
+        contexto=g.contexto_operacion,
+        permisos=permisos,
+    )
