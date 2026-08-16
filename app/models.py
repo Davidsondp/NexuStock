@@ -831,12 +831,67 @@ class VentaItem(TimestampMixin, db.Model):
     __table_args__ = (
         ForeignKeyConstraint(["venta_id", "empresa_id"], ["venta.id", "venta.empresa_id"]),
         ForeignKeyConstraint(["producto_id", "empresa_id"], ["producto.id", "producto.empresa_id"]),
+        ForeignKeyConstraint(
+            ["presentacion_id", "empresa_id"],
+            [
+                "presentacion_producto.id",
+                "presentacion_producto.empresa_id",
+            ],
+        ),
         UniqueConstraint("venta_id", "producto_id", name="uq_venta_producto"),
         CheckConstraint("cantidad > 0 AND precio_unitario >= 0", name="ck_venta_item_valores"),
         CheckConstraint("descuento >= 0 AND impuesto >= 0 AND total >= 0", name="ck_venta_item_totales"),
+        CheckConstraint(
+            (
+                "cantidad_presentacion > 0 "
+                "AND factor_conversion > 0"
+            ),
+            name=(
+                "ck_venta_item_presentacion_"
+                "cantidades"
+            ),
+        ),
+        CheckConstraint(
+            "precio_presentacion >= 0",
+            name=(
+                "ck_venta_item_presentacion_"
+                "precio"
+            ),
+        ),
     )
     id = db.Column(db.Integer, primary_key=True); empresa_id = db.Column(db.Integer, nullable=False)
     venta_id = db.Column(db.Integer, nullable=False); producto_id = db.Column(db.Integer, nullable=False)
+    presentacion_id = db.Column(
+        db.Integer,
+        nullable=True,
+    )
+    presentacion_codigo = db.Column(
+        db.String(50),
+        nullable=True,
+    )
+    presentacion_nombre = db.Column(
+        db.String(100),
+        nullable=True,
+    )
+    presentacion_abreviatura = db.Column(
+        db.String(20),
+        nullable=True,
+    )
+    cantidad_presentacion = db.Column(
+        db.Numeric(14, 3),
+        nullable=False,
+        default=0,
+    )
+    factor_conversion = db.Column(
+        db.Numeric(14, 3),
+        nullable=False,
+        default=1,
+    )
+    precio_presentacion = db.Column(
+        db.Numeric(14, 2),
+        nullable=False,
+        default=0,
+    )
     cantidad = db.Column(db.Numeric(14, 3), nullable=False)
     precio_unitario = db.Column(db.Numeric(14, 2), nullable=False)
     descuento = db.Column(db.Numeric(14, 2), nullable=False, default=0)

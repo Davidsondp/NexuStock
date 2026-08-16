@@ -335,9 +335,10 @@
 .linea-venta {
     display: grid;
     grid-template-columns:
-        minmax(180px, 2fr)
+        minmax(180px, 1.6fr)
+        minmax(150px, 1.2fr)
         minmax(100px, 0.7fr)
-        minmax(120px, 0.9fr)
+        minmax(135px, 0.9fr)
         auto;
     align-items: end;
     gap: 12px;
@@ -358,6 +359,23 @@
 
 .linea-venta .campo {
     width: 100%;
+}
+
+
+.linea-equivalencia {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 9px 11px;
+    border-radius: 9px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.78rem;
+    font-weight: 650;
+}
+
+.linea-presentacion:disabled {
+    cursor: wait;
+    opacity: 0.72;
 }
 
 .error-formulario {

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from app.models import Usuario, UsuarioSucursal, db
 from tests.test_autenticacion import REGISTRO
 
@@ -157,3 +159,44 @@ def test_empleado_conserva_acciones_operativas_de_ventas(
     assert b'data-permiso-reservar="true"' in respuesta.data
     assert b'data-permiso-confirmar="true"' in respuesta.data
     assert b'data-permiso-cancelar="true"' in respuesta.data
+
+
+def test_panel_ventas_explica_presentaciones(
+    client,
+):
+    registrar_empresa(client)
+
+    respuesta = client.get(
+        "/panel/ventas"
+    )
+
+    assert respuesta.status_code == 200
+    assert (
+        "Venta por unidad base o presentaci?n"
+        .encode("utf-8")
+        in respuesta.data
+    )
+    assert (
+        "El stock se validar? autom?ticamente "
+        "en la unidad base"
+        .encode("utf-8")
+        in respuesta.data
+    )
+
+
+def test_javascript_ventas_integra_presentaciones():
+    contenido = Path(
+        "app/static/js/ventas.js"
+    ).read_text(encoding="utf-8-sig")
+
+    contratos = (
+        "linea-presentacion",
+        "/presentaciones",
+        "presentacion_id",
+        "factor_conversion",
+        "cantidadBase",
+        "linea-equivalencia",
+    )
+
+    for contrato in contratos:
+        assert contrato in contenido

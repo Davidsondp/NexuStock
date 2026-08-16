@@ -202,6 +202,208 @@ function crearGrupoLinea(etiquetaTexto, control) {
     return grupo;
 }
 
+function crearSelectorPresentaciones() {
+    const selector = document.createElement("select");
+
+    selector.className =
+        "campo linea-presentacion";
+    selector.disabled = true;
+
+    const opcion = crearOpcion(
+        "",
+        "Unidad base"
+    );
+
+    opcion.dataset.factor = "1";
+    opcion.dataset.abreviatura = "un";
+
+    selector.appendChild(opcion);
+
+    return selector;
+}
+
+
+function actualizarEquivalenciaLinea(linea) {
+    const selector = linea.querySelector(
+        ".linea-presentacion"
+    );
+    const cantidad = Number(
+        linea.querySelector(
+            ".linea-cantidad"
+        )?.value || 0
+    );
+    const opcion = selector?.selectedOptions[0];
+    const factor = Number(
+        opcion?.dataset.factor || 1
+    );
+    const cantidadBase = cantidad * factor;
+    const abreviatura = (
+        opcion?.dataset.abreviatura
+        || "unidad base"
+    );
+    const equivalencia = linea.querySelector(
+        ".linea-equivalencia"
+    );
+
+    if (!equivalencia) {
+        return;
+    }
+
+    if (
+        !Number.isFinite(cantidad)
+        || cantidad <= 0
+    ) {
+        equivalencia.textContent =
+            "Ingresa una cantidad para calcular la equivalencia.";
+        return;
+    }
+
+    equivalencia.textContent = (
+        `${cantidad} ? ${factor} = `
+        + `${cantidadBase.toFixed(3)} `
+        + `${abreviatura} de inventario`
+    );
+}
+
+
+function actualizarPrecioPresentacion(linea) {
+    const productoId = Number(
+        linea.querySelector(
+            ".linea-producto"
+        )?.value || 0
+    );
+    const producto = estado.productos.find(
+        (actual) =>
+            Number(actual.id) === productoId
+    );
+    const selector = linea.querySelector(
+        ".linea-presentacion"
+    );
+    const opcion = selector?.selectedOptions[0];
+    const factor = Number(
+        opcion?.dataset.factor || 1
+    );
+    const precio = linea.querySelector(
+        ".linea-precio"
+    );
+
+    if (!producto || !precio) {
+        return;
+    }
+
+    precio.value = (
+        Number(producto.precio_venta || 0)
+        * factor
+    ).toFixed(2);
+}
+
+
+async function cargarPresentacionesLinea(
+    linea,
+    productoId,
+    presentacionSeleccionada = ""
+) {
+    const selector = linea.querySelector(
+        ".linea-presentacion"
+    );
+
+    if (!selector) {
+        return;
+    }
+
+    limpiar(selector);
+    selector.disabled = true;
+
+    const base = crearOpcion(
+        "",
+        "Unidad base"
+    );
+
+    base.dataset.factor = "1";
+    base.dataset.abreviatura = "unidad base";
+    selector.appendChild(base);
+
+    if (!productoId) {
+        selector.value = "";
+        actualizarEquivalenciaLinea(linea);
+        return;
+    }
+
+    try {
+        const datos = await solicitarJson(
+            `${configuracion.apiProductos}/`
+            + `${productoId}/presentaciones`
+        );
+
+        const unidadBase = datos.unidad_base || {};
+
+        base.textContent = (
+            `${unidadBase.nombre || "Unidad base"} `
+            + "(unidad base)"
+        );
+        base.dataset.factor = "1";
+        base.dataset.abreviatura = (
+            unidadBase.abreviatura
+            || unidadBase.nombre
+            || "unidad base"
+        );
+
+        (datos.presentaciones || [])
+            .filter(
+                (presentacion) =>
+                    presentacion.activa
+            )
+            .forEach((presentacion) => {
+                const opcion = crearOpcion(
+                    presentacion.id,
+                    (
+                        `${presentacion.nombre} `
+                        + `(? ${presentacion.factor_base})`
+                    )
+                );
+
+                opcion.dataset.factor =
+                    presentacion.factor_base;
+                opcion.dataset.abreviatura = (
+                    presentacion.abreviatura
+                    || presentacion.nombre
+                );
+
+                selector.appendChild(opcion);
+            });
+
+        selector.disabled = false;
+
+        const existe = [
+            ...selector.options,
+        ].some(
+            (opcion) =>
+                opcion.value
+                === String(
+                    presentacionSeleccionada
+                    || ""
+                )
+        );
+
+        selector.value = existe
+            ? String(
+                presentacionSeleccionada
+                || ""
+            )
+            : "";
+
+        actualizarPrecioPresentacion(linea);
+        actualizarEquivalenciaLinea(linea);
+    } catch (error) {
+        selector.disabled = false;
+        selector.value = "";
+        actualizarPrecioPresentacion(linea);
+        actualizarEquivalenciaLinea(linea);
+        notificar(error.message);
+    }
+}
+
+
 function agregarLineaVenta(datos = {}) {
     const contenedor = elemento("lineas-venta");
 
@@ -216,14 +418,23 @@ function agregarLineaVenta(datos = {}) {
     );
 
     const selector = crearSelectorProductos();
-    selector.value = String(datos.producto_id || "");
+    selector.value = String(
+        datos.producto_id || ""
+    );
+
+    const presentacion =
+        crearSelectorPresentaciones();
 
     const cantidad = document.createElement("input");
     cantidad.className = "campo linea-cantidad";
     cantidad.type = "number";
     cantidad.min = "0.001";
     cantidad.step = "0.001";
-    cantidad.value = String(datos.cantidad || "1");
+    cantidad.value = String(
+        datos.cantidad_presentacion
+        || datos.cantidad
+        || "1"
+    );
     cantidad.required = true;
 
     const precio = document.createElement("input");
@@ -232,38 +443,61 @@ function agregarLineaVenta(datos = {}) {
     precio.min = "0";
     precio.step = "0.01";
     precio.value = String(
-        datos.precio_unitario || "0"
+        datos.precio_presentacion
+        || datos.precio_unitario
+        || "0"
     );
     precio.required = true;
+
+    const equivalencia = crearElemento(
+        "p",
+        "",
+        "linea-equivalencia"
+    );
 
     const descuento = document.createElement("input");
     descuento.type = "hidden";
     descuento.className = "linea-descuento";
-    descuento.value = String(datos.descuento || "0");
+    descuento.value = String(
+        datos.descuento || "0"
+    );
 
     const impuesto = document.createElement("input");
     impuesto.type = "hidden";
     impuesto.className = "linea-impuesto";
-    impuesto.value = String(datos.impuesto || "0");
+    impuesto.value = String(
+        datos.impuesto || "0"
+    );
 
-    selector.addEventListener("change", () => {
-        const producto = estado.productos.find(
-            (actual) =>
-                String(actual.id) === selector.value
-        );
-
-        if (producto) {
-            precio.value = String(
-                producto.precio_venta || "0"
+    selector.addEventListener(
+        "change",
+        async () => {
+            await cargarPresentacionesLinea(
+                linea,
+                Number(selector.value || 0)
             );
         }
-    });
+    );
+
+    presentacion.addEventListener(
+        "change",
+        () => {
+            actualizarPrecioPresentacion(linea);
+            actualizarEquivalenciaLinea(linea);
+        }
+    );
+
+    cantidad.addEventListener(
+        "input",
+        () => actualizarEquivalenciaLinea(linea)
+    );
 
     const quitar = crearElemento(
         "button",
         "Quitar",
         "boton boton--peligro boton--pequeno"
     );
+
     quitar.type = "button";
 
     quitar.addEventListener("click", () => {
@@ -278,17 +512,38 @@ function agregarLineaVenta(datos = {}) {
         crearGrupoLinea("Producto", selector)
     );
     linea.appendChild(
+        crearGrupoLinea(
+            "Presentaci?n",
+            presentacion
+        )
+    );
+    linea.appendChild(
         crearGrupoLinea("Cantidad", cantidad)
     );
     linea.appendChild(
-        crearGrupoLinea("Precio unitario", precio)
+        crearGrupoLinea(
+            "Precio por presentaci?n",
+            precio
+        )
     );
     linea.appendChild(quitar);
+    linea.appendChild(equivalencia);
     linea.appendChild(descuento);
     linea.appendChild(impuesto);
 
     contenedor.appendChild(linea);
+
+    actualizarEquivalenciaLinea(linea);
+
+    if (selector.value) {
+        cargarPresentacionesLinea(
+            linea,
+            Number(selector.value),
+            datos.presentacion_id
+        );
+    }
 }
+
 
 function restablecerFormulario() {
     elemento("formulario-venta")?.reset();
@@ -354,6 +609,30 @@ function construirDatosVenta() {
             ).value
         );
 
+        const selectorPresentacion =
+            linea.querySelector(
+                ".linea-presentacion"
+            );
+        const opcionPresentacion =
+            selectorPresentacion
+                ?.selectedOptions[0];
+        const presentacionId = Number(
+            selectorPresentacion?.value || 0
+        );
+        const factor = Number(
+            opcionPresentacion
+                ?.dataset.factor || 1
+        );
+
+        const conversion = {
+            factor_conversion: factor,
+        };
+
+        const cantidadBase = (
+            cantidad
+            * conversion.factor_conversion
+        );
+
         const descuento = Number(
             linea.querySelector(
                 ".linea-descuento"
@@ -380,7 +659,10 @@ function construirDatosVenta() {
 
         const stock = stockProducto(productoId);
 
-        if (cantidad > Number(stock.disponible)) {
+        if (
+            cantidadBase
+            > Number(stock.disponible)
+        ) {
             throw new Error(
                 `La cantidad solicitada supera el stock ` +
                 `disponible (${stock.disponible}).`
@@ -398,6 +680,8 @@ function construirDatosVenta() {
 
         return {
             producto_id: productoId,
+            presentacion_id:
+                presentacionId || null,
             cantidad,
             precio_unitario: precioUnitario,
             descuento,

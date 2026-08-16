@@ -82,6 +82,23 @@ def _serializar(venta):
                     if item.producto_id in productos
                     else None
                 ),
+                "presentacion_id":
+                    item.presentacion_id,
+                "presentacion_codigo":
+                    item.presentacion_codigo,
+                "presentacion_nombre":
+                    item.presentacion_nombre,
+                "presentacion_abreviatura":
+                    item.presentacion_abreviatura,
+                "cantidad_presentacion": str(
+                    item.cantidad_presentacion
+                ),
+                "factor_conversion": str(
+                    item.factor_conversion
+                ),
+                "precio_presentacion": str(
+                    item.precio_presentacion
+                ),
                 "cantidad": str(item.cantidad),
                 "precio_unitario": str(
                     item.precio_unitario

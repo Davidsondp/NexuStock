@@ -3,7 +3,17 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from sqlalchemy.exc import IntegrityError
 
-from ..models import Bodega, Cliente, Inventario, Producto, Venta, VentaItem, db, utcnow
+from ..models import (
+    Bodega,
+    Cliente,
+    Inventario,
+    PresentacionProducto,
+    Producto,
+    Venta,
+    VentaItem,
+    db,
+    utcnow,
+)
 from ..permisos import evaluar_permiso
 from .auditoria import registrar_auditoria
 from .contexto import ContextoOperacion, sucursales_autorizadas
@@ -57,18 +67,47 @@ class ServicioVentas:
             for datos in items:
                 producto = self._producto(int(datos.get("producto_id", 0)))
                 if producto.id in vistos: raise ErrorVenta("No se puede repetir un producto")
-                vistos.add(producto.id); cantidad = _cantidad_positiva(datos.get("cantidad"))
-                precio = _dinero(datos.get("precio_unitario", producto.precio_venta), "Precio unitario")
-                descuento = _dinero(datos.get("descuento", 0), "Descuento")
-                impuesto = _dinero(datos.get("impuesto", 0), "Impuesto")
-                bruto = (cantidad * precio).quantize(DOS)
-                if descuento > bruto: raise ErrorVenta("El descuento supera el subtotal del item")
-                venta.items.append(VentaItem(empresa_id=self.usuario.empresa_id, producto_id=producto.id,
-                    cantidad=cantidad, precio_unitario=precio, descuento=descuento,
-                    impuesto=impuesto, total=bruto-descuento+impuesto))
-            venta.subtotal = sum(((Decimal(i.cantidad)*Decimal(i.precio_unitario)).quantize(DOS) for i in venta.items), Decimal(0))
-            venta.descuento = sum((Decimal(i.descuento) for i in venta.items), Decimal(0))
-            venta.impuesto = sum((Decimal(i.impuesto) for i in venta.items), Decimal(0)); venta.total = venta.subtotal-venta.descuento+venta.impuesto
+                vistos.add(producto.id)
+                valores = self._preparar_item(
+                    producto,
+                    datos,
+                )
+                venta.items.append(
+                    VentaItem(
+                        empresa_id=
+                            self.usuario.empresa_id,
+                        producto_id=producto.id,
+                        **valores,
+                    )
+                )
+            venta.descuento = sum(
+                (
+                    Decimal(item.descuento)
+                    for item in venta.items
+                ),
+                Decimal("0"),
+            )
+            venta.impuesto = sum(
+                (
+                    Decimal(item.impuesto)
+                    for item in venta.items
+                ),
+                Decimal("0"),
+            )
+            venta.subtotal = sum(
+                (
+                    Decimal(item.total)
+                    + Decimal(item.descuento)
+                    - Decimal(item.impuesto)
+                    for item in venta.items
+                ),
+                Decimal("0"),
+            )
+            venta.total = (
+                venta.subtotal
+                - venta.descuento
+                + venta.impuesto
+            )
             db.session.flush(); self._auditar(venta, "borrador_creado"); db.session.commit(); return venta
         except IntegrityError as exc: db.session.rollback(); raise ErrorVenta("El número de venta ya existe") from exc
         except Exception: db.session.rollback(); raise
@@ -112,6 +151,157 @@ class ServicioVentas:
             venta.estado="cancelada"; venta.cancelada_en=utcnow(); venta.motivo_cancelacion=motivo
             self._auditar(venta,"cancelada"); db.session.commit(); return venta
         except Exception: db.session.rollback(); raise
+
+
+    def _preparar_item(
+        self,
+        producto,
+        datos,
+    ):
+        cantidad_presentacion = (
+            _cantidad_positiva(
+                datos.get("cantidad")
+            )
+        )
+
+        valor_precio = datos.get(
+            "precio_unitario"
+        )
+
+        presentacion_id = datos.get(
+            "presentacion_id"
+        )
+        presentacion = None
+
+        if presentacion_id not in (
+            None,
+            "",
+        ):
+            try:
+                presentacion_id = int(
+                    presentacion_id
+                )
+            except (
+                TypeError,
+                ValueError,
+            ) as exc:
+                raise ErrorVenta(
+                    "La presentaci?n no es v?lida"
+                ) from exc
+
+            presentacion = db.session.scalar(
+                db.select(
+                    PresentacionProducto
+                ).where(
+                    PresentacionProducto.id
+                    == presentacion_id,
+                    PresentacionProducto.empresa_id
+                    == self.usuario.empresa_id,
+                    PresentacionProducto.producto_id
+                    == producto.id,
+                    PresentacionProducto.activa
+                    .is_(True),
+                )
+            )
+
+            if presentacion is None:
+                raise ErrorVenta(
+                    "La presentaci?n no pertenece "
+                    "al producto o est? inactiva"
+                )
+
+        factor = Decimal(
+            presentacion.factor_base
+            if presentacion
+            else 1
+        ).quantize(
+            Decimal("0.001"),
+            rounding=ROUND_HALF_UP,
+        )
+
+        if valor_precio is None:
+            valor_precio = (
+                Decimal(producto.precio_venta)
+                * factor
+            )
+
+        precio_presentacion = _dinero(
+            valor_precio,
+            "Precio de presentaci?n",
+        )
+
+        cantidad_base = (
+            cantidad_presentacion
+            * factor
+        ).quantize(
+            Decimal("0.001"),
+            rounding=ROUND_HALF_UP,
+        )
+
+        precio_base = (
+            precio_presentacion
+            / factor
+        ).quantize(
+            DOS,
+            rounding=ROUND_HALF_UP,
+        )
+
+        descuento = _dinero(
+            datos.get("descuento", 0),
+            "Descuento",
+        )
+        impuesto = _dinero(
+            datos.get("impuesto", 0),
+            "Impuesto",
+        )
+
+        bruto = (
+            cantidad_presentacion
+            * precio_presentacion
+        ).quantize(
+            DOS,
+            rounding=ROUND_HALF_UP,
+        )
+
+        if descuento > bruto:
+            raise ErrorVenta(
+                "El descuento supera "
+                "el subtotal del item"
+            )
+
+        return {
+            "presentacion_id": (
+                presentacion.id
+                if presentacion
+                else None
+            ),
+            "presentacion_codigo": (
+                presentacion.codigo
+                if presentacion
+                else None
+            ),
+            "presentacion_nombre": (
+                presentacion.nombre
+                if presentacion
+                else None
+            ),
+            "presentacion_abreviatura": (
+                presentacion.abreviatura
+                if presentacion
+                else None
+            ),
+            "cantidad_presentacion":
+                cantidad_presentacion,
+            "factor_conversion": factor,
+            "precio_presentacion":
+                precio_presentacion,
+            "cantidad": cantidad_base,
+            "precio_unitario": precio_base,
+            "descuento": descuento,
+            "impuesto": impuesto,
+            "total":
+                bruto - descuento + impuesto,
+        }
 
     def _inventario(self,bodega_id,producto_id):
         inv=db.session.scalar(db.select(Inventario).where(Inventario.empresa_id==self.usuario.empresa_id,
