@@ -309,3 +309,59 @@ def reportes():
         contexto=g.contexto_operacion,
         permisos=permisos,
     )
+
+
+@panel_bp.get("/administracion/usuarios")
+@login_required
+@requerir_permiso("usuarios.ver")
+@requerir_contexto
+def administracion_usuarios():
+    empresa_id = current_user.empresa_id
+
+    permisos = {
+        "crear": evaluar_permiso(
+            current_user,
+            "usuarios.crear",
+            empresa_id=empresa_id,
+        ).permitido,
+        "editar": evaluar_permiso(
+            current_user,
+            "usuarios.editar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "desactivar": evaluar_permiso(
+            current_user,
+            "usuarios.desactivar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "roles": evaluar_permiso(
+            current_user,
+            "usuarios.gestionar_roles",
+            empresa_id=empresa_id,
+        ).permitido,
+    }
+
+    suscripcion = (
+        current_user.empresa
+        .suscripcion_actual
+    )
+    limite_usuarios = (
+        suscripcion.plan.limite_usuarios
+        if suscripcion
+        else 0
+    )
+
+    from ...permisos import (
+        permisos_empresariales_conocidos,
+    )
+
+    return render_template(
+        "panel/usuarios.html",
+        empresa=current_user.empresa,
+        contexto=g.contexto_operacion,
+        permisos=permisos,
+        limite_usuarios=limite_usuarios,
+        permisos_catalogo=sorted(
+            permisos_empresariales_conocidos()
+        ),
+    )

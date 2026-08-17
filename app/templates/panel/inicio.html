@@ -132,6 +132,25 @@
                     <span>Reportes</span>
                 </a>
 
+                {% if current_user.rol == "admin_empresa" %}
+                    <p class="navegacion__titulo">
+                        Administración
+                    </p>
+
+                    <a
+                        class="navegacion__enlace"
+                        href="{{ url_for(
+                            'panel.administracion_usuarios'
+                        ) }}"
+                    >
+                        <span
+                            class="navegacion__icono"
+                            aria-hidden="true"
+                        >U</span>
+                        <span>Administración</span>
+                    </a>
+                {% endif %}
+
                 <a
                     class="navegacion__enlace"
                     href="{{ url_for('contexto.seleccionar') }}"
