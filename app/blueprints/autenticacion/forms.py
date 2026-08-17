@@ -9,10 +9,10 @@ class RegistroForm(FlaskForm):
         "Rubro de la empresa",
         choices=[
             ("general", "Comercio general"),
-            ("almacen", "Almac?n"),
+            ("almacen", "Almacén"),
             ("minimarket", "Minimarket"),
-            ("botilleria", "Botiller?a"),
-            ("ferreteria", "Ferreter?a"),
+            ("botilleria", "Botillería"),
+            ("ferreteria", "Ferretería"),
             ("farmacia", "Farmacia"),
         ],
         default="general",
