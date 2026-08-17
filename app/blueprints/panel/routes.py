@@ -276,3 +276,36 @@ def alertas():
         contexto=g.contexto_operacion,
         permisos=permisos,
     )
+
+
+@panel_bp.get("/reportes")
+@login_required
+@requerir_permiso("reportes.ver")
+@requerir_contexto
+def reportes():
+    empresa_id = current_user.empresa_id
+
+    permisos = {
+        "analitica": evaluar_permiso(
+            current_user,
+            "analitica.ver",
+            empresa_id=empresa_id,
+        ).permitido,
+        "exportar": evaluar_permiso(
+            current_user,
+            "reportes.exportar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "ejecutivo": evaluar_permiso(
+            current_user,
+            "dashboard.ejecutivo",
+            empresa_id=empresa_id,
+        ).permitido,
+    }
+
+    return render_template(
+        "panel/reportes.html",
+        empresa=current_user.empresa,
+        contexto=g.contexto_operacion,
+        permisos=permisos,
+    )
