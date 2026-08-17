@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from app.models import Auditoria, Bodega, Empresa, Sucursal, Usuario, UsuarioSucursal, db
 from app.services.contexto import (CLAVE_BODEGA, CLAVE_SUCURSAL, establecer_contexto,
                                    obtener_contexto)
@@ -124,3 +126,64 @@ def test_bodega_desactivada_invalida_contexto(app, client):
     with client.session_transaction() as sesion:
         assert CLAVE_SUCURSAL not in sesion
         assert CLAVE_BODEGA not in sesion
+
+
+def test_selector_contexto_incluye_interfaz_visual(
+    client,
+):
+    _registrar(client)
+
+    respuesta = client.get(
+        "/contexto/seleccionar"
+    )
+
+    assert respuesta.status_code == 200
+
+    contratos = (
+        b'data-api-bodegas-base="/contexto/bodegas"',
+        b'id="selector-contexto"',
+        b'id="sucursal_id"',
+        b'id="bodega_id"',
+        b'id="resumen-sucursal"',
+        b'id="resumen-bodega"',
+        b'id="estado-contexto"',
+        b'id="volver-panel"',
+        b"css/contexto.css",
+        b"js/contexto.js",
+    )
+
+    for contrato in contratos:
+        assert contrato in respuesta.data
+
+    textos = (
+        "Seleccionar ubicación",
+        "Contexto operacional",
+        "El inventario, las ventas y los reportes",
+        "Sucursal autorizada",
+        "Bodega de trabajo",
+    )
+
+    for texto in textos:
+        assert (
+            texto.encode("utf-8")
+            in respuesta.data
+        )
+
+
+def test_javascript_contexto_actualiza_bodegas():
+    contenido = Path(
+        "app/static/js/contexto.js"
+    ).read_text(encoding="utf-8-sig")
+
+    contratos = (
+        "apiBodegasBase",
+        "sucursal_id",
+        "bodega_id",
+        "resumen-sucursal",
+        "resumen-bodega",
+        "estado-contexto",
+        "X-CSRFToken",
+    )
+
+    for contrato in contratos:
+        assert contrato in contenido

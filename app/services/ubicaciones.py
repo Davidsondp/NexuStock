@@ -67,6 +67,157 @@ class ServicioUbicaciones:
             db.session.rollback(); raise ErrorUbicacion("El código de bodega ya existe") from exc
         except Exception: db.session.rollback(); raise
 
+    def editar_sucursal(
+        self,
+        sucursal_id,
+        **cambios,
+    ):
+        self._exigir("sucursales.editar")
+        sucursal = self._sucursal(sucursal_id)
+
+        permitidos = {
+            "codigo",
+            "nombre",
+            "direccion",
+            "ciudad",
+            "telefono",
+        }
+
+        try:
+            for campo, valor in cambios.items():
+                if campo not in permitidos:
+                    continue
+
+                if campo == "codigo":
+                    valor = self._codigo(valor)
+                elif campo == "nombre":
+                    valor = self._nombre(valor)
+                else:
+                    valor = self._texto_opcional(valor)
+
+                setattr(sucursal, campo, valor)
+
+            db.session.flush()
+            self._auditar(
+                "sucursal.editada",
+                "Sucursal",
+                sucursal.id,
+            )
+            db.session.commit()
+            return sucursal
+        except IntegrityError as exc:
+            db.session.rollback()
+            raise ErrorUbicacion(
+                "El codigo de sucursal ya existe"
+            ) from exc
+        except Exception:
+            db.session.rollback()
+            raise
+
+    def editar_bodega(
+        self,
+        bodega_id,
+        **cambios,
+    ):
+        self._exigir("bodegas.editar")
+        bodega = self._bodega(bodega_id)
+
+        permitidos = {
+            "codigo",
+            "nombre",
+            "descripcion",
+        }
+
+        try:
+            for campo, valor in cambios.items():
+                if campo not in permitidos:
+                    continue
+
+                if campo == "codigo":
+                    valor = self._codigo(valor)
+                elif campo == "nombre":
+                    valor = self._nombre(valor)
+                else:
+                    valor = self._texto_opcional(valor)
+
+                setattr(bodega, campo, valor)
+
+            db.session.flush()
+            self._auditar(
+                "bodega.editada",
+                "Bodega",
+                bodega.id,
+            )
+            db.session.commit()
+            return bodega
+        except IntegrityError as exc:
+            db.session.rollback()
+            raise ErrorUbicacion(
+                "El codigo de bodega ya existe"
+            ) from exc
+        except Exception:
+            db.session.rollback()
+            raise
+
+    def reactivar_sucursal(
+        self,
+        sucursal_id,
+    ):
+        self._exigir("sucursales.editar")
+        sucursal = self._sucursal(sucursal_id)
+
+        if sucursal.activa:
+            return sucursal
+
+        sucursal.activa = True
+
+        bodegas = [
+            bodega
+            for bodega in sucursal.bodegas
+            if not bodega.eliminado
+        ]
+
+        if (
+            bodegas
+            and not any(
+                bodega.activa
+                for bodega in bodegas
+            )
+        ):
+            bodegas[0].activa = True
+
+        self._auditar(
+            "sucursal.reactivada",
+            "Sucursal",
+            sucursal.id,
+        )
+        db.session.commit()
+        return sucursal
+
+    def reactivar_bodega(
+        self,
+        bodega_id,
+    ):
+        self._exigir("bodegas.editar")
+        bodega = self._bodega(bodega_id)
+
+        if not bodega.sucursal.activa:
+            raise ErrorUbicacion(
+                "Primero debes reactivar la sucursal"
+            )
+
+        if bodega.activa:
+            return bodega
+
+        bodega.activa = True
+        self._auditar(
+            "bodega.reactivada",
+            "Bodega",
+            bodega.id,
+        )
+        db.session.commit()
+        return bodega
+
     def asignar_usuario(self, *, usuario_id, sucursal_id, es_principal=False):
         self._exigir("usuarios.editar")
         usuario = db.session.scalar(db.select(Usuario).where(
@@ -161,6 +312,14 @@ class ServicioUbicaciones:
             Bodega.empresa_id == self.usuario.empresa_id, Bodega.eliminado.is_(False)))
         if not entidad: raise PermissionError("Bodega fuera del ámbito empresarial")
         return entidad
+
+    @staticmethod
+    def _texto_opcional(valor):
+        if valor is None:
+            return None
+
+        valor = str(valor).strip()
+        return valor or None
 
     @staticmethod
     def _codigo(valor):

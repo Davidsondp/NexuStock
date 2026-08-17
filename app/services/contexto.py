@@ -4,7 +4,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import wraps
 
-from flask import abort, g, redirect, request, session, url_for
+from flask import (
+    abort,
+    g,
+    has_request_context,
+    redirect,
+    request,
+    session,
+    url_for,
+)
 from flask_login import current_user
 
 from ..models import Bodega, Sucursal, UsuarioSucursal, db
@@ -54,6 +62,9 @@ def bodegas_autorizadas(usuario, sucursal_id: int) -> list[Bodega]:
 
 
 def limpiar_contexto() -> None:
+    if not has_request_context():
+        return
+
     session.pop(CLAVE_SUCURSAL, None)
     session.pop(CLAVE_BODEGA, None)
     g.pop("contexto_operacion", None)

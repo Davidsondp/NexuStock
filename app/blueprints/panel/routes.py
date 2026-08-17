@@ -365,3 +365,79 @@ def administracion_usuarios():
             permisos_empresariales_conocidos()
         ),
     )
+
+
+@panel_bp.get("/administracion/ubicaciones")
+@login_required
+@requerir_permiso("empresa.editar")
+@requerir_contexto
+def administracion_ubicaciones():
+    empresa_id = current_user.empresa_id
+
+    permisos = {
+        "crear_sucursal": evaluar_permiso(
+            current_user,
+            "sucursales.crear",
+            empresa_id=empresa_id,
+        ).permitido,
+        "editar_sucursal": evaluar_permiso(
+            current_user,
+            "sucursales.editar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "desactivar_sucursal": evaluar_permiso(
+            current_user,
+            "sucursales.desactivar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "crear_bodega": evaluar_permiso(
+            current_user,
+            "bodegas.crear",
+            empresa_id=empresa_id,
+        ).permitido,
+        "editar_bodega": evaluar_permiso(
+            current_user,
+            "bodegas.editar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "desactivar_bodega": evaluar_permiso(
+            current_user,
+            "bodegas.desactivar",
+            empresa_id=empresa_id,
+        ).permitido,
+        "asignar_usuarios": evaluar_permiso(
+            current_user,
+            "usuarios.editar",
+            empresa_id=empresa_id,
+        ).permitido,
+    }
+
+    suscripcion = (
+        current_user.empresa
+        .suscripcion_actual
+    )
+    plan = (
+        suscripcion.plan
+        if suscripcion
+        else None
+    )
+
+    limite_sucursales = (
+        plan.limite_sucursales
+        if plan
+        else 0
+    )
+    limite_bodegas = (
+        plan.limite_bodegas
+        if plan
+        else 0
+    )
+
+    return render_template(
+        "panel/ubicaciones.html",
+        empresa=current_user.empresa,
+        contexto=g.contexto_operacion,
+        permisos=permisos,
+        limite_sucursales=limite_sucursales,
+        limite_bodegas=limite_bodegas,
+    )
