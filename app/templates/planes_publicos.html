@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+    <meta
+        name="description"
+        content="Planes de NexuStock para controlar inventario y hacer crecer tu negocio."
+    >
+
+    <title>Planes NexuStock | Control de inventario</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for(
+            'static',
+            filename='css/planes_publicos.css'
+        ) }}"
+    >
+</head>
+
+<body
+    class="pagina-planes"
+    data-registro-base="{{
+        url_for('autenticacion.registro')
+    }}"
+>
+    <header class="navegacion-publica">
+        <a
+            class="marca-publica"
+            href="/"
+            aria-label="NexuStock"
+        >
+            <span aria-hidden="true">N</span>
+            <div>
+                <strong>NexuStock</strong>
+                <small>Inventario inteligente</small>
+            </div>
+        </a>
+
+        <nav aria-label="Navegación principal">
+            <a href="#planes-comerciales">
+                Planes
+            </a>
+            <a href="#comparacion-publica">
+                Capacidades
+            </a>
+            <a href="#preguntas-planes">
+                Preguntas
+            </a>
+        </nav>
+
+        <div class="navegacion-publica__acciones">
+            <a
+                class="enlace-ingreso"
+                href="{{
+                    url_for('autenticacion.ingresar')
+                }}"
+            >
+                Ingresar
+            </a>
+
+            <a
+                class="boton-publico boton-publico--primario"
+                href="{{
+                    url_for('autenticacion.registro')
+                }}"
+                data-plan="profesional-pago"
+            >
+                Prueba NexuStock
+            </a>
+        </div>
+    </header>
+
+    <main>
+        <section
+            id="portada-planes"
+            class="portada-planes"
+        >
+            <div class="portada-planes__contenido">
+                <p class="etiqueta-publica">
+                    Inventario que impulsa decisiones
+                </p>
+
+                <h1>
+                    Controla tu inventario.
+                    <span>Haz crecer tu negocio.</span>
+                </h1>
+
+                <p class="portada-planes__descripcion">
+                    NexuStock concentra productos, compras,
+                    ventas, alertas, reportes y operaciones
+                    en una experiencia clara para tu equipo.
+                </p>
+
+                <div class="portada-planes__acciones">
+                    <a
+                        class="boton-publico boton-publico--primario"
+                        href="{{
+                            url_for('autenticacion.registro')
+                        }}"
+                        data-plan="profesional-pago"
+                    >
+                        Comenzar prueba
+                    </a>
+
+                    <a
+                        class="boton-publico boton-publico--vidrio"
+                        href="#demostracion-producto"
+                    >
+                        Ver cómo funciona
+                    </a>
+                </div>
+
+                <div class="portada-planes__garantias">
+                    <span>✓ Configuración guiada</span>
+                    <span>✓ Datos aislados por empresa</span>
+                    <span>✓ Sin tarjeta para comenzar</span>
+                </div>
+            </div>
+
+            <div
+                id="demostracion-producto"
+                class="demostracion-producto"
+                aria-label="Demostración de NexuStock"
+            >
+                <div class="demostracion-producto__barra">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <small>Panel empresarial</small>
+                </div>
+
+                <div class="demostracion-producto__resumen">
+                    <article>
+                        <span>Stock controlado</span>
+                        <strong>98%</strong>
+                    </article>
+                    <article>
+                        <span>Alertas críticas</span>
+                        <strong>3</strong>
+                    </article>
+                    <article>
+                        <span>Valor inventario</span>
+                        <strong>$12,8M</strong>
+                    </article>
+                </div>
+
+                <div class="demostracion-producto__grafico">
+                    <div style="--altura: 42%"></div>
+                    <div style="--altura: 58%"></div>
+                    <div style="--altura: 48%"></div>
+                    <div style="--altura: 76%"></div>
+                    <div style="--altura: 68%"></div>
+                    <div style="--altura: 91%"></div>
+                </div>
+
+                <div class="demostracion-producto__alerta">
+                    <span aria-hidden="true">●</span>
+                    <div>
+                        <strong>Monitoreo automático</strong>
+                        <small>
+                            Inventario actualizado y protegido
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="confianza-publica">
+            <p>
+                Diseñado para negocios que necesitan
+                control real sin complejidad innecesaria
+            </p>
+
+            <div>
+                <span>Almacenes</span>
+                <span>Minimarkets</span>
+                <span>Ferreterías</span>
+                <span>Botillerías</span>
+                <span>Comercio</span>
+            </div>
+        </section>
+
+        <section
+            id="planes-comerciales"
+            class="seccion-planes-publicos"
+        >
+            <div class="encabezado-publico">
+                <p class="etiqueta-publica">
+                    Crece a tu ritmo
+                </p>
+                <h2>
+                    Elige el plan que acompaña tu operación
+                </h2>
+                <p>
+                    Comienza con lo esencial y amplía
+                    capacidades cuando tu negocio lo necesite.
+                </p>
+            </div>
+
+            <div
+                id="selector-ciclo-publico"
+                class="selector-ciclo-publico"
+                aria-label="Ciclo de facturación"
+            >
+                <button
+                    type="button"
+                    data-ciclo="mensual"
+                    aria-pressed="true"
+                >
+                    Mensual
+                </button>
+                <button
+                    type="button"
+                    data-ciclo="anual"
+                    aria-pressed="false"
+                >
+                    Anual
+                    <span>Mejor valor</span>
+                </button>
+            </div>
+
+            <div class="planes-publicos">
+                <article
+                    class="plan-publico"
+                    data-plan="basico-pago"
+                >
+                    <div class="plan-publico__cabecera">
+                        <p>Para comenzar</p>
+                        <h3>Básico</h3>
+                        <p>
+                            Control esencial para una operación
+                            pequeña y ordenada.
+                        </p>
+                    </div>
+
+                    <div
+                        class="plan-publico__precio"
+                        data-precio-mensual="9990"
+                        data-precio-anual="99900"
+                    >
+                        <strong>$9.990</strong>
+                        <span>/ mes</span>
+                    </div>
+
+                    <ul>
+                        <li>Hasta 500 productos</li>
+                        <li>2 usuarios</li>
+                        <li>5.000 movimientos mensuales</li>
+                        <li>Productos e inventario</li>
+                        <li>Compras, ventas y proveedores</li>
+                        <li>Alertas y reportes básicos</li>
+                    </ul>
+
+                    <a
+                        class="boton-publico boton-publico--secundario"
+                        href="{{
+                            url_for('autenticacion.registro')
+                        }}"
+                        data-plan="basico-pago"
+                    >
+                        Comenzar prueba
+                    </a>
+                </article>
+
+                <article
+                    class="plan-publico plan-publico--destacado"
+                    data-plan="profesional-pago"
+                >
+                    <span class="plan-publico__recomendado">
+                        Más elegido
+                    </span>
+
+                    <div class="plan-publico__cabecera">
+                        <p>Para crecer</p>
+                        <h3>Profesional</h3>
+                        <p>
+                            Analítica y control avanzado para
+                            equipos que están creciendo.
+                        </p>
+                    </div>
+
+                    <div
+                        class="plan-publico__precio"
+                        data-precio-mensual="29990"
+                        data-precio-anual="299900"
+                    >
+                        <strong>$29.990</strong>
+                        <span>/ mes</span>
+                    </div>
+
+                    <ul>
+                        <li>Hasta 5.000 productos</li>
+                        <li>10 usuarios</li>
+                        <li>50.000 movimientos mensuales</li>
+                        <li>Roles y permisos avanzados</li>
+                        <li>Analítica y recomendaciones</li>
+                        <li>Auditoría y exportación avanzada</li>
+                    </ul>
+
+                    <a
+                        class="boton-publico boton-publico--primario"
+                        href="{{
+                            url_for('autenticacion.registro')
+                        }}"
+                        data-plan="profesional-pago"
+                    >
+                        Comenzar prueba
+                    </a>
+                </article>
+
+                <article
+                    class="plan-publico"
+                    data-plan="empresa-pago"
+                >
+                    <div class="plan-publico__cabecera">
+                        <p>Para escalar</p>
+                        <h3>Empresa</h3>
+                        <p>
+                            Capacidad completa para operaciones
+                            con múltiples ubicaciones.
+                        </p>
+                    </div>
+
+                    <div
+                        class="plan-publico__precio"
+                        data-precio-mensual="69990"
+                        data-precio-anual="699900"
+                    >
+                        <strong>$69.990</strong>
+                        <span>/ mes</span>
+                    </div>
+
+                    <ul>
+                        <li>Productos y usuarios sin límite</li>
+                        <li>Movimientos sin límite</li>
+                        <li>Multisucursal y multibodega</li>
+                        <li>Transferencias entre bodegas</li>
+                        <li>Dashboard ejecutivo</li>
+                        <li>API y reportes personalizados</li>
+                    </ul>
+
+                    <a
+                        class="boton-publico boton-publico--secundario"
+                        href="{{
+                            url_for('autenticacion.registro')
+                        }}"
+                        data-plan="empresa-pago"
+                    >
+                        Comenzar prueba
+                    </a>
+                </article>
+            </div>
+
+            <a
+                class="enlace-comparacion"
+                href="#comparacion-publica"
+            >
+                Comparar capacidades
+                <span aria-hidden="true">↓</span>
+            </a>
+        </section>
+
+        <section
+            id="comparacion-publica"
+            class="comparacion-publica"
+        >
+            <div class="encabezado-publico">
+                <p class="etiqueta-publica">
+                    Una plataforma completa
+                </p>
+                <h2>Capacidades que crecen contigo</h2>
+                <p>
+                    Cada nivel amplía el control de tu
+                    operación sin obligarte a cambiar de sistema.
+                </p>
+            </div>
+
+            <div class="comparacion-publica__grupos">
+                <article>
+                    <span>01</span>
+                    <h3>Operación diaria</h3>
+                    <p>
+                        Productos, inventario, compras,
+                        ventas, lotes y movimientos.
+                    </p>
+                </article>
+
+                <article>
+                    <span>02</span>
+                    <h3>Gestión empresarial</h3>
+                    <p>
+                        Usuarios, permisos, auditoría,
+                        reportes y exportaciones.
+                    </p>
+                </article>
+
+                <article>
+                    <span>03</span>
+                    <h3>Inteligencia operacional</h3>
+                    <p>
+                        Analítica, alertas, predicciones
+                        y recomendaciones basadas en datos.
+                    </p>
+                </article>
+
+                <article>
+                    <span>04</span>
+                    <h3>Escala</h3>
+                    <p>
+                        Sucursales, bodegas, transferencias,
+                        API y tableros ejecutivos.
+                    </p>
+                </article>
+            </div>
+
+            <div class="ia-publica">
+                <div>
+                    <span aria-hidden="true">✦</span>
+                    <div>
+                        <strong>Inteligencia artificial</strong>
+                        <p>
+                            Asistencia avanzada integrada al
+                            flujo de decisiones de inventario.
+                        </p>
+                    </div>
+                </div>
+                <span>Próximamente</span>
+            </div>
+        </section>
+
+        <section
+            id="preguntas-planes"
+            class="preguntas-planes"
+        >
+            <div class="encabezado-publico">
+                <p class="etiqueta-publica">
+                    Decisión informada
+                </p>
+                <h2>Preguntas frecuentes</h2>
+            </div>
+
+            <div class="preguntas-planes__lista">
+                <details>
+                    <summary>
+                        ¿Puedo cambiar de plan después?
+                    </summary>
+                    <p>
+                        Sí. El administrador puede solicitar
+                        un cambio desde el panel empresarial.
+                    </p>
+                </details>
+
+                <details>
+                    <summary>
+                        ¿Mis datos quedan separados?
+                    </summary>
+                    <p>
+                        Sí. Cada empresa opera con aislamiento
+                        y permisos independientes.
+                    </p>
+                </details>
+
+                <details>
+                    <summary>
+                        ¿NexuStock sirve para varias bodegas?
+                    </summary>
+                    <p>
+                        El plan Empresa incorpora múltiples
+                        sucursales, bodegas y transferencias.
+                    </p>
+                </details>
+
+                <details>
+                    <summary>
+                        ¿La inteligencia artificial ya funciona?
+                    </summary>
+                    <p>
+                        Todavía no. Está identificada como una
+                        capacidad futura de la plataforma.
+                    </p>
+                </details>
+            </div>
+        </section>
+
+        <section
+            id="cta-final-planes"
+            class="cta-final-planes"
+        >
+            <p class="etiqueta-publica">
+                Da el siguiente paso
+            </p>
+            <h2>
+                Convierte tu inventario en una ventaja
+                para tu negocio
+            </h2>
+            <p>
+                Comienza con NexuStock y centraliza
+                tu operación desde el primer día.
+            </p>
+
+            <a
+                class="boton-publico boton-publico--luminoso"
+                href="{{
+                    url_for('autenticacion.registro')
+                }}"
+                data-plan="profesional-pago"
+            >
+                Prueba NexuStock
+            </a>
+        </section>
+    </main>
+
+    <footer class="pie-publico">
+        <a class="marca-publica" href="/">
+            <span aria-hidden="true">N</span>
+            <strong>NexuStock</strong>
+        </a>
+
+        <p>
+            Gestión de inventario para negocios
+            que quieren crecer con control.
+        </p>
+
+        <a href="{{
+            url_for('autenticacion.ingresar')
+        }}">
+            Ingresar
+        </a>
+    </footer>
+
+    <a
+        id="cta-movil-planes"
+        class="cta-movil-planes"
+        href="{{
+            url_for('autenticacion.registro')
+        }}"
+        data-plan="profesional-pago"
+    >
+        Comenzar prueba
+    </a>
+
+    <script
+        src="{{ url_for(
+            'static',
+            filename='js/planes_publicos.js'
+        ) }}"
+        defer
+    ></script>
+</body>
+</html>

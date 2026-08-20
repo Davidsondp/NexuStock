@@ -37,6 +37,25 @@ class ServicioSuscripciones:
             SolicitudCambioPlan.creado_en.desc()).limit(20)))
         return suscripcion, solicitudes
 
+    def planes_disponibles(self):
+        self._exigir("suscripciones.ver")
+
+        consulta = (
+            db.select(PlanSaaS)
+            .where(
+                PlanSaaS.activo.is_(True),
+                PlanSaaS.codigo != "prueba",
+            )
+            .order_by(
+                PlanSaaS.orden,
+                PlanSaaS.id,
+            )
+        )
+
+        return list(
+            db.session.scalars(consulta)
+        )
+
     def solicitar_cambio(self, *, plan_codigo, ciclo):
         self._exigir("suscripciones.solicitar")
         ciclo = (ciclo or "").lower()

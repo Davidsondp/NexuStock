@@ -2,6 +2,7 @@ import click
 from sqlalchemy import text
 
 from .models import PlanSaaS, Usuario, db
+from .services.planes import funciones_plan
 
 
 PLANES = (
@@ -9,32 +10,22 @@ PLANES = (
          precio_mensual=0, precio_anual=0, dias_prueba=30, limite_productos=100,
          limite_usuarios=2, limite_movimientos_mes=500, limite_sucursales=1,
          limite_bodegas=1, almacenamiento_mb=500,
-         funciones={"productos": True, "movimientos": True, "proveedores": True,
-                    "reportes.avanzados": True, "analitica": True, "ia": True,
-                    "auditoria": True}, orden=1),
+         funciones=funciones_plan("prueba"), orden=1),
     dict(codigo="basico", nombre="Básico", descripcion="Para pequeños negocios",
          precio_mensual=9990, precio_anual=99900, dias_prueba=0, limite_productos=500,
          limite_usuarios=2, limite_movimientos_mes=5000, limite_sucursales=1,
          limite_bodegas=1, almacenamiento_mb=2000,
-         funciones={"productos": True, "movimientos": True, "proveedores": True}, orden=2),
+         funciones=funciones_plan("basico"), orden=2),
     dict(codigo="profesional", nombre="Profesional", descripcion="Operación y control avanzado",
          precio_mensual=19990, precio_anual=199900, dias_prueba=0, limite_productos=5000,
          limite_usuarios=10, limite_movimientos_mes=50000, limite_sucursales=3,
          limite_bodegas=3, almacenamiento_mb=5000,
-         funciones={"productos": True, "movimientos": True, "proveedores": True,
-                    "proveedores.avanzados": True, "reportes.avanzados": True,
-                    "exportacion.avanzada": True, "analitica": True, "ia": True,
-                    "auditoria": True}, orden=3),
+         funciones=funciones_plan("profesional"), orden=3),
     dict(codigo="empresa", nombre="Empresa", descripcion="Control e inteligencia completa",
          precio_mensual=49990, precio_anual=499900, dias_prueba=0, limite_productos=None,
          limite_usuarios=None, limite_movimientos_mes=None, limite_sucursales=None,
          limite_bodegas=None, almacenamiento_mb=20000,
-         funciones={"productos": True, "movimientos": True, "proveedores": True,
-                    "proveedores.avanzados": True, "reportes.avanzados": True,
-                    "reportes.personalizados": True, "exportacion.avanzada": True,
-                    "analitica": True, "ia": True, "auditoria": True,
-                    "multisucursal": True, "multibodega": True, "transferencias": True,
-                    "dashboard.ejecutivo": True, "api": True}, orden=4),
+         funciones=funciones_plan("empresa"), orden=4),
 )
 
 

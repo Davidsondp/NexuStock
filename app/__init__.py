@@ -4,6 +4,7 @@ from flask import (
     Flask,
     jsonify,
     redirect,
+    render_template,
     session,
     url_for,
 )
@@ -94,6 +95,13 @@ def crear_aplicacion(nombre_configuracion: str | None = None) -> Flask:
 
         return redirect(
             url_for("panel.inicio")
+        )
+
+
+    @app.get("/planes")
+    def planes_publicos():
+        return render_template(
+            "planes_publicos.html"
         )
 
     from .commands import registrar_comandos

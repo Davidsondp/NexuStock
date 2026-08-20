@@ -367,6 +367,27 @@ def administracion_usuarios():
     )
 
 
+
+
+@panel_bp.get("/administracion/planes")
+@login_required
+@requerir_permiso("suscripciones.ver")
+@requerir_contexto
+def administracion_planes():
+    contexto = g.contexto_operacion
+
+    puede_solicitar = evaluar_permiso(
+        current_user,
+        "suscripciones.solicitar",
+    ).permitido
+
+    return render_template(
+        "panel/planes.html",
+        contexto=contexto,
+        puede_solicitar=puede_solicitar,
+    )
+
+
 @panel_bp.get("/administracion/ubicaciones")
 @login_required
 @requerir_permiso("empresa.editar")

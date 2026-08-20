@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+    <meta
+        name="description"
+        content="Administración empresarial de planes y suscripciones"
+    >
+
+    <title>Planes y suscripción | NexuStock</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for(
+            'static',
+            filename='css/panel_empresarial.css'
+        ) }}"
+    >
+    <link
+        rel="stylesheet"
+        href="{{ url_for(
+            'static',
+            filename='css/planes.css'
+        ) }}"
+    >
+</head>
+
+<body
+    data-api-suscripciones="{{
+        url_for('suscripciones.resumen')
+    }}"
+    data-puede-solicitar="{{
+        'true' if puede_solicitar else 'false'
+    }}"
+>
+    <div class="panel-empresa">
+        <aside
+            id="barra-lateral"
+            class="lateral"
+            aria-label="Navegación empresarial"
+        >
+            <div class="marca">
+                <div
+                    class="marca__icono"
+                    aria-hidden="true"
+                >
+                    N
+                </div>
+
+                <div>
+                    <p class="marca__nombre">
+                        NexuStock
+                    </p>
+                    <span class="marca__empresa">
+                        {{ contexto.sucursal.nombre }}
+                    </span>
+                </div>
+            </div>
+
+            <nav
+                class="navegacion"
+                aria-label="Módulos empresariales"
+            >
+                <p class="navegacion__titulo">
+                    Operación
+                </p>
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for('panel.inicio') }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >⌂</span>
+                    <span>Resumen</span>
+                </a>
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for('panel.productos') }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >□</span>
+                    <span>Productos</span>
+                </a>
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for('panel.inventario') }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >≡</span>
+                    <span>Inventario</span>
+                </a>
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for('panel.proveedores') }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >P</span>
+                    <span>Proveedores</span>
+                </a>
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for('panel.clientes') }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >C</span>
+                    <span>Clientes</span>
+                </a>
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for('panel.ventas') }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >$</span>
+                    <span>Ventas</span>
+                </a>
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for('panel.compras') }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >⇩</span>
+                    <span>Compras</span>
+                </a>
+
+                <p class="navegacion__titulo">
+                    Control
+                </p>
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for('panel.alertas') }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >!</span>
+                    <span>Alertas</span>
+                </a>
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for('panel.reportes') }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >▦</span>
+                    <span>Reportes</span>
+                </a>
+
+                <p class="navegacion__titulo">
+                    Administración
+                </p>
+
+                <a
+                    class="
+                        navegacion__enlace
+                        navegacion__enlace--activo
+                    "
+                    href="{{ url_for(
+                        'panel.administracion_usuarios'
+                    ) }}"
+                    aria-current="page"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >U</span>
+                    <span>Usuarios</span>
+                </a>
+
+                <a
+                    class="navegacion__enlace"
+                    href="{{ url_for(
+                        'contexto.seleccionar'
+                    ) }}"
+                >
+                    <span
+                        class="navegacion__icono"
+                        aria-hidden="true"
+                    >⌖</span>
+                    <span>Cambiar ubicación</span>
+                </a>
+            </nav>
+
+            <div class="lateral__usuario">
+                <div class="usuario">
+                    <div
+                        class="usuario__avatar"
+                        aria-hidden="true"
+                    >
+                        {{
+                            current_user.nombre[:1]
+                            | upper
+                        }}
+                    </div>
+
+                    <div>
+                        <div class="usuario__nombre">
+                            {{ current_user.nombre }}
+                            {{
+                                current_user.apellido
+                                or ""
+                            }}
+                        </div>
+                        <span class="usuario__rol">
+                            {{
+                                current_user.rol
+                                | replace("_", " ")
+                                | title
+                            }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <button
+            id="cerrar-menu"
+            class="superposicion"
+            type="button"
+            aria-label="Cerrar menú"
+        ></button>
+
+        <div class="principal">
+            <header class="cabecera">
+                <div class="cabecera__grupo">
+                    <button
+                        id="abrir-menu"
+                        class="boton-menu"
+                        type="button"
+                        aria-label="Abrir menú"
+                        aria-controls="barra-lateral"
+                        aria-expanded="false"
+                    >
+                        ☰
+                    </button>
+
+                    <div>
+                        <h1 class="cabecera__titulo">
+                            Planes y suscripción
+                        </h1>
+                        <p class="cabecera__contexto">
+                            {{ contexto.sucursal.nombre }}
+                            ·
+                            Gestión comercial
+                        </p>
+                    </div>
+                </div>
+
+                <div class="cabecera__acciones">
+                    <button
+                        id="actualizar-planes-cabecera"
+                        class="boton boton--secundario"
+                        type="button"
+                    >
+                        Actualizar
+                    </button>
+
+                    <form
+                        method="post"
+                        action="{{ url_for(
+                            'autenticacion.salir'
+                        ) }}"
+                    >
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}"
+                        >
+
+                        <button
+                            class="boton boton--secundario"
+                            type="submit"
+                        >
+                            Cerrar sesión
+                        </button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="planes-contenido">
+                <section class="planes-portada">
+                    <div>
+                        <p class="planes-portada__etiqueta">
+                            Capacidad empresarial
+                        </p>
+                        <h2>
+                            Elige la capacidad que necesita tu empresa
+                        </h2>
+                        <p>
+                            Compara funciones, límites y ciclos
+                            de facturación con toda la capacidad
+                            disponible en NexuStock.
+                        </p>
+                    </div>
+
+                    <div class="planes-portada__estado">
+                        <span aria-hidden="true">●</span>
+                        <div>
+                            <strong>
+                                Suscripción protegida
+                            </strong>
+                            <small>
+                                Cambios controlados y auditados
+                            </small>
+                        </div>
+                    </div>
+                </section>
+
+                <section
+                    class="planes-resumen"
+                    aria-label="Resumen de la suscripción"
+                >
+                    <article>
+                        <span>Plan actual</span>
+                        <strong id="resumen-plan-actual">
+                            Cargando...
+                        </strong>
+                        <small>
+                            Capacidad contratada
+                        </small>
+                    </article>
+
+                    <article>
+                        <span>Estado</span>
+                        <strong
+                            id="resumen-estado-suscripcion"
+                        >
+                            Cargando...
+                        </strong>
+                        <small>
+                            Estado de la suscripción
+                        </small>
+                    </article>
+
+                    <article>
+                        <span>Vigencia</span>
+                        <strong id="resumen-vigencia">
+                            Cargando...
+                        </strong>
+                        <small>
+                            Próxima fecha de término
+                        </small>
+                    </article>
+
+                    <article>
+                        <span>Ciclo</span>
+                        <strong id="resumen-ciclo">
+                            Cargando...
+                        </strong>
+                        <small>
+                            Periodicidad contratada
+                        </small>
+                    </article>
+                </section>
+
+                <section class="planes-panel">
+                    <div class="planes-panel__encabezado">
+                        <div>
+                            <p class="planes-panel__etiqueta">
+                                Oferta comercial
+                            </p>
+                            <h3>Planes disponibles</h3>
+                            <p>
+                                Todos los planes muestran límites,
+                                capacidades incluidas y funciones
+                                disponibles próximamente.
+                            </p>
+                        </div>
+
+                        <div class="planes-panel__acciones">
+                            <label class="campo campo--compacto">
+                                <span>Ciclo de facturación</span>
+                                <select id="selector-ciclo">
+                                    <option value="mensual">
+                                        Mensual
+                                    </option>
+                                    <option value="anual">
+                                        Anual ? mejor valor
+                                    </option>
+                                </select>
+                            </label>
+
+                            <button
+                                id="actualizar-planes"
+                                class="boton boton--secundario"
+                                type="button"
+                            >
+                                Actualizar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div
+                        id="estado-planes"
+                        class="planes-estado"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        Cargando planes...
+                    </div>
+
+                    <div
+                        id="lista-planes"
+                        class="planes-lista"
+                    ></div>
+                </section>
+
+                <section class="planes-panel">
+                    <div class="planes-panel__encabezado">
+                        <div>
+                            <p class="planes-panel__etiqueta">
+                                Alcance contratado
+                            </p>
+                            <h3>Límites del plan actual</h3>
+                            <p>
+                                Consulta el volumen operacional
+                                permitido por tu suscripción.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        id="lista-limites-plan"
+                        class="planes-limites"
+                    ></div>
+                </section>
+
+                <section class="planes-panel">
+                    <div class="planes-panel__encabezado">
+                        <div>
+                            <p class="planes-panel__etiqueta">
+                                Matriz funcional
+                            </p>
+                            <h3>Capacidades de NexuStock</h3>
+                            <p>
+                                Compara las 29 capacidades
+                                comerciales disponibles en la
+                                plataforma.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        id="comparador-capacidades"
+                        class="planes-comparador"
+                    >
+                        <div class="planes-comparador__vacio">
+                            Cargando capacidades...
+                        </div>
+                    </div>
+
+                    <div
+                        class="planes-ia"
+                        aria-label="Inteligencia artificial"
+                    >
+                        <div>
+                            <strong>
+                                Inteligencia artificial
+                            </strong>
+                            <p>
+                                Predicción y asistencia avanzada
+                                dentro del flujo operativo.
+                            </p>
+                        </div>
+                        <span>Próximamente</span>
+                    </div>
+                </section>
+
+                <section class="planes-panel">
+                    <div class="planes-panel__encabezado">
+                        <div>
+                            <p class="planes-panel__etiqueta">
+                                Seguimiento
+                            </p>
+                            <h3>Solicitudes de cambio</h3>
+                            <p>
+                                Revisa solicitudes pendientes,
+                                aprobadas o canceladas.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div
+                        id="historial-solicitudes"
+                        class="planes-solicitudes"
+                    >
+                        Cargando solicitudes...
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div
+        id="notificacion"
+        class="notificacion"
+        role="status"
+        aria-live="polite"
+        hidden
+    ></div>
+
+    <script
+        src="{{ url_for(
+            'static',
+            filename='js/planes.js'
+        ) }}"
+        defer
+    ></script>
+</body>
+</html>

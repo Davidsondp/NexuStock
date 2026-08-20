@@ -7,6 +7,7 @@ from decimal import Decimal
 import pytest
 
 from app.models import Auditoria, Empresa, Pago, PlanSaaS, SolicitudCambioPlan, Usuario, db
+from app.services.planes import CATALOGO_CAPACIDADES
 from app.services.suscripciones import (ConflictoPago, ErrorSuscripcion,
     FirmaWebhookInvalida, ProcesadorWebhooksPago, ServicioSuscripciones)
 from tests.test_autenticacion import REGISTRO
@@ -136,3 +137,320 @@ def test_webhook_sin_secreto_no_arranca(app, client):
     cuerpo, marca, firma = _evento()
     with pytest.raises(RuntimeError):
         ProcesadorWebhooksPago(None)
+
+
+def test_resumen_expone_detalle_del_plan_actual(
+    app,
+    client,
+):
+    _preparar(app, client)
+
+    respuesta = client.get(
+        "/api/suscripciones"
+    )
+
+    assert respuesta.status_code == 200
+
+    datos = respuesta.get_json()
+    suscripcion = datos["suscripcion"]
+
+    # Se conserva el contrato existente.
+    assert suscripcion["plan"] == "prueba"
+    assert suscripcion["estado"] == "prueba"
+    assert suscripcion["ciclo"] == "prueba"
+
+    # Detalle requerido por el panel empresarial.
+    assert (
+        suscripcion["plan_nombre"]
+        == "Prueba"
+    )
+    assert suscripcion["limites"] == {
+        "productos": 100,
+        "usuarios": 2,
+        "movimientos_mes": 500,
+        "sucursales": 1,
+        "bodegas": 1,
+        "almacenamiento_mb": None,
+    }
+    assert (
+        suscripcion["funciones"]["productos"]
+        is True
+    )
+
+
+def test_resumen_expone_planes_comerciales_activos(
+    app,
+    client,
+):
+    _preparar(app, client)
+
+    with app.app_context():
+        basico = PlanSaaS(
+            codigo="basico-panel",
+            nombre="B\u00e1sico Panel",
+            descripcion="Operaci\u00f3n esencial",
+            precio_mensual=9990,
+            precio_anual=99900,
+            moneda="CLP",
+            dias_prueba=0,
+            limite_productos=500,
+            limite_usuarios=2,
+            limite_movimientos_mes=5000,
+            limite_sucursales=1,
+            limite_bodegas=1,
+            almacenamiento_mb=2000,
+            funciones={
+                "productos": True,
+                "movimientos": True,
+            },
+            activo=True,
+            orden=2,
+        )
+        inactivo = PlanSaaS(
+            codigo="plan-inactivo",
+            nombre="Plan inactivo",
+            descripcion="No debe exponerse",
+            precio_mensual=1,
+            precio_anual=1,
+            moneda="CLP",
+            dias_prueba=0,
+            funciones={},
+            activo=False,
+            orden=99,
+        )
+
+        db.session.add_all([
+            basico,
+            inactivo,
+        ])
+        db.session.commit()
+
+    respuesta = client.get(
+        "/api/suscripciones"
+    )
+
+    assert respuesta.status_code == 200
+
+    planes = respuesta.get_json()[
+        "planes_disponibles"
+    ]
+
+    codigos = [
+        plan["codigo"]
+        for plan in planes
+    ]
+
+    assert "prueba" not in codigos
+    assert "plan-inactivo" not in codigos
+    assert "basico-panel" in codigos
+    assert "profesional-pago" in codigos
+
+    plan = next(
+        plan
+        for plan in planes
+        if plan["codigo"] == "basico-panel"
+    )
+
+    capacidades = plan.pop("capacidades")
+
+    assert len(capacidades) == 29
+    assert {
+        capacidad["codigo"]
+        for capacidad in capacidades
+    } == {
+        capacidad["codigo"]
+        for capacidad
+        in CATALOGO_CAPACIDADES
+    }
+
+    assert plan == {
+        "id": plan["id"],
+        "codigo": "basico-panel",
+        "nombre": "B\u00e1sico Panel",
+        "descripcion": "Operaci\u00f3n esencial",
+        "precio_mensual": "9990.00",
+        "precio_anual": "99900.00",
+        "moneda": "CLP",
+        "limites": {
+            "productos": 500,
+            "usuarios": 2,
+            "movimientos_mes": 5000,
+            "sucursales": 1,
+            "bodegas": 1,
+            "almacenamiento_mb": 2000,
+        },
+        "funciones": {
+            "productos": True,
+            "movimientos": True,
+        },
+    }
+
+
+def test_resumen_ordena_planes_comerciales(
+    app,
+    client,
+):
+    _preparar(app, client)
+
+    with app.app_context():
+        primero = PlanSaaS(
+            codigo="primero",
+            nombre="Primero",
+            precio_mensual=100,
+            precio_anual=1000,
+            moneda="CLP",
+            dias_prueba=0,
+            funciones={},
+            activo=True,
+            orden=1,
+        )
+        ultimo = PlanSaaS(
+            codigo="ultimo",
+            nombre="\u00daltimo",
+            precio_mensual=300,
+            precio_anual=3000,
+            moneda="CLP",
+            dias_prueba=0,
+            funciones={},
+            activo=True,
+            orden=20,
+        )
+
+        db.session.add_all([
+            ultimo,
+            primero,
+        ])
+        db.session.commit()
+
+    planes = client.get(
+        "/api/suscripciones"
+    ).get_json()["planes_disponibles"]
+
+    codigos = [
+        plan["codigo"]
+        for plan in planes
+    ]
+
+    assert (
+        codigos.index("primero")
+        < codigos.index("ultimo")
+    )
+
+
+def test_resumen_expone_catalogo_comercial_completo(
+    app,
+    client,
+):
+    _preparar(app, client)
+
+    respuesta = client.get(
+        "/api/suscripciones"
+    )
+
+    assert respuesta.status_code == 200
+
+    catalogo = respuesta.get_json()[
+        "catalogo_capacidades"
+    ]
+
+    assert len(catalogo) == 29
+
+    codigos = {
+        capacidad["codigo"]
+        for capacidad in catalogo
+    }
+
+    assert {
+        "productos",
+        "inventario",
+        "ventas",
+        "compras",
+        "alertas",
+        "analitica",
+        "multisucursal",
+        "transferencias",
+        "api",
+        "ia",
+    }.issubset(codigos)
+
+    ia = next(
+        capacidad
+        for capacidad in catalogo
+        if capacidad["codigo"] == "ia"
+    )
+
+    assert ia["estado"] == "proximamente"
+    assert ia["grupo"] == "inteligencia"
+
+
+def test_plan_actual_expone_capacidades_comerciales(
+    app,
+    client,
+):
+    _preparar(app, client)
+
+    suscripcion = client.get(
+        "/api/suscripciones"
+    ).get_json()["suscripcion"]
+
+    capacidades = suscripcion["capacidades"]
+
+    assert len(capacidades) == 29
+
+    por_codigo = {
+        capacidad["codigo"]: capacidad
+        for capacidad in capacidades
+    }
+
+    assert (
+        por_codigo["productos"]["incluida"]
+        is True
+    )
+    assert (
+        por_codigo["ia"]["incluida"]
+        is False
+    )
+    assert (
+        por_codigo["ia"]["estado"]
+        == "proximamente"
+    )
+
+
+def test_planes_disponibles_exponen_matriz_completa(
+    app,
+    client,
+):
+    _preparar(app, client)
+
+    planes = client.get(
+        "/api/suscripciones"
+    ).get_json()["planes_disponibles"]
+
+    profesional = next(
+        plan
+        for plan in planes
+        if plan["codigo"]
+        == "profesional-pago"
+    )
+
+    capacidades = profesional["capacidades"]
+
+    assert len(capacidades) == 29
+
+    por_codigo = {
+        capacidad["codigo"]: capacidad
+        for capacidad in capacidades
+    }
+
+    assert (
+        por_codigo["analitica"]["incluida"]
+        is True
+    )
+    assert (
+        por_codigo["api"]["incluida"]
+        is False
+    )
+    assert (
+        por_codigo["ia"]["incluida"]
+        is False
+    )
