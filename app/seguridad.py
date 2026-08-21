@@ -121,7 +121,7 @@ def registrar_seguridad(app):
         respuesta.headers["Permissions-Policy"] = "camera=(self), microphone=(), geolocation=(self)"
         respuesta.headers["Content-Security-Policy"] = (
             "default-src 'self'; img-src 'self' https: data:; base-uri 'self'; "
-            "frame-ancestors 'none'; form-action 'self'; object-src 'none'"
+            "frame-ancestors 'none'; form-action 'self' https://webpay3gint.transbank.cl https://webpay3g.transbank.cl; object-src 'none'"
         )
         respuesta.headers["X-Request-ID"] = getattr(g, "id_solicitud", secrets.token_hex(16))
         if request.endpoint != "static":
