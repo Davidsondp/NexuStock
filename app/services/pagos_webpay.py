@@ -377,6 +377,78 @@ def _buscar_pago_por_token(
     )
 
 
+def cancelar_checkout_webpay(
+    *,
+    token: str,
+    referencia: str | None = None,
+    sesion: str | None = None,
+) -> Pago:
+    """Registra una cancelaci?n desde el formulario de Webpay sin ejecutar commit."""
+
+    token = str(token or "").strip()
+    referencia = str(referencia or "").strip()
+    sesion = str(sesion or "").strip()
+
+    if not token:
+        raise TokenWebpayInvalido("El token Webpay no es v?lido")
+
+    pago = _buscar_pago_por_token(token)
+
+    if not pago:
+        raise TokenWebpayInvalido(
+            "El token Webpay no corresponde a un pago"
+        )
+
+    datos = dict(pago.datos_proveedor or {})
+
+    if referencia and pago.referencia_externa != referencia:
+        raise TokenWebpayInvalido(
+            "La orden de compra no corresponde al pago"
+        )
+
+    sesion_registrada = str(datos.get("session_id") or "").strip()
+
+    if sesion and sesion_registrada and sesion != sesion_registrada:
+        raise TokenWebpayInvalido(
+            "La sesi?n Webpay no corresponde al pago"
+        )
+
+    if pago.estado == "pagado":
+        raise ConflictoPago(
+            "El pago ya fue confirmado y no puede cancelarse"
+        )
+
+    if pago.estado in {"rechazado", "anulado", "reembolsado"}:
+        return pago
+
+    pago.estado = "rechazado"
+    pago.datos_proveedor = {
+        **datos,
+        "cancelado_por_usuario": True,
+        "cancelado_en": utcnow().isoformat(),
+        "tbk_orden_compra": referencia or None,
+        "tbk_id_sesion": sesion or None,
+        "motivo": "Cancelado por el usuario en Webpay",
+    }
+
+    registrar_auditoria(
+        accion="pago.webpay_cancelado_usuario",
+        modulo="suscripciones",
+        empresa_id=pago.empresa_id,
+        entidad_tipo="Pago",
+        entidad_id=pago.id,
+        datos_nuevos={
+            "proveedor": "webpay",
+            "referencia": pago.referencia_externa,
+            "estado": pago.estado,
+            "motivo": "Cancelado por el usuario en Webpay",
+        },
+    )
+
+    db.session.commit()
+    return pago
+
+
 def _respuesta_webpay_segura(
     respuesta: Any,
 ) -> dict:

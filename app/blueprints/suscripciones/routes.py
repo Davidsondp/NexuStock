@@ -12,6 +12,7 @@ from ...services.pagos_webpay import (
     ErrorProveedorWebpay,
     TokenWebpayInvalido,
     WebpayNoConfigurado,
+    cancelar_checkout_webpay,
     confirmar_checkout_webpay,
     iniciar_checkout_webpay,
     obtener_transaccion_webpay,
@@ -273,12 +274,35 @@ def iniciar_checkout_mercadopago_route(solicitud_id):
 )
 @csrf.exempt
 def retorno_webpay():
-    token = request.form.get("token_ws") or request.args.get("token_ws")
+    token = request.values.get("token_ws")
+    token_cancelado = request.values.get("TBK_TOKEN")
+    orden_cancelada = request.values.get("TBK_ORDEN_COMPRA")
+    sesion_cancelada = request.values.get("TBK_ID_SESION")
 
     try:
+        if token_cancelado:
+            cancelar_checkout_webpay(
+                token=token_cancelado,
+                referencia=orden_cancelada,
+                sesion=sesion_cancelada,
+            )
+
+            return redirect(
+                url_for(
+                    "panel.inicio",
+                    checkout="cancelado",
+                )
+            )
+
         if not token:
-            raise TokenWebpayInvalido("El token Webpay no es válido")
-        transaccion = obtener_transaccion_webpay(current_app.config)
+            raise TokenWebpayInvalido(
+                "El token Webpay no es v?lido"
+            )
+
+        transaccion = obtener_transaccion_webpay(
+            current_app.config
+        )
+
         confirmar_checkout_webpay(
             token=token,
             transaccion=transaccion,
