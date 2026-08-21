@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 from urllib.parse import quote
@@ -171,6 +172,12 @@ def _pago_reutilizable(
     empresa_id: int,
     solicitud_id: int,
 ) -> Pago | None:
+    """Reutiliza ?nicamente transacciones reci?n creadas.
+
+    La ventana breve evita duplicados por doble clic, pero impide
+    reutilizar tokens Webpay vencidos, consumidos o abandonados.
+    """
+
     pagos = db.session.scalars(
         db.select(Pago)
         .where(
@@ -187,11 +194,58 @@ def _pago_reutilizable(
         .order_by(Pago.id.desc())
     )
 
+    hubo_cambios = False
+    ahora = utcnow()
+    ventana_reutilizacion = timedelta(seconds=15)
+
     for pago in pagos:
         datos = dict(pago.datos_proveedor or {})
+        token = str(datos.get("token") or "").strip()
+        url = str(datos.get("url_redireccion") or "").strip()
+        iniciado_en = str(datos.get("iniciado_en") or "").strip()
 
-        if datos.get("token") and datos.get("url_redireccion"):
+        reutilizable = False
+
+        if token and url and iniciado_en:
+            try:
+                inicio_pago = datetime.fromisoformat(iniciado_en)
+
+                if inicio_pago.tzinfo is not None:
+                    inicio_pago = (
+                        inicio_pago
+                        .astimezone(timezone.utc)
+                        .replace(tzinfo=None)
+                    )
+
+                edad = ahora - inicio_pago
+
+                reutilizable = (
+                    timedelta(0)
+                    <= edad
+                    <= ventana_reutilizacion
+                )
+
+            except (TypeError, ValueError):
+                reutilizable = False
+
+        if reutilizable:
+            if hubo_cambios:
+                db.session.commit()
+
             return pago
+
+        pago.estado = "rechazado"
+        pago.datos_proveedor = {
+            **datos,
+            "motivo": (
+                "Transacci?n Webpay reemplazada por un nuevo intento"
+            ),
+            "expirado_en": ahora.isoformat(),
+        }
+        hubo_cambios = True
+
+    if hubo_cambios:
+        db.session.commit()
 
     return None
 
