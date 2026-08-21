@@ -1,0 +1,180 @@
+:root {
+    --nx-fondo: #f3f6fb;
+    --nx-superficie: rgb(255 255 255 / 92%);
+    --nx-texto: #111827;
+    --nx-suave: #667085;
+    --nx-borde: #e4eaf2;
+    --nx-azul: #2563eb;
+    --nx-azul-oscuro: #1d4ed8;
+    --nx-violeta: #7c3aed;
+    --nx-verde: #059669;
+    --nx-rojo: #e11d48;
+    --nx-radio: 18px;
+    --nx-sombra: 0 16px 42px rgb(15 23 42 / 8%);
+    --nx-sombra-hover: 0 24px 58px rgb(15 23 42 / 13%);
+}
+
+html {
+    accent-color: var(--nx-azul);
+}
+
+body {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+.marca__icono:has(.marca__logo) {
+    overflow: hidden;
+    border: 1px solid rgb(219 234 254 / 75%);
+    background: #fff;
+    box-shadow: 0 8px 22px rgb(15 23 42 / 18%);
+}
+
+.marca__logo {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.marca__logo-completo,
+.marca-publica__logo {
+    display: block;
+    flex: 0 0 auto;
+    border-radius: 18px;
+    background: #fff;
+    object-fit: contain;
+    box-shadow: 0 12px 28px rgb(2 36 78 / 22%);
+}
+
+.marca__logo-completo { width: 74px; height: 74px; }
+.marca-publica__logo { width: 48px; height: 48px; border-radius: 13px; }
+
+body::selection {
+    background: #bfdbfe;
+    color: #172554;
+}
+
+body :where(button, a, input, select, textarea) {
+    -webkit-tap-highlight-color: transparent;
+}
+
+body :where(button, a, input, select, textarea):focus-visible {
+    outline: 3px solid rgb(37 99 235 / 22%);
+    outline-offset: 2px;
+}
+
+body :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    border-color: var(--nx-borde);
+    border-radius: 12px;
+    background-color: #fff;
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+body :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):hover {
+    border-color: #cbd5e1;
+}
+
+body :where(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 4px rgb(37 99 235 / 10%);
+    outline: none;
+}
+
+body :where(input, textarea)::placeholder {
+    color: #98a2b3;
+}
+
+body :where(button, .boton) {
+    transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+body :where(button, .boton):not(:disabled):hover {
+    transform: translateY(-2px);
+}
+
+body :where(button, .boton):disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+body :where(.tarjeta, .card, article, section) {
+    scroll-margin-top: 100px;
+}
+
+body :where(.tarjeta, .panel, .modal__contenido, .modal-contenido) {
+    border-color: var(--nx-borde);
+}
+
+body :where(.tarjeta, .card) {
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+body :where(.tarjeta, .card):focus-within {
+    border-color: #bfdbfe;
+    box-shadow: var(--nx-sombra-hover);
+}
+
+body :where(table) {
+    font-variant-numeric: tabular-nums;
+}
+
+body :where(tbody tr) {
+    transition: background-color 140ms ease;
+}
+
+body :where(dialog, [role="dialog"]) {
+    backdrop-filter: blur(8px);
+}
+
+body :where(.insignia, .badge, [class*="estado--"]) {
+    letter-spacing: 0.01em;
+}
+
+body :where(.estado-carga, .tabla__vacio, .estado-vacio) {
+    color: var(--nx-suave);
+}
+
+body :where(.notificacion, #notificacion, #mensaje) {
+    backdrop-filter: blur(14px);
+}
+
+* {
+    scrollbar-color: #cbd5e1 transparent;
+    scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background: #cbd5e1;
+    background-clip: padding-box;
+}
+
+@media (hover: hover) {
+    body :where(.tabla tbody tr, tbody tr):hover {
+        background-color: #f8faff;
+    }
+}
+
+@media (max-width: 640px) {
+    body :where(button, .boton, input, select) {
+        min-height: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}
