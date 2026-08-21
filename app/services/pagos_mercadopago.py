@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
 import hmac
@@ -97,7 +98,12 @@ def _referencia(empresa_id: int, solicitud_id: int) -> str:
     return f"NS-MP-{empresa_id}-{solicitud_id}-{uuid4().hex[:16].upper()}"
 
 
-def _pago_reutilizable(empresa_id: int, solicitud_id: int) -> Pago | None:
+def _pago_reutilizable(
+    empresa_id: int,
+    solicitud_id: int,
+) -> Pago | None:
+    """Reutiliza una preferencia solo durante una ventana breve."""
+
     pagos = db.session.scalars(
         db.select(Pago)
         .where(
@@ -108,7 +114,56 @@ def _pago_reutilizable(empresa_id: int, solicitud_id: int) -> Pago | None:
         )
         .order_by(Pago.id.desc())
     )
-    return next((p for p in pagos if (p.datos_proveedor or {}).get("init_point")), None)
+
+    ahora = utcnow()
+    ventana = timedelta(seconds=15)
+    hubo_cambios = False
+
+    for pago in pagos:
+        datos = dict(pago.datos_proveedor or {})
+        url = str(datos.get("init_point") or "").strip()
+        iniciado_en = str(datos.get("iniciado_en") or "").strip()
+        reutilizable = False
+
+        if url and iniciado_en:
+            try:
+                inicio_pago = datetime.fromisoformat(iniciado_en)
+
+                if inicio_pago.tzinfo is not None:
+                    inicio_pago = (
+                        inicio_pago
+                        .astimezone(timezone.utc)
+                        .replace(tzinfo=None)
+                    )
+
+                edad = ahora - inicio_pago
+                reutilizable = (
+                    timedelta(0) <= edad <= ventana
+                )
+
+            except (TypeError, ValueError):
+                reutilizable = False
+
+        if reutilizable:
+            if hubo_cambios:
+                db.session.commit()
+
+            return pago
+
+        pago.estado = "rechazado"
+        pago.datos_proveedor = {
+            **datos,
+            "motivo": (
+                "Preferencia reemplazada por un nuevo intento"
+            ),
+            "expirado_en": ahora.isoformat(),
+        }
+        hubo_cambios = True
+
+    if hubo_cambios:
+        db.session.commit()
+
+    return None
 
 
 def iniciar_checkout_mercadopago(
@@ -190,9 +245,9 @@ def iniciar_checkout_mercadopago(
                 },
                 "payer": {"email": usuario.email},
                 "back_urls": {
-                    "success": base_url + "/panel/administracion/planes?checkout=exito",
-                    "failure": base_url + "/panel/administracion/planes?checkout=error",
-                    "pending": base_url + "/panel/administracion/planes?checkout=pendiente",
+                    "success": base_url + "/webhooks/pagos/mercadopago/retorno?resultado=exito",
+                    "failure": base_url + "/webhooks/pagos/mercadopago/retorno?resultado=error",
+                    "pending": base_url + "/webhooks/pagos/mercadopago/retorno?resultado=pendiente",
                 },
                 "auto_return": "approved",
                 "notification_url": base_url + "/webhooks/pagos/mercadopago",

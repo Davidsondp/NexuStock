@@ -331,6 +331,36 @@ def retorno_webpay():
         return _error(exc, 400)
 
 
+@webhooks_pago_bp.get("/mercadopago/retorno")
+def retorno_mercadopago():
+    resultado = str(
+        request.args.get("resultado") or "pendiente"
+    ).strip().lower()
+
+    if resultado not in {"exito", "error", "pendiente"}:
+        resultado = "pendiente"
+
+    if current_user.is_authenticated:
+        if current_user.rol == "super_admin":
+            destino = url_for(
+                "panel_superadministracion.inicio"
+            )
+        else:
+            destino = url_for(
+                "panel.inicio",
+                checkout=resultado,
+                proveedor="mercadopago",
+            )
+    else:
+        destino = url_for(
+            "autenticacion.ingresar",
+            checkout=resultado,
+            proveedor="mercadopago",
+        )
+
+    return redirect(destino)
+
+
 @webhooks_pago_bp.post("/mercadopago")
 @csrf.exempt
 def webhook_mercadopago():
