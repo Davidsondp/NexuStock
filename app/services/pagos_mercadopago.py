@@ -9,6 +9,7 @@ import hashlib
 import hmac
 import time
 from typing import Any
+from urllib.parse import quote
 from uuid import uuid4
 
 import requests
@@ -83,6 +84,35 @@ class ClienteMercadoPago:
     def obtener_pago(self, pago_id: str) -> dict:
         return self._solicitar("GET", f"/v1/payments/{pago_id}")
 
+    def buscar_pagos(self, referencia_externa: str) -> list[dict]:
+        datos = self._solicitar(
+            "GET",
+            "/v1/payments/search",
+            params={
+                "external_reference": referencia_externa,
+                "sort": "date_created",
+                "criteria": "desc",
+            },
+        )
+        resultados = datos.get("results") or []
+        if not isinstance(resultados, list):
+            raise ErrorProveedorMercadoPago(
+                "Mercado Pago devolvió una búsqueda inválida"
+            )
+        return [item for item in resultados if isinstance(item, dict)]
+
+    def expirar_preferencia(self, preferencia_id: str) -> dict:
+        ahora = datetime.now(timezone.utc)
+        return self._solicitar(
+            "PUT",
+            f"/checkout/preferences/{quote(str(preferencia_id), safe='')}",
+            json={
+                "expires": True,
+                "expiration_date_from": (ahora - timedelta(days=1)).isoformat(),
+                "expiration_date_to": ahora.isoformat(),
+            },
+        )
+
 
 def obtener_cliente_mercadopago(configuracion):
     fabrica = configuracion.get("MERCADOPAGO_CLIENTE_FACTORY")
@@ -102,7 +132,11 @@ def _pago_reutilizable(
     empresa_id: int,
     solicitud_id: int,
 ) -> Pago | None:
-    """Reutiliza una preferencia solo durante una ventana breve."""
+    """Reutiliza la preferencia mientras no exista un resultado final.
+
+    Una preferencia de Mercado Pago no se considera vencida solo por el
+    tiempo local. La cancelación segura la expira expresamente en el proveedor.
+    """
 
     pagos = db.session.scalars(
         db.select(Pago)
@@ -115,53 +149,11 @@ def _pago_reutilizable(
         .order_by(Pago.id.desc())
     )
 
-    ahora = utcnow()
-    ventana = timedelta(seconds=15)
-    hubo_cambios = False
-
     for pago in pagos:
         datos = dict(pago.datos_proveedor or {})
         url = str(datos.get("init_point") or "").strip()
-        iniciado_en = str(datos.get("iniciado_en") or "").strip()
-        reutilizable = False
-
-        if url and iniciado_en:
-            try:
-                inicio_pago = datetime.fromisoformat(iniciado_en)
-
-                if inicio_pago.tzinfo is not None:
-                    inicio_pago = (
-                        inicio_pago
-                        .astimezone(timezone.utc)
-                        .replace(tzinfo=None)
-                    )
-
-                edad = ahora - inicio_pago
-                reutilizable = (
-                    timedelta(0) <= edad <= ventana
-                )
-
-            except (TypeError, ValueError):
-                reutilizable = False
-
-        if reutilizable:
-            if hubo_cambios:
-                db.session.commit()
-
+        if url:
             return pago
-
-        pago.estado = "rechazado"
-        pago.datos_proveedor = {
-            **datos,
-            "motivo": (
-                "Preferencia reemplazada por un nuevo intento"
-            ),
-            "expirado_en": ahora.isoformat(),
-        }
-        hubo_cambios = True
-
-    if hubo_cambios:
-        db.session.commit()
 
     return None
 

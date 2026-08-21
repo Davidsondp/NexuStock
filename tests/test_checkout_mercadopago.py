@@ -10,6 +10,8 @@ class ClienteMercadoPagoFalso:
     def __init__(self):
         self.preferencias = []
         self.pagos = {}
+        self.resultados_busqueda = []
+        self.preferencias_expiradas = []
 
     def crear_preferencia(self, datos, clave_idempotencia):
         self.preferencias.append((datos, clave_idempotencia))
@@ -21,6 +23,13 @@ class ClienteMercadoPagoFalso:
 
     def obtener_pago(self, pago_id):
         return self.pagos[str(pago_id)]
+
+    def buscar_pagos(self, _referencia_externa):
+        return list(self.resultados_busqueda)
+
+    def expirar_preferencia(self, preferencia_id):
+        self.preferencias_expiradas.append(preferencia_id)
+        return {"id": preferencia_id, "expires": True}
 
 
 def _configurar(app, cliente):
@@ -77,6 +86,60 @@ def test_checkout_mercadopago_reutiliza_preferencia(app, client):
     assert segunda.status_code == 200
     assert primera.get_json()["id"] == segunda.get_json()["id"]
     assert len(proveedor.preferencias) == 1
+
+
+def test_cancelacion_expira_preferencia_sin_pago_y_libera_solicitud(app, client):
+    solicitud = preparar_solicitud(app, client)
+    proveedor = ClienteMercadoPagoFalso()
+    _configurar(app, proveedor)
+    inicio = client.post(
+        f"/api/suscripciones/solicitudes/{solicitud['id']}/checkout/mercadopago",
+        json={},
+    )
+    assert inicio.status_code == 201
+
+    respuesta = client.post(
+        f"/api/suscripciones/solicitudes/{solicitud['id']}/cancelar",
+        json={},
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.get_json()["estado"] == "cancelada"
+    assert proveedor.preferencias_expiradas == ["PREFERENCIA-PRUEBA"]
+    with app.app_context():
+        pago = db.session.get(Pago, inicio.get_json()["id"])
+        assert pago.estado == "rechazado"
+
+
+def test_cancelacion_detecta_pago_aprobado_mercadopago(app, client):
+    solicitud = preparar_solicitud(app, client)
+    proveedor = ClienteMercadoPagoFalso()
+    _configurar(app, proveedor)
+    inicio = client.post(
+        f"/api/suscripciones/solicitudes/{solicitud['id']}/checkout/mercadopago",
+        json={},
+    ).get_json()
+    proveedor.resultados_busqueda = [{"id": 123, "status": "approved"}]
+    proveedor.pagos["123"] = {
+        "id": 123,
+        "status": "approved",
+        "external_reference": inicio["referencia_externa"],
+        "transaction_amount": solicitud["monto_esperado"],
+        "currency_id": "CLP",
+        "payment_type_id": "credit_card",
+    }
+
+    respuesta = client.post(
+        f"/api/suscripciones/solicitudes/{solicitud['id']}/cancelar",
+        json={},
+    )
+
+    assert respuesta.status_code == 409
+    with app.app_context():
+        pago = db.session.get(Pago, inicio["id"])
+        solicitud_db = db.session.get(SolicitudCambioPlan, solicitud["id"])
+        assert pago.estado == "pagado"
+        assert solicitud_db.estado == "aprobada"
 
 
 def test_webhook_mercadopago_consulta_y_activa_suscripcion(app, client):

@@ -7,6 +7,7 @@ from ...services.planes import (
     CATALOGO_CAPACIDADES,
     capacidades_del_plan,
 )
+from ...services.conciliacion_pagos import conciliar_antes_de_cancelar
 from ...services.pagos_webpay import (
     ErrorCheckoutWebpay,
     ErrorProveedorWebpay,
@@ -130,7 +131,7 @@ def solicitar():
             201,
         )
     except ErrorSuscripcion as exc:
-        return _error(exc)
+        return _error(exc, 409 if isinstance(exc, ConflictoPago) else 400)
 
 
 @suscripciones_bp.post("/solicitudes/<int:solicitud_id>/cancelar")
@@ -138,11 +139,16 @@ def solicitar():
 @requerir_permiso("suscripciones.solicitar")
 def cancelar(solicitud_id):
     try:
+        conciliar_antes_de_cancelar(
+            usuario=current_user,
+            solicitud_id=solicitud_id,
+            configuracion=current_app.config,
+        )
         return jsonify(
             _solicitud(ServicioSuscripciones(current_user).cancelar_solicitud(solicitud_id))
         )
     except ErrorSuscripcion as exc:
-        return _error(exc)
+        return _error(exc, 409 if isinstance(exc, ConflictoPago) else 400)
 
 
 @suscripciones_bp.post("/solicitudes/<int:solicitud_id>/pagos")
@@ -296,7 +302,7 @@ def retorno_webpay():
 
         if not token:
             raise TokenWebpayInvalido(
-                "El token Webpay no es v?lido"
+                "El token Webpay no es válido"
             )
 
         transaccion = obtener_transaccion_webpay(

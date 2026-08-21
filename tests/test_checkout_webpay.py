@@ -13,6 +13,8 @@ from tests.test_suscripciones import _preparar
 class TransaccionWebpayFalsa:
     def __init__(self):
         self.creaciones = []
+        self.estado = "INITIALIZED"
+        self.respuesta_estado = None
 
     def create(
         self,
@@ -34,6 +36,9 @@ class TransaccionWebpayFalsa:
             "token": "TOKEN-WEBPAY-PRUEBA",
             "url": ("https://webpay3gint.transbank.cl/" "webpayserver/initTransaction"),
         }
+
+    def status(self, _token):
+        return self.respuesta_estado or {"status": self.estado}
 
 
 def preparar_solicitud(app, client):
@@ -147,6 +152,86 @@ def test_checkout_webpay_reutiliza_pago_en_proceso(
         )
 
         assert len(pagos) == 1
+
+
+def test_cancelacion_concilia_webpay_fallido_y_libera_solicitud(app, client):
+    solicitud = preparar_solicitud(app, client)
+    transaccion = TransaccionWebpayFalsa()
+    app.config["WEBPAY_TRANSACCION_FACTORY"] = lambda: transaccion
+    inicio = client.post(
+        f"/api/suscripciones/solicitudes/{solicitud['id']}/checkout/webpay",
+        json={},
+    )
+    assert inicio.status_code == 201
+
+    transaccion.estado = "FAILED"
+    respuesta = client.post(
+        f"/api/suscripciones/solicitudes/{solicitud['id']}/cancelar",
+        json={},
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.get_json()["estado"] == "cancelada"
+    with app.app_context():
+        pago = db.session.get(Pago, inicio.get_json()["id"])
+        assert pago.estado == "rechazado"
+
+
+def test_cancelacion_bloquea_webpay_aun_inicializado(app, client):
+    solicitud = preparar_solicitud(app, client)
+    transaccion = TransaccionWebpayFalsa()
+    app.config["WEBPAY_TRANSACCION_FACTORY"] = lambda: transaccion
+    client.post(
+        f"/api/suscripciones/solicitudes/{solicitud['id']}/checkout/webpay",
+        json={},
+    )
+
+    respuesta = client.post(
+        f"/api/suscripciones/solicitudes/{solicitud['id']}/cancelar",
+        json={},
+    )
+
+    assert respuesta.status_code == 400
+    assert respuesta.get_json()["codigo"] == "conciliacion_pago_no_disponible"
+
+
+def test_cancelacion_detecta_autorizacion_webpay_y_activa_plan(app, client):
+    solicitud = preparar_solicitud(app, client)
+    transaccion = TransaccionWebpayFalsa()
+    app.config["WEBPAY_TRANSACCION_FACTORY"] = lambda: transaccion
+    inicio = client.post(
+        f"/api/suscripciones/solicitudes/{solicitud['id']}/checkout/webpay",
+        json={},
+    ).get_json()
+    with app.app_context():
+        pago = db.session.get(Pago, inicio["id"])
+        sesion = pago.datos_proveedor["session_id"]
+    transaccion.respuesta_estado = {
+        "status": "AUTHORIZED",
+        "response_code": 0,
+        "buy_order": inicio["referencia_externa"],
+        "session_id": sesion,
+        "amount": solicitud["monto_esperado"],
+        "authorization_code": "AUT-CONCILIADA",
+        "payment_type_code": "VD",
+        "installments_number": 0,
+        "transaction_date": "2026-08-21T12:00:00Z",
+        "accounting_date": "0821",
+        "vci": "TSY",
+        "card_detail": {"card_number": "6623"},
+    }
+
+    respuesta = client.post(
+        f"/api/suscripciones/solicitudes/{solicitud['id']}/cancelar",
+        json={},
+    )
+
+    assert respuesta.status_code == 409
+    with app.app_context():
+        pago = db.session.get(Pago, inicio["id"])
+        solicitud_db = db.session.get(SolicitudCambioPlan, solicitud["id"])
+        assert pago.estado == "pagado"
+        assert solicitud_db.estado == "aprobada"
 
 
 def test_checkout_webpay_rechaza_sin_configuracion(

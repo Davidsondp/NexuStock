@@ -104,6 +104,13 @@ class ClienteWebpayPlus:
             f"{self.base_url}{self._RUTA}/{token_seguro}",
         )
 
+    def status(self, token) -> dict:
+        token_seguro = quote(str(token), safe="")
+        return self._solicitar(
+            "GET",
+            f"{self.base_url}{self._RUTA}/{token_seguro}",
+        )
+
 
 def obtener_transaccion_webpay(
     configuracion,
@@ -171,12 +178,9 @@ def _pago_reutilizable(
     *,
     empresa_id: int,
     solicitud_id: int,
+    transaccion,
 ) -> Pago | None:
-    """Reutiliza ?nicamente transacciones reci?n creadas.
-
-    La ventana breve evita duplicados por doble clic, pero impide
-    reutilizar tokens Webpay vencidos, consumidos o abandonados.
-    """
+    """Reutiliza una transacción solo si Webpay confirma que sigue iniciada."""
 
     pagos = db.session.scalars(
         db.select(Pago)
@@ -194,9 +198,9 @@ def _pago_reutilizable(
         .order_by(Pago.id.desc())
     )
 
-    hubo_cambios = False
     ahora = utcnow()
-    ventana_reutilizacion = timedelta(seconds=15)
+    vigencia_segura = timedelta(minutes=10)
+    hubo_cambios = False
 
     for pago in pagos:
         datos = dict(pago.datos_proveedor or {})
@@ -204,42 +208,54 @@ def _pago_reutilizable(
         url = str(datos.get("url_redireccion") or "").strip()
         iniciado_en = str(datos.get("iniciado_en") or "").strip()
 
-        reutilizable = False
+        if not token or not url or not iniciado_en:
+            pago.estado = "rechazado"
+            pago.datos_proveedor = {
+                **datos,
+                "motivo": "transaccion_webpay_incompleta",
+                "expirado_en": ahora.isoformat(),
+            }
+            hubo_cambios = True
+            continue
 
-        if token and url and iniciado_en:
-            try:
-                inicio_pago = datetime.fromisoformat(iniciado_en)
+        # Compatibilidad con fábricas falsas y dobles de prueba existentes.
+        if not callable(getattr(transaccion, "status", None)):
+            return pago
 
-                if inicio_pago.tzinfo is not None:
-                    inicio_pago = (
-                        inicio_pago
-                        .astimezone(timezone.utc)
-                        .replace(tzinfo=None)
-                    )
+        try:
+            respuesta = transaccion.status(token)
+            estado = str(_dato_respuesta(respuesta, "status") or "").upper()
+            inicio_pago = datetime.fromisoformat(iniciado_en)
+            if inicio_pago.tzinfo is not None:
+                inicio_pago = inicio_pago.astimezone(timezone.utc).replace(tzinfo=None)
+            edad = ahora - inicio_pago
+        except (TypeError, ValueError):
+            estado = ""
+            edad = timedelta(0)
+        except Exception:
+            # Si el proveedor no responde, no se crea un cobro duplicado potencial.
+            return pago
 
-                edad = ahora - inicio_pago
+        if estado == "INITIALIZED" and edad <= vigencia_segura:
+            return pago
 
-                reutilizable = (
-                    timedelta(0)
-                    <= edad
-                    <= ventana_reutilizacion
-                )
+        if estado in {"AUTHORIZED", "CAPTURED"}:
+            raise ConflictoPago(
+                "Webpay informa un pago autorizado pendiente de conciliación"
+            )
 
-            except (TypeError, ValueError):
-                reutilizable = False
-
-        if reutilizable:
-            if hubo_cambios:
-                db.session.commit()
-
+        if estado == "INITIALIZED":
+            motivo = "token_webpay_vencido"
+        elif estado in {"FAILED", "REVERSED", "NULLIFIED"}:
+            motivo = f"estado_webpay_{estado.lower()}"
+        else:
             return pago
 
         pago.estado = "rechazado"
         pago.datos_proveedor = {
             **datos,
-            "motivo": (
-                "Transacci?n Webpay reemplazada por un nuevo intento"
-            ),
+            "estado_consultado": estado,
+            "motivo": motivo,
             "expirado_en": ahora.isoformat(),
         }
         hubo_cambios = True
@@ -284,6 +300,7 @@ def iniciar_checkout_webpay(
     existente = _pago_reutilizable(
         empresa_id=usuario.empresa_id,
         solicitud_id=solicitud.id,
+        transaccion=transaccion,
     )
 
     if existente:
@@ -444,7 +461,7 @@ def cancelar_checkout_webpay(
     sesion = str(sesion or "").strip()
 
     if not token:
-        raise TokenWebpayInvalido("El token Webpay no es v?lido")
+        raise TokenWebpayInvalido("El token Webpay no es válido")
 
     pago = _buscar_pago_por_token(token)
 
@@ -594,6 +611,53 @@ def _rechazar_confirmacion(
     )
 
     db.session.commit()
+
+
+def conciliar_checkout_webpay_autorizado(*, pago: Pago, respuesta) -> Pago:
+    """Aplica una autorización ya confirmada por el estado remoto de Webpay."""
+
+    datos = _respuesta_webpay_segura(respuesta)
+    anteriores = dict(pago.datos_proveedor or {})
+    try:
+        monto_recibido = Decimal(datos["amount"]).quantize(Decimal("0.01"))
+    except Exception:
+        _rechazar_confirmacion(pago=pago, datos=datos, motivo="monto_invalido")
+        raise ConflictoPago("Webpay devolvió un monto inválido")
+
+    validaciones = (
+        (datos["status"] == "AUTHORIZED", "transaccion_no_autorizada"),
+        (datos["response_code"] == 0, "codigo_respuesta_rechazado"),
+        (datos["buy_order"] == pago.referencia_externa, "orden_no_coincide"),
+        (datos["session_id"] == anteriores.get("session_id"), "sesion_no_coincide"),
+        (monto_recibido == Decimal(pago.monto), "monto_no_coincide"),
+        (pago.moneda == "CLP", "moneda_no_admitida"),
+    )
+    motivo = next((codigo for valido, codigo in validaciones if not valido), None)
+    if motivo:
+        _rechazar_confirmacion(pago=pago, datos=datos, motivo=motivo)
+        raise ConflictoPago("La autorización Webpay no coincide con el pago")
+
+    pago.datos_proveedor = {
+        **anteriores,
+        **datos,
+        "confirmado_en": utcnow().isoformat(),
+        "conciliado_por_estado": True,
+    }
+    ProcesadorWebhooksPago._confirmar(pago)
+    registrar_auditoria(
+        accion="pago.webpay_pagado_conciliado",
+        modulo="suscripciones",
+        empresa_id=pago.empresa_id,
+        entidad_tipo="Pago",
+        entidad_id=pago.id,
+        datos_nuevos={
+            "proveedor": "webpay",
+            "referencia": pago.referencia_externa,
+            "estado": pago.estado,
+        },
+    )
+    db.session.commit()
+    return pago
 
 
 def confirmar_checkout_webpay(
